@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.gguf
+.sweep_*
+*.sweep_tmp.gguf
+nohup.out
+/tmp/
