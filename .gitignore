@@ -5,3 +5,4 @@ __pycache__/
 *.sweep_tmp.gguf
 nohup.out
 /tmp/
+MIMO.md
