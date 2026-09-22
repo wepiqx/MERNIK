@@ -85,7 +85,7 @@ python scripts/audit_tiers.py --model M-6500.gguf --layer 31
 
 ### Queue & Allocation Principles
 
-Every tensor starts at a floor tier based on its functional class. A global max-heap drains the target budget best-first by $\frac{\sum(\text{importance}) \times \Delta}{\text{MiB}}$. Tied groups (identical imatrix energy) upgrade as a single unit with summed importance. Structural pins — MTP heads ($\to$ Q8_0), output/token embeddings ($\to$ Q5_K), MoE routers ($\to$ F16) — sit outside the budget queue.
+Every tensor starts at a floor tier based on its functional class. A global max-heap drains the target budget best-first by sum(importance) × Δ / MiB. Tied groups (identical imatrix energy) upgrade as a single unit with summed importance. Structural pins — MTP heads (→ Q8_0), output/token embeddings (→ Q5_K), MoE routers (→ F16) — sit outside the budget queue.
 
 ### Utility Lenses: MSE vs SMAPE vs RMSE vs MIX
 
