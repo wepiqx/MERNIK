@@ -130,6 +130,8 @@ def main():
 def _battery():
     # preflight: never silently score 164 empty completions against a dead
     # server (that failure mode already cost us one battery).
+    t0 = time.time()
+    print(f"battery start: {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
     try:
         r = requests.get(f"{SERVER_URL}/health", timeout=10)
         r.raise_for_status()
@@ -163,7 +165,9 @@ def _battery():
         time.sleep(0.1)
 
     write_jsonl(OUTPUT_FILE, results)
+    dt = time.time() - t0
     print(f"\nSaved {len(results)} to {OUTPUT_FILE}")
+    print(f"battery time: {dt/60:.1f} min ({dt/len(results):.1f} s/task over {len(results)} tasks)")
 
     print("\n--- Evaluating pass@1 ---")
     r = evaluate_functional_correctness(sample_file=OUTPUT_FILE, k=[1], n_workers=4)
