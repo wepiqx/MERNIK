@@ -44,7 +44,7 @@ def main():
     parser.add_argument("--free-pins", action="store_true",
                          help="EXPERIMENTAL: let output/token_embd/MTP/routers fight "
                               "for budget instead of fixed pins")
-    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "mix"],
+    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "mix", "balance"],
                         default="mse",
                         help="BATTLEFIELD: utility metric for the queue "
                              "(default: mse)")

@@ -157,6 +157,26 @@ def _gain_mode(mode: str, cur_tier: str, next_tier: str,
         if ec + en <= 0:
             return 0.0
         return 2.0 * (ec - en) / (ec + en)
+    if mode == "balance":
+        # Kings need the people, people need kings (scar 2026-09-22):
+        # geometric blend of the relative lens (SMAPE barbell shape) and
+        # the absolute lens (MSE weight + live sub-4 toxicity). Both halves
+        # O(1)-normalized first (MIX lesson), so neither outbids 800:1.
+        # Toxicity survives here because the MSE half is divided by a
+        # CONSTANT reference — unlike SMAPE's (ec+en) denominator, which
+        # cancels it. TOX multipliers reverted (dead code, wrong direction).
+        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
+        if ec + en <= 0:
+            return 0.0
+        rel = 2.0 * (ec - en) / (ec + en)
+        aba = ec - en
+        if rel <= 0.0 or aba <= 0.0:
+            return 0.0
+        s_ref = _scale("smape", cur_tier, next_tier, uopt or {})
+        m_ref = _scale("mse", cur_tier, next_tier, uopt or {})
+        if s_ref <= 0.0 or m_ref <= 0.0:
+            return 0.0
+        return math.sqrt((rel / s_ref) * (aba / m_ref))
     if mode == "ssim":
         # Measured structural gain, per group MEMBER (not rep): members of a
         # tied group share importance but not weights, so ΔSSIM differs per
