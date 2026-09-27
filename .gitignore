@@ -11,6 +11,5 @@ AGENTS.md
 # experimental scratch: local only, never push
 gnom/
 provenance/
-tests/
 tinynet.py
 train_net.py

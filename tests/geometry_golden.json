@@ -1,0 +1,140 @@
+{
+  "MiniCPM5-2B @1200 smse allow-q3": {
+    "tiers": {
+      "F32": 85,
+      "IQ2_S": 9,
+      "IQ2_XS": 4,
+      "IQ2_XXS": 64,
+      "IQ3_S": 16,
+      "IQ3_XXS": 9,
+      "IQ4_XS": 64,
+      "Q4_K": 3,
+      "Q5_K": 6,
+      "Q6_K": 121
+    },
+    "total_mib": 1200.0
+  },
+  "MiniCPM5-2B @1400 top-down": {
+    "tiers": {
+      "F32": 85,
+      "IQ4_XS": 39,
+      "Q4_K": 255,
+      "Q5_K": 2
+    },
+    "total_mib": 1399.8
+  },
+  "MiniCPM5-2B @1700 logcosh (gain reshaper)": {
+    "tiers": {
+      "F32": 85,
+      "IQ4_XS": 28,
+      "Q4_K": 9,
+      "Q5_K": 80,
+      "Q6_K": 173,
+      "Q8_0": 6
+    },
+    "total_mib": 1699.9
+  },
+  "MiniCPM5-2B @1700 mix    (per-group kings/junk)": {
+    "tiers": {
+      "F32": 85,
+      "IQ4_XS": 80,
+      "Q4_K": 32,
+      "Q5_K": 13,
+      "Q6_K": 40,
+      "Q8_0": 131
+    },
+    "total_mib": 1699.9
+  },
+  "MiniCPM5-2B @1700 mse    (bottom-up default)": {
+    "tiers": {
+      "F32": 85,
+      "IQ4_XS": 40,
+      "Q4_K": 19,
+      "Q5_K": 71,
+      "Q6_K": 45,
+      "Q8_0": 121
+    },
+    "total_mib": 1699.8
+  },
+  "MiniCPM5-2B @1700 rmse   (perfectionist rescale)": {
+    "tiers": {
+      "F32": 85,
+      "IQ4_XS": 49,
+      "Q4_K": 24,
+      "Q5_K": 48,
+      "Q6_K": 50,
+      "Q8_0": 125
+    },
+    "total_mib": 1699.9
+  },
+  "MiniCPM5-2B @1700 smape  (barbell lens)": {
+    "tiers": {
+      "F32": 85,
+      "IQ4_XS": 89,
+      "Q4_K": 35,
+      "Q5_K": 3,
+      "Q6_K": 5,
+      "Q8_0": 164
+    },
+    "total_mib": 1699.7
+  },
+  "MiniCPM5-2B @1700 smse   (blend lens)": {
+    "tiers": {
+      "F32": 85,
+      "IQ4_XS": 49,
+      "Q4_K": 22,
+      "Q5_K": 52,
+      "Q6_K": 48,
+      "Q8_0": 125
+    },
+    "total_mib": 1699.7
+  },
+  "MiniCPM5-2B @1700 srmse  (SMAPE x RMSE)": {
+    "tiers": {
+      "F32": 85,
+      "IQ4_XS": 59,
+      "Q4_K": 34,
+      "Q5_K": 32,
+      "Q6_K": 31,
+      "Q8_0": 140
+    },
+    "total_mib": 1699.9
+  },
+  "MiniCPM5-2B @1700 top-down smape  (TD barbell)": {
+    "tiers": {
+      "F16": 94,
+      "F32": 85,
+      "Q4_K": 159,
+      "Q5_K": 6,
+      "Q6_K": 6,
+      "Q8_0": 31
+    },
+    "total_mib": 1700.0
+  },
+  "MiniCPM5-2B @2500 squeeze (dungeon/palace binary)": {
+    "tiers": {
+      "F16": 198,
+      "F32": 85,
+      "IQ1_S": 96,
+      "Q5_K": 2
+    },
+    "total_mib": 2499.9
+  },
+  "RINIQ-M2 @5100 mse       (qwen35 hybrid + MTP)": {
+    "tiers": {
+      "F32": 177,
+      "Q4_K": 216,
+      "Q5_K": 34
+    },
+    "total_mib": 5098.4
+  },
+  "zoo-stand 1.7B @1000 mse  (README-ZOO baseline)": {
+    "tiers": {
+      "F32": 57,
+      "Q4_K": 105,
+      "Q5_K": 8,
+      "Q6_K": 56
+    },
+    "total_mib": 999.9
+  }
+}
