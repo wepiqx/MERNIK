@@ -1,1733 +1,0 @@
-=== Sat Sep 26 19:01:34 CEST 2026 QUANT Prism-Q6 ===
-load_backend: loaded BLAS backend from /home/wepiqx/llama.cpp/build/bin/libggml-blas.so
-ggml_cuda_init: found 1 CUDA devices (Total VRAM: 8106 MiB):
-  Device 0: NVIDIA GeForce GTX 1070, compute capability 6.1, VMM: yes, VRAM: 8106 MiB
-load_backend: loaded CUDA backend from /home/wepiqx/llama.cpp/build/bin/libggml-cuda.so
-load_backend: loaded CPU backend from /home/wepiqx/llama.cpp/build/bin/libggml-cpu-haswell.so
-version: 0.5.0-dev (build 11170, commit a02c7f58c)
-built with GNU 16.2.1 for Linux x86_64
-llama_quantize: quantizing '/mnt/Vsio/Downloads/PrismCoder-9B-BF16.gguf' to '/mnt/Vsio/Downloads/PrismCoder-9B-Q6_K.gguf' as Q6_K
-llama_model_loader: loaded meta data with 35 key-value pairs and 442 tensors from /mnt/Vsio/Downloads/PrismCoder-9B-BF16.gguf (version GGUF V3 (latest))
-llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
-llama_model_loader: - kv   0:                       general.architecture str              = qwen35
-llama_model_loader: - kv   1:                               general.type str              = model
-llama_model_loader: - kv   2:                               general.name str              = Prism
-llama_model_loader: - kv   3:                         general.size_label str              = 9.2B
-llama_model_loader: - kv   4:                         qwen35.block_count u32              = 33
-llama_model_loader: - kv   5:                      qwen35.context_length u32              = 262144
-llama_model_loader: - kv   6:                    qwen35.embedding_length u32              = 4096
-llama_model_loader: - kv   7:                 qwen35.feed_forward_length u32              = 12288
-llama_model_loader: - kv   8:                qwen35.attention.head_count u32              = 16
-llama_model_loader: - kv   9:             qwen35.attention.head_count_kv u32              = 4
-llama_model_loader: - kv  10:             qwen35.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
-llama_model_loader: - kv  11:                      qwen35.rope.freq_base f32              = 10000000.000000
-llama_model_loader: - kv  12:    qwen35.attention.layer_norm_rms_epsilon f32              = 0.000001
-llama_model_loader: - kv  13:                qwen35.attention.key_length u32              = 256
-llama_model_loader: - kv  14:              qwen35.attention.value_length u32              = 256
-llama_model_loader: - kv  15:                          general.file_type u32              = 32
-llama_model_loader: - kv  16:                qwen35.nextn_predict_layers u32              = 1
-llama_model_loader: - kv  17:                     qwen35.ssm.conv_kernel u32              = 4
-llama_model_loader: - kv  18:                      qwen35.ssm.state_size u32              = 128
-llama_model_loader: - kv  19:                     qwen35.ssm.group_count u32              = 16
-llama_model_loader: - kv  20:                  qwen35.ssm.time_step_rank u32              = 32
-llama_model_loader: - kv  21:                      qwen35.ssm.inner_size u32              = 4096
-llama_model_loader: - kv  22:          qwen35.attention.recurrent_layers arr[bool,33]     = [true, true, true, false, true, true,...
-llama_model_loader: - kv  23:             qwen35.full_attention_interval u32              = 4
-llama_model_loader: - kv  24:                qwen35.rope.dimension_count u32              = 64
-llama_model_loader: - kv  25:               general.quantization_version u32              = 2
-llama_model_loader: - kv  26:                       tokenizer.ggml.model str              = gpt2
-llama_model_loader: - kv  27:                         tokenizer.ggml.pre str              = qwen35
-llama_model_loader: - kv  28:                      tokenizer.ggml.tokens arr[str,248320]  = ["!", "\"", "#", "$", "%", "&", "'", ...
-llama_model_loader: - kv  29:                  tokenizer.ggml.token_type arr[i32,248320]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
-llama_model_loader: - kv  30:                      tokenizer.ggml.merges arr[str,247587]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
-llama_model_loader: - kv  31:                tokenizer.ggml.eos_token_id u32              = 248046
-llama_model_loader: - kv  32:            tokenizer.ggml.padding_token_id u32              = 248044
-llama_model_loader: - kv  33:               tokenizer.ggml.add_bos_token bool             = false
-llama_model_loader: - kv  34:                    tokenizer.chat_template str              = {%- set image_count = namespace(value...
-llama_model_loader: - type  f32:  184 tensors
-llama_model_loader: - type bf16:  258 tensors
-[   1/ 442] output.weight                        - [  4096, 248320,      1,      1], type =   bf16, converting to q6_K .. size =  1940.00 MiB ->   795.70 MiB
-[   2/ 442] output_norm.weight                   - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[   3/ 442] token_embd.weight                    - [  4096, 248320,      1,      1], type =   bf16, converting to q6_K .. size =  1940.00 MiB ->   795.70 MiB
-[   4/ 442] blk.0.attn_gate.weight               - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[   5/ 442] blk.0.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[   6/ 442] blk.0.attn_qkv.weight                - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[   7/ 442] blk.0.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[   8/ 442] blk.0.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[   9/ 442] blk.0.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  10/ 442] blk.0.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  11/ 442] blk.0.ssm_a                          - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  12/ 442] blk.0.ssm_alpha.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  13/ 442] blk.0.ssm_beta.weight                - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  14/ 442] blk.0.ssm_conv1d.weight              - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[  15/ 442] blk.0.ssm_dt.bias                    - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  16/ 442] blk.0.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  17/ 442] blk.0.ssm_out.weight                 - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  18/ 442] blk.1.attn_gate.weight               - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  19/ 442] blk.1.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  20/ 442] blk.1.attn_qkv.weight                - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[  21/ 442] blk.1.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  22/ 442] blk.1.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  23/ 442] blk.1.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  24/ 442] blk.1.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  25/ 442] blk.1.ssm_a                          - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  26/ 442] blk.1.ssm_alpha.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  27/ 442] blk.1.ssm_beta.weight                - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  28/ 442] blk.1.ssm_conv1d.weight              - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[  29/ 442] blk.1.ssm_dt.bias                    - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  30/ 442] blk.1.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  31/ 442] blk.1.ssm_out.weight                 - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  32/ 442] blk.2.attn_gate.weight               - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  33/ 442] blk.2.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  34/ 442] blk.2.attn_qkv.weight                - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[  35/ 442] blk.2.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  36/ 442] blk.2.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  37/ 442] blk.2.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  38/ 442] blk.2.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  39/ 442] blk.2.ssm_a                          - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  40/ 442] blk.2.ssm_alpha.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  41/ 442] blk.2.ssm_beta.weight                - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  42/ 442] blk.2.ssm_conv1d.weight              - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[  43/ 442] blk.2.ssm_dt.bias                    - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  44/ 442] blk.2.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  45/ 442] blk.2.ssm_out.weight                 - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  46/ 442] blk.3.attn_k.weight                  - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[  47/ 442] blk.3.attn_k_norm.weight             - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[  48/ 442] blk.3.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  49/ 442] blk.3.attn_output.weight             - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  50/ 442] blk.3.attn_q.weight                  - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[  51/ 442] blk.3.attn_q_norm.weight             - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[  52/ 442] blk.3.attn_v.weight                  - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[  53/ 442] blk.3.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  54/ 442] blk.3.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  55/ 442] blk.3.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  56/ 442] blk.3.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  57/ 442] blk.4.attn_gate.weight               - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  58/ 442] blk.4.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  59/ 442] blk.4.attn_qkv.weight                - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[  60/ 442] blk.4.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  61/ 442] blk.4.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  62/ 442] blk.4.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  63/ 442] blk.4.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  64/ 442] blk.4.ssm_a                          - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  65/ 442] blk.4.ssm_alpha.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  66/ 442] blk.4.ssm_beta.weight                - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  67/ 442] blk.4.ssm_conv1d.weight              - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[  68/ 442] blk.4.ssm_dt.bias                    - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  69/ 442] blk.4.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  70/ 442] blk.4.ssm_out.weight                 - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  71/ 442] blk.5.attn_gate.weight               - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  72/ 442] blk.5.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  73/ 442] blk.5.attn_qkv.weight                - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[  74/ 442] blk.5.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  75/ 442] blk.5.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  76/ 442] blk.5.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  77/ 442] blk.5.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  78/ 442] blk.5.ssm_a                          - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  79/ 442] blk.5.ssm_alpha.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  80/ 442] blk.5.ssm_beta.weight                - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  81/ 442] blk.5.ssm_conv1d.weight              - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[  82/ 442] blk.5.ssm_dt.bias                    - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  83/ 442] blk.5.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  84/ 442] blk.5.ssm_out.weight                 - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  85/ 442] blk.6.attn_gate.weight               - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  86/ 442] blk.6.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  87/ 442] blk.6.attn_qkv.weight                - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[  88/ 442] blk.6.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  89/ 442] blk.6.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  90/ 442] blk.6.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[  91/ 442] blk.6.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[  92/ 442] blk.6.ssm_a                          - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  93/ 442] blk.6.ssm_alpha.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  94/ 442] blk.6.ssm_beta.weight                - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[  95/ 442] blk.6.ssm_conv1d.weight              - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[  96/ 442] blk.6.ssm_dt.bias                    - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  97/ 442] blk.6.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[  98/ 442] blk.6.ssm_out.weight                 - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[  99/ 442] blk.7.attn_k.weight                  - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 100/ 442] blk.7.attn_k_norm.weight             - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 101/ 442] blk.7.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 102/ 442] blk.7.attn_output.weight             - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 103/ 442] blk.7.attn_q.weight                  - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 104/ 442] blk.7.attn_q_norm.weight             - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 105/ 442] blk.7.attn_v.weight                  - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 106/ 442] blk.7.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 107/ 442] blk.7.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 108/ 442] blk.7.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 109/ 442] blk.7.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 110/ 442] blk.8.attn_gate.weight               - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 111/ 442] blk.8.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 112/ 442] blk.8.attn_qkv.weight                - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 113/ 442] blk.8.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 114/ 442] blk.8.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 115/ 442] blk.8.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 116/ 442] blk.8.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 117/ 442] blk.8.ssm_a                          - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 118/ 442] blk.8.ssm_alpha.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 119/ 442] blk.8.ssm_beta.weight                - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 120/ 442] blk.8.ssm_conv1d.weight              - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 121/ 442] blk.8.ssm_dt.bias                    - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 122/ 442] blk.8.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 123/ 442] blk.8.ssm_out.weight                 - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 124/ 442] blk.9.attn_gate.weight               - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 125/ 442] blk.9.attn_norm.weight               - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 126/ 442] blk.9.attn_qkv.weight                - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 127/ 442] blk.9.ffn_down.weight                - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 128/ 442] blk.9.ffn_gate.weight                - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 129/ 442] blk.9.ffn_up.weight                  - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 130/ 442] blk.9.post_attention_norm.weight     - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 131/ 442] blk.9.ssm_a                          - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 132/ 442] blk.9.ssm_alpha.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 133/ 442] blk.9.ssm_beta.weight                - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 134/ 442] blk.9.ssm_conv1d.weight              - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 135/ 442] blk.9.ssm_dt.bias                    - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 136/ 442] blk.9.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 137/ 442] blk.9.ssm_out.weight                 - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 138/ 442] blk.10.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 139/ 442] blk.10.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 140/ 442] blk.10.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 141/ 442] blk.10.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 142/ 442] blk.10.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 143/ 442] blk.10.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 144/ 442] blk.10.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 145/ 442] blk.10.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 146/ 442] blk.10.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 147/ 442] blk.10.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 148/ 442] blk.10.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 149/ 442] blk.10.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 150/ 442] blk.10.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 151/ 442] blk.10.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 152/ 442] blk.11.attn_k.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 153/ 442] blk.11.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 154/ 442] blk.11.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 155/ 442] blk.11.attn_output.weight            - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 156/ 442] blk.11.attn_q.weight                 - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 157/ 442] blk.11.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 158/ 442] blk.11.attn_v.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 159/ 442] blk.11.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 160/ 442] blk.11.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 161/ 442] blk.11.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 162/ 442] blk.11.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 163/ 442] blk.12.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 164/ 442] blk.12.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 165/ 442] blk.12.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 166/ 442] blk.12.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 167/ 442] blk.12.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 168/ 442] blk.12.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 169/ 442] blk.12.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 170/ 442] blk.12.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 171/ 442] blk.12.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 172/ 442] blk.12.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 173/ 442] blk.12.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 174/ 442] blk.12.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 175/ 442] blk.12.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 176/ 442] blk.12.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 177/ 442] blk.13.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 178/ 442] blk.13.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 179/ 442] blk.13.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 180/ 442] blk.13.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 181/ 442] blk.13.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 182/ 442] blk.13.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 183/ 442] blk.13.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 184/ 442] blk.13.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 185/ 442] blk.13.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 186/ 442] blk.13.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 187/ 442] blk.13.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 188/ 442] blk.13.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 189/ 442] blk.13.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 190/ 442] blk.13.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 191/ 442] blk.14.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 192/ 442] blk.14.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 193/ 442] blk.14.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 194/ 442] blk.14.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 195/ 442] blk.14.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 196/ 442] blk.14.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 197/ 442] blk.14.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 198/ 442] blk.14.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 199/ 442] blk.14.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 200/ 442] blk.14.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 201/ 442] blk.14.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 202/ 442] blk.14.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 203/ 442] blk.14.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 204/ 442] blk.14.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 205/ 442] blk.15.attn_k.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 206/ 442] blk.15.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 207/ 442] blk.15.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 208/ 442] blk.15.attn_output.weight            - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 209/ 442] blk.15.attn_q.weight                 - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 210/ 442] blk.15.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 211/ 442] blk.15.attn_v.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 212/ 442] blk.15.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 213/ 442] blk.15.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 214/ 442] blk.15.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 215/ 442] blk.15.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 216/ 442] blk.16.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 217/ 442] blk.16.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 218/ 442] blk.16.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 219/ 442] blk.16.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 220/ 442] blk.16.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 221/ 442] blk.16.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 222/ 442] blk.16.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 223/ 442] blk.16.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 224/ 442] blk.16.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 225/ 442] blk.16.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 226/ 442] blk.16.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 227/ 442] blk.16.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 228/ 442] blk.16.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 229/ 442] blk.16.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 230/ 442] blk.17.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 231/ 442] blk.17.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 232/ 442] blk.17.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 233/ 442] blk.17.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 234/ 442] blk.17.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 235/ 442] blk.17.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 236/ 442] blk.17.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 237/ 442] blk.17.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 238/ 442] blk.17.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 239/ 442] blk.17.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 240/ 442] blk.17.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 241/ 442] blk.17.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 242/ 442] blk.17.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 243/ 442] blk.17.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 244/ 442] blk.18.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 245/ 442] blk.18.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 246/ 442] blk.18.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 247/ 442] blk.18.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 248/ 442] blk.18.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 249/ 442] blk.18.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 250/ 442] blk.18.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 251/ 442] blk.18.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 252/ 442] blk.18.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 253/ 442] blk.18.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 254/ 442] blk.18.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 255/ 442] blk.18.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 256/ 442] blk.18.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 257/ 442] blk.18.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 258/ 442] blk.19.attn_k.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 259/ 442] blk.19.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 260/ 442] blk.19.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 261/ 442] blk.19.attn_output.weight            - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 262/ 442] blk.19.attn_q.weight                 - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 263/ 442] blk.19.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 264/ 442] blk.19.attn_v.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 265/ 442] blk.19.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 266/ 442] blk.19.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 267/ 442] blk.19.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 268/ 442] blk.19.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 269/ 442] blk.20.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 270/ 442] blk.20.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 271/ 442] blk.20.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 272/ 442] blk.20.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 273/ 442] blk.20.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 274/ 442] blk.20.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 275/ 442] blk.20.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 276/ 442] blk.20.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 277/ 442] blk.20.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 278/ 442] blk.20.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 279/ 442] blk.20.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 280/ 442] blk.20.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 281/ 442] blk.20.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 282/ 442] blk.20.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 283/ 442] blk.21.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 284/ 442] blk.21.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 285/ 442] blk.21.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 286/ 442] blk.21.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 287/ 442] blk.21.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 288/ 442] blk.21.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 289/ 442] blk.21.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 290/ 442] blk.21.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 291/ 442] blk.21.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 292/ 442] blk.21.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 293/ 442] blk.21.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 294/ 442] blk.21.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 295/ 442] blk.21.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 296/ 442] blk.21.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 297/ 442] blk.22.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 298/ 442] blk.22.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 299/ 442] blk.22.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 300/ 442] blk.22.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 301/ 442] blk.22.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 302/ 442] blk.22.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 303/ 442] blk.22.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 304/ 442] blk.22.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 305/ 442] blk.22.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 306/ 442] blk.22.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 307/ 442] blk.22.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 308/ 442] blk.22.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 309/ 442] blk.22.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 310/ 442] blk.22.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 311/ 442] blk.23.attn_k.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 312/ 442] blk.23.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 313/ 442] blk.23.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 314/ 442] blk.23.attn_output.weight            - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 315/ 442] blk.23.attn_q.weight                 - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 316/ 442] blk.23.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 317/ 442] blk.23.attn_v.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 318/ 442] blk.23.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 319/ 442] blk.23.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 320/ 442] blk.23.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 321/ 442] blk.23.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 322/ 442] blk.24.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 323/ 442] blk.24.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 324/ 442] blk.24.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 325/ 442] blk.24.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 326/ 442] blk.24.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 327/ 442] blk.24.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 328/ 442] blk.24.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 329/ 442] blk.24.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 330/ 442] blk.24.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 331/ 442] blk.24.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 332/ 442] blk.24.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 333/ 442] blk.24.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 334/ 442] blk.24.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 335/ 442] blk.24.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 336/ 442] blk.25.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 337/ 442] blk.25.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 338/ 442] blk.25.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 339/ 442] blk.25.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 340/ 442] blk.25.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 341/ 442] blk.25.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 342/ 442] blk.25.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 343/ 442] blk.25.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 344/ 442] blk.25.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 345/ 442] blk.25.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 346/ 442] blk.25.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 347/ 442] blk.25.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 348/ 442] blk.25.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 349/ 442] blk.25.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 350/ 442] blk.26.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 351/ 442] blk.26.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 352/ 442] blk.26.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 353/ 442] blk.26.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 354/ 442] blk.26.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 355/ 442] blk.26.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 356/ 442] blk.26.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 357/ 442] blk.26.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 358/ 442] blk.26.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 359/ 442] blk.26.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 360/ 442] blk.26.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 361/ 442] blk.26.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 362/ 442] blk.26.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 363/ 442] blk.26.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 364/ 442] blk.27.attn_k.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 365/ 442] blk.27.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 366/ 442] blk.27.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 367/ 442] blk.27.attn_output.weight            - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 368/ 442] blk.27.attn_q.weight                 - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 369/ 442] blk.27.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 370/ 442] blk.27.attn_v.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 371/ 442] blk.27.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 372/ 442] blk.27.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 373/ 442] blk.27.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 374/ 442] blk.27.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 375/ 442] blk.28.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 376/ 442] blk.28.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 377/ 442] blk.28.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 378/ 442] blk.28.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 379/ 442] blk.28.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 380/ 442] blk.28.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 381/ 442] blk.28.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 382/ 442] blk.28.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 383/ 442] blk.28.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 384/ 442] blk.28.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 385/ 442] blk.28.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 386/ 442] blk.28.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 387/ 442] blk.28.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 388/ 442] blk.28.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 389/ 442] blk.29.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 390/ 442] blk.29.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 391/ 442] blk.29.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 392/ 442] blk.29.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 393/ 442] blk.29.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 394/ 442] blk.29.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 395/ 442] blk.29.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 396/ 442] blk.29.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 397/ 442] blk.29.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 398/ 442] blk.29.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 399/ 442] blk.29.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 400/ 442] blk.29.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 401/ 442] blk.29.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 402/ 442] blk.29.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 403/ 442] blk.30.attn_gate.weight              - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 404/ 442] blk.30.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 405/ 442] blk.30.attn_qkv.weight               - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 406/ 442] blk.30.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 407/ 442] blk.30.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 408/ 442] blk.30.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 409/ 442] blk.30.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 410/ 442] blk.30.ssm_a                         - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 411/ 442] blk.30.ssm_alpha.weight              - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 412/ 442] blk.30.ssm_beta.weight               - [  4096,     32,      1,      1], type =   bf16, converting to q6_K .. size =     0.25 MiB ->     0.10 MiB
-[ 413/ 442] blk.30.ssm_conv1d.weight             - [     4,   8192,      1,      1], type =    f32, size =    0.125 MiB
-[ 414/ 442] blk.30.ssm_dt.bias                   - [    32,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 415/ 442] blk.30.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
-[ 416/ 442] blk.30.ssm_out.weight                - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 417/ 442] blk.31.attn_k.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 418/ 442] blk.31.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 419/ 442] blk.31.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 420/ 442] blk.31.attn_output.weight            - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 421/ 442] blk.31.attn_q.weight                 - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 422/ 442] blk.31.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 423/ 442] blk.31.attn_v.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 424/ 442] blk.31.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 425/ 442] blk.31.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 426/ 442] blk.31.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 427/ 442] blk.31.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 428/ 442] blk.32.attn_k.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 429/ 442] blk.32.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 430/ 442] blk.32.attn_norm.weight              - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 431/ 442] blk.32.attn_output.weight            - [  4096,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    32.00 MiB ->    13.12 MiB
-[ 432/ 442] blk.32.attn_q.weight                 - [  4096,   8192,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 433/ 442] blk.32.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
-[ 434/ 442] blk.32.attn_v.weight                 - [  4096,   1024,      1,      1], type =   bf16, converting to q6_K .. size =     8.00 MiB ->     3.28 MiB
-[ 435/ 442] blk.32.ffn_down.weight               - [ 12288,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 436/ 442] blk.32.ffn_gate.weight               - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 437/ 442] blk.32.ffn_up.weight                 - [  4096,  12288,      1,      1], type =   bf16, converting to q6_K .. size =    96.00 MiB ->    39.38 MiB
-[ 438/ 442] blk.32.nextn.eh_proj.weight          - [  8192,   4096,      1,      1], type =   bf16, converting to q6_K .. size =    64.00 MiB ->    26.25 MiB
-[ 439/ 442] blk.32.nextn.enorm.weight            - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 440/ 442] blk.32.nextn.hnorm.weight            - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 441/ 442] blk.32.nextn.shared_head_norm.weight - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-[ 442/ 442] blk.32.post_attention_norm.weight    - [  4096,      1,      1,      1], type =    f32, size =    0.016 MiB
-llama_model_quantize_impl: model size  = 17544.13 MiB (16.00 BPW)
-llama_model_quantize_impl: quant size  =  7198.27 MiB (6.57 BPW)
-
-llama_quantize: quantize time = 223662.00 ms
-llama_quantize:    total time = 223662.00 ms
-=== Sat Sep 26 19:05:19 CEST 2026 PPL Prism-Q6 ===
-0.02.289.269 W model has unused tensor blk.32.attn_norm.weight (size = 16384 bytes) -- ignoring
-0.02.289.275 W model has unused tensor blk.32.post_attention_norm.weight (size = 16384 bytes) -- ignoring
-0.02.289.282 W model has unused tensor blk.32.attn_q.weight (size = 27525120 bytes) -- ignoring
-0.02.289.285 W model has unused tensor blk.32.attn_k.weight (size = 3440640 bytes) -- ignoring
-0.02.289.288 W model has unused tensor blk.32.attn_v.weight (size = 3440640 bytes) -- ignoring
-0.02.289.297 W model has unused tensor blk.32.attn_output.weight (size = 13762560 bytes) -- ignoring
-0.02.289.300 W model has unused tensor blk.32.attn_q_norm.weight (size = 1024 bytes) -- ignoring
-0.02.289.302 W model has unused tensor blk.32.attn_k_norm.weight (size = 1024 bytes) -- ignoring
-0.02.289.305 W model has unused tensor blk.32.ffn_gate.weight (size = 41287680 bytes) -- ignoring
-0.02.289.308 W model has unused tensor blk.32.ffn_down.weight (size = 41287680 bytes) -- ignoring
-0.02.289.311 W model has unused tensor blk.32.ffn_up.weight (size = 41287680 bytes) -- ignoring
-0.02.289.316 W model has unused tensor blk.32.nextn.eh_proj.weight (size = 27525120 bytes) -- ignoring
-0.02.289.321 W model has unused tensor blk.32.nextn.enorm.weight (size = 16384 bytes) -- ignoring
-0.02.289.327 W model has unused tensor blk.32.nextn.hnorm.weight (size = 16384 bytes) -- ignoring
-0.02.289.341 W model has unused tensor blk.32.nextn.shared_head_norm.weight (size = 16384 bytes) -- ignoring
-1.06.096.746 I cmn          init: llama threadpool init, n_threads = 4
-1.06.232.424 I 
-1.06.235.951 I system_info: n_threads = 4 (n_threads_batch = 4) / 8 | CUDA : ARCHS = 610 | FORCE_MMQ = 1 | USE_GRAPHS = 1 | FA_QUANTS = all | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
-1.06.235.969 I perplexity: tokenizing the input ..
-1.06.927.001 I perplexity: tokenization took 691.024 ms
-1.06.927.153 I perplexity: calculating perplexity over 290 chunks, n_ctx=1024, batch_size=512, n_seq=1
-1.11.446.445 I perplexity: 4.52 seconds per pass - ETA 21.83 minutes
-[1]5.0861,[2]7.4925,[3]8.9625,[4]9.5787,[5]10.3098,[6]10.5321,[7]10.4899,[8]10.7474,[9]10.8223,[10]10.7081,[11]10.4226,[12]9.5620,[13]8.9759,[14]8.6497,[15]8.5178,[16]8.4105,[17]8.4467,[18]8.5589,[19]8.5695,[20]8.7071,[21]8.7148,[22]8.7024,[23]8.5832,[24]8.7686,[25]8.8346,[26]8.8386,[27]8.9493,[28]9.0606,[29]9.0444,[30]9.0804,[31]9.1113,[32]9.2202,[33]9.3714,[34]9.3387,[35]9.2935,[36]9.3060,[37]9.3685,[38]9.3511,[39]9.3121,[40]9.1940,[41]9.2107,[42]9.1741,[43]9.2777,[44]9.2482,[45]9.1936,[46]9.1579,[47]9.1992,[48]9.1663,[49]9.1871,[50]9.2665,[51]9.2701,[52]9.2384,[53]9.2472,[54]9.3543,[55]9.4662,[56]9.5136,[57]9.6295,[58]9.5763,[59]9.5422,[60]9.5447,[61]9.5035,[62]9.4282,[63]9.3860,[64]9.3013,[65]9.2370,[66]9.2254,[67]9.2100,[68]9.1688,[69]9.1405,[70]9.1367,[71]9.1386,[72]9.1741,[73]9.1064,[74]9.0375,[75]8.9651,[76]8.9138,[77]8.8629,[78]8.7821,[79]8.7136,[80]8.6530,[81]8.6172,[82]8.6040,[83]8.6007,[84]8.6198,[85]8.6679,[86]8.7527,[87]8.8220,[88]8.8828,[89]8.9364,[90]8.9467,[91]8.9946,[92]9.0121,[93]9.0603,[94]9.0725,[95]9.1150,[96]9.1070,[97]9.1692,[98]9.1767,[99]9.1484,[100]9.1367,[101]9.1961,[102]9.2049,[103]9.2120,[104]9.1769,[105]9.1476,[106]9.1413,[107]9.1073,[108]9.0983,[109]9.0544,[110]9.0358,[111]9.0177,[112]8.9811,[113]8.9500,[114]8.9169,[115]8.8764,[116]8.8696,[117]8.8530,[118]8.8380,[119]8.7970,[120]8.7889,[121]8.7928,[122]8.8003,[123]8.8188,[124]8.8392,[125]8.8612,[126]8.9012,[127]8.9166,[128]8.9450,[129]8.9002,[130]8.8725,[131]8.8813,[132]8.9023,[133]8.8999,[134]8.9028,[135]8.8764,[136]8.8674,[137]8.8584,[138]8.8504,[139]8.8493,[140]8.8253,[141]8.7651,[142]8.7808,[143]8.7379,[144]8.7434,[145]8.7566,[146]8.7871,[147]8.8305,[148]8.8696,[149]8.8575,[150]8.8470,[151]8.8206,[152]8.8227,[153]8.8258,[154]8.8189,[155]8.8279,[156]8.8209,[157]8.7998,[158]8.8361,[159]8.8521,[160]8.8475,[161]8.8720,[162]8.9004,[163]8.8756,[164]8.8443,[165]8.8077,[166]8.7941,[167]8.7829,[168]8.7846,[169]8.7678,[170]8.7510,[171]8.7473,[172]8.7468,[173]8.7422,[174]8.7297,[175]8.7431,[176]8.7306,[177]8.7495,[178]8.7470,[179]8.7379,[180]8.7416,[181]8.7638,[182]8.8127,[183]8.8671,[184]8.9006,[185]8.9453,[186]8.9676,[187]8.9983,[188]9.0302,[189]9.0718,[190]9.0958,[191]9.1327,[192]9.1623,[193]9.1477,[194]9.1914,[195]9.1981,[196]9.1832,[197]9.1901,[198]9.1929,[199]9.2098,[200]9.2030,[201]9.1795,[202]9.1680,[203]9.1787,[204]9.1839,[205]9.1770,[206]9.1871,[207]9.1830,[208]9.1973,[209]9.1997,[210]9.1852,[211]9.1816,[212]9.1811,[213]9.2121,[214]9.2202,[215]9.2307,[216]9.2293,[217]9.2146,[218]9.2143,[219]9.2316,[220]9.2361,[221]9.2350,[222]9.2304,[223]9.2265,[224]9.2336,[225]9.2162,[226]9.2031,[227]9.2052,[228]9.2342,[229]9.2348,[230]9.2457,[231]9.2514,[232]9.2612,[233]9.2801,[234]9.2871,[235]9.2750,[236]9.2858,[237]9.2798,[238]9.2637,[239]9.2787,[240]9.2823,[241]9.2859,[242]9.2787,[243]9.2599,[244]9.2496,[245]9.2418,[246]9.2332,[247]9.2462,[248]9.2424,[249]9.2394,[250]9.2710,[251]9.2816,[252]9.2684,[253]9.2636,[254]9.2698,[255]9.2639,[256]9.2559,[257]9.2482,[258]9.2530,[259]9.2628,[260]9.2562,[261]9.2596,[262]9.2532,[263]9.2451,[264]9.2501,[265]9.2463,[266]9.2497,[267]9.2751,[268]9.2783,[269]9.2790,[270]9.2864,[271]9.2797,[272]9.2579,[273]9.2680,[274]9.2397,[275]9.1900,[276]9.1988,[277]9.1976,[278]9.2063,[279]9.2169,[280]9.2348,[281]9.2397,[282]9.2247,[283]9.2124,[284]9.2147,[285]9.2137,[286]9.2175,[287]9.2238,[288]9.2505,[289]9.2661,[290]9.2602,
-11.29.445.639 I Final estimate: PPL = 9.2602 +/- 0.06337
-
-=== Sat Sep 26 19:16:50 CEST 2026 HE Prism-Q6 ===
-serving /mnt/Vsio/Downloads/PrismCoder-9B-Q6_K.gguf on 28082
-battery start: 2026-09-26 19:17:21
-[1/164] HumanEval/0 ... OK
-[2/164] HumanEval/1 ... OK
-[3/164] HumanEval/10 ... OK
-[4/164] HumanEval/100 ... OK
-[5/164] HumanEval/101 ... OK
-[6/164] HumanEval/102 ... OK
-[7/164] HumanEval/103 ... OK
-[8/164] HumanEval/104 ... OK
-[9/164] HumanEval/105 ... OK
-[10/164] HumanEval/106 ... OK
-[11/164] HumanEval/107 ... OK
-[12/164] HumanEval/108 ... OK
-[13/164] HumanEval/109 ... OK
-[14/164] HumanEval/11 ... OK
-[15/164] HumanEval/110 ... OK
-[16/164] HumanEval/111 ... OK
-[17/164] HumanEval/112 ... OK
-[18/164] HumanEval/113 ... OK
-[19/164] HumanEval/114 ... OK
-[20/164] HumanEval/115 ... OK
-[21/164] HumanEval/116 ... OK
-[22/164] HumanEval/117 ... OK
-[23/164] HumanEval/118 ... OK
-[24/164] HumanEval/119 ... OK
-[25/164] HumanEval/12 ... OK
-[26/164] HumanEval/120 ... OK
-[27/164] HumanEval/121 ... OK
-[28/164] HumanEval/122 ... OK
-[29/164] HumanEval/123 ... OK
-[30/164] HumanEval/124 ... OK
-[31/164] HumanEval/125 ... OK
-[32/164] HumanEval/126 ... OK
-[33/164] HumanEval/127 ... OK
-[34/164] HumanEval/128 ... OK
-[35/164] HumanEval/129 ... OK
-[36/164] HumanEval/13 ... OK
-[37/164] HumanEval/130 ... OK
-[38/164] HumanEval/131 ... OK
-[39/164] HumanEval/132 ... OK
-[40/164] HumanEval/133 ... OK
-[41/164] HumanEval/134 ... OK
-[42/164] HumanEval/135 ... OK
-[43/164] HumanEval/136 ... OK
-[44/164] HumanEval/137 ... OK
-[45/164] HumanEval/138 ... OK
-[46/164] HumanEval/139 ... === Sat Sep 26 20:08:05 CEST 2026 HE Prism-Q6 (post-reboot rerun) ===
-serving /mnt/Vsio/Downloads/PrismCoder-9B-Q6_K.gguf on 28082
-battery start: 2026-09-26 20:08:56
-[1/164] HumanEval/0 ... OK
-[2/164] HumanEval/1 ... OK
-[3/164] HumanEval/10 ... OK
-[4/164] HumanEval/100 ... OK
-[5/164] HumanEval/101 ... OK
-[6/164] HumanEval/102 ... OK
-[7/164] HumanEval/103 ... OK
-[8/164] HumanEval/104 ... OK
-[9/164] HumanEval/105 ... OK
-[10/164] HumanEval/106 ... OK
-[11/164] HumanEval/107 ... OK
-[12/164] HumanEval/108 ... OK
-[13/164] HumanEval/109 ... OK
-[14/164] HumanEval/11 ... OK
-[15/164] HumanEval/110 ... OK
-[16/164] HumanEval/111 ... OK
-[17/164] HumanEval/112 ... OK
-[18/164] HumanEval/113 ... OK
-[19/164] HumanEval/114 ... OK
-[20/164] HumanEval/115 ... OK
-[21/164] HumanEval/116 ... OK
-[22/164] HumanEval/117 ... OK
-[23/164] HumanEval/118 ... OK
-[24/164] HumanEval/119 ... OK
-[25/164] HumanEval/12 ... OK
-[26/164] HumanEval/120 ... OK
-[27/164] HumanEval/121 ... OK
-[28/164] HumanEval/122 ... OK
-[29/164] HumanEval/123 ... OK
-[30/164] HumanEval/124 ... OK
-[31/164] HumanEval/125 ... OK
-[32/164] HumanEval/126 ... OK
-[33/164] HumanEval/127 ... OK
-[34/164] HumanEval/128 ... OK
-[35/164] HumanEval/129 ... OK
-[36/164] HumanEval/13 ... OK
-[37/164] HumanEval/130 ... OK
-[38/164] HumanEval/131 ... OK
-[39/164] HumanEval/132 ... OK
-[40/164] HumanEval/133 ... OK
-[41/164] HumanEval/134 ... OK
-[42/164] HumanEval/135 ... OK
-[43/164] HumanEval/136 ... OK
-[44/164] HumanEval/137 ... OK
-[45/164] HumanEval/138 ... OK
-[46/164] HumanEval/139 ... OK
-[47/164] HumanEval/14 ... OK
-[48/164] HumanEval/140 ... OK
-[49/164] HumanEval/141 ... OK
-[50/164] HumanEval/142 ... OK
-[51/164] HumanEval/143 ... OK
-[52/164] HumanEval/144 ... OK
-[53/164] HumanEval/145 ... OK
-[54/164] HumanEval/146 ... OK
-[55/164] HumanEval/147 ... OK
-[56/164] HumanEval/148 ... OK
-[57/164] HumanEval/149 ... OK
-[58/164] HumanEval/15 ... OK
-[59/164] HumanEval/150 ... OK
-[60/164] HumanEval/151 ... OK
-[61/164] HumanEval/152 ... OK
-[62/164] HumanEval/153 ... OK
-[63/164] HumanEval/154 ... OK
-[64/164] HumanEval/155 ... OK
-[65/164] HumanEval/156 ... OK
-[66/164] HumanEval/157 ... OK
-[67/164] HumanEval/158 ... OK
-[68/164] HumanEval/159 ... OK
-[69/164] HumanEval/16 ... OK
-[70/164] HumanEval/160 ... OK
-[71/164] HumanEval/161 ... OK
-[72/164] HumanEval/162 ... OK
-[73/164] HumanEval/163 ... OK
-[74/164] HumanEval/17 ... OK
-[75/164] HumanEval/18 ... OK
-[76/164] HumanEval/19 ... OK
-[77/164] HumanEval/2 ... OK
-[78/164] HumanEval/20 ... OK
-[79/164] HumanEval/21 ... OK
-[80/164] HumanEval/22 ... OK
-[81/164] HumanEval/23 ... OK
-[82/164] HumanEval/24 ... OK
-[83/164] HumanEval/25 ... OK
-[84/164] HumanEval/26 ... OK
-[85/164] HumanEval/27 ... OK
-[86/164] HumanEval/28 ... OK
-[87/164] HumanEval/29 ... OK
-[88/164] HumanEval/3 ... OK
-[89/164] HumanEval/30 ... OK
-[90/164] HumanEval/31 ... OK
-[91/164] HumanEval/32 ... OK
-[92/164] HumanEval/33 ... OK
-[93/164] HumanEval/34 ... OK
-[94/164] HumanEval/35 ... OK
-[95/164] HumanEval/36 ... OK
-[96/164] HumanEval/37 ... OK
-[97/164] HumanEval/38 ... OK
-[98/164] HumanEval/39 ... OK
-[99/164] HumanEval/4 ... OK
-[100/164] HumanEval/40 ... OK
-[101/164] HumanEval/41 ... OK
-[102/164] HumanEval/42 ... OK
-[103/164] HumanEval/43 ... OK
-[104/164] HumanEval/44 ... OK
-[105/164] HumanEval/45 ... OK
-[106/164] HumanEval/46 ... OK
-[107/164] HumanEval/47 ... OK
-[108/164] HumanEval/48 ... OK
-[109/164] HumanEval/49 ... OK
-[110/164] HumanEval/5 ... OK
-[111/164] HumanEval/50 ... OK
-[112/164] HumanEval/51 ... OK
-[113/164] HumanEval/52 ... OK
-[114/164] HumanEval/53 ... OK
-[115/164] HumanEval/54 ... OK
-[116/164] HumanEval/55 ... OK
-[117/164] HumanEval/56 ... OK
-[118/164] HumanEval/57 ... OK
-[119/164] HumanEval/58 ... OK
-[120/164] HumanEval/59 ... OK
-[121/164] HumanEval/6 ... OK
-[122/164] HumanEval/60 ... OK
-[123/164] HumanEval/61 ... OK
-[124/164] HumanEval/62 ... OK
-[125/164] HumanEval/63 ... OK
-[126/164] HumanEval/64 ... OK
-[127/164] HumanEval/65 ... OK
-[128/164] HumanEval/66 ... OK
-[129/164] HumanEval/67 ... OK
-[130/164] HumanEval/68 ... OK
-[131/164] HumanEval/69 ... OK
-[132/164] HumanEval/7 ... OK
-[133/164] HumanEval/70 ... OK
-[134/164] HumanEval/71 ... OK
-[135/164] HumanEval/72 ... OK
-[136/164] HumanEval/73 ... OK
-[137/164] HumanEval/74 ... OK
-[138/164] HumanEval/75 ... OK
-[139/164] HumanEval/76 ... OK
-[140/164] HumanEval/77 ... OK
-[141/164] HumanEval/78 ... OK
-[142/164] HumanEval/79 ... OK
-[143/164] HumanEval/8 ... OK
-[144/164] HumanEval/80 ... OK
-[145/164] HumanEval/81 ... OK
-[146/164] HumanEval/82 ... OK
-[147/164] HumanEval/83 ... OK
-[148/164] HumanEval/84 ... OK
-[149/164] HumanEval/85 ... OK
-[150/164] HumanEval/86 ... OK
-[151/164] HumanEval/87 ... OK
-[152/164] HumanEval/88 ... OK
-[153/164] HumanEval/89 ... OK
-[154/164] HumanEval/9 ... OK
-[155/164] HumanEval/90 ... OK
-[156/164] HumanEval/91 ... OK
-[157/164] HumanEval/92 ... OK
-[158/164] HumanEval/93 ... OK
-[159/164] HumanEval/94 ... OK
-[160/164] HumanEval/95 ... OK
-[161/164] HumanEval/96 ... OK
-[162/164] HumanEval/97 ... OK
-[163/164] HumanEval/98 ... OK
-[164/164] HumanEval/99 ... OK
-
-Saved 164 to /mnt/Vsio/MERNIK/eval_results/humaneval_prismq6.jsonl
-battery time: 84.5 min (30.9 s/task over 164 tasks)
-
---- Evaluating pass@1 ---
-Reading samples...
-0it [00:00, ?it/s]164it [00:00, 48417.39it/s]
-Running test suites...
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:07,  1.27it/s] 10%|█         | 17/164 [00:00<00:05, 25.61it/s] 20%|██        | 33/164 [00:00<00:02, 49.36it/s] 30%|██▉       | 49/164 [00:01<00:01, 70.75it/s] 40%|███▉      | 65/164 [00:01<00:01, 89.10it/s] 49%|████▉     | 81/164 [00:01<00:00, 104.86it/s] 59%|█████▊    | 96/164 [00:01<00:00, 115.75it/s] 68%|██████▊   | 112/164 [00:01<00:00, 124.79it/s] 78%|███████▊  | 128/164 [00:01<00:00, 131.36it/s] 88%|████████▊ | 144/164 [00:01<00:00, 136.20it/s] 98%|█████████▊| 160/164 [00:01<00:00, 139.99it/s]100%|██████████| 164/164 [00:01<00:00, 87.78it/s] 
-Writing results to /mnt/Vsio/MERNIK/eval_results/humaneval_prismq6.jsonl_results.jsonl...
-  0%|          | 0/164 [00:00<?, ?it/s]100%|██████████| 164/164 [00:00<00:00, 110999.82it/s]
-pass@1: {'pass@1': np.float64(0.7926829268292683)}
-own server killed — GPU free
-=== Sat Sep 26 21:33:25 CEST 2026 HE+ humaneval_prismq6.jsonl ===
-Load from ground-truth from /home/wepiqx/.cache/evalplus/fe585eb4df8c88d844eeb463ea4d0302.pkl
-Reading samples...
-0it [00:00, ?it/s]1it [00:00,  1.60it/s]164it [00:00, 247.79it/s]
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:02,  1.33it/s]  6%|▌         | 10/164 [00:00<00:10, 15.13it/s] 13%|█▎        | 21/164 [00:00<00:04, 32.10it/s] 19%|█▉        | 31/164 [00:01<00:03, 34.38it/s] 24%|██▍       | 40/164 [00:01<00:02, 44.06it/s] 29%|██▊       | 47/164 [00:01<00:02, 48.57it/s] 33%|███▎      | 54/164 [00:01<00:02, 44.87it/s] 37%|███▋      | 60/164 [00:01<00:02, 36.66it/s] 40%|███▉      | 65/164 [00:02<00:02, 34.63it/s] 43%|████▎     | 70/164 [00:02<00:02, 34.47it/s] 45%|████▌     | 74/164 [00:02<00:02, 34.36it/s] 48%|████▊     | 78/164 [00:02<00:02, 33.95it/s] 50%|█████     | 82/164 [00:02<00:02, 31.66it/s] 52%|█████▏    | 86/164 [00:02<00:02, 31.51it/s] 55%|█████▍    | 90/164 [00:02<00:02, 32.39it/s] 57%|█████▋    | 94/164 [00:03<00:03, 19.34it/s] 60%|█████▉    | 98/164 [00:03<00:02, 22.14it/s] 62%|██████▏   | 101/164 [00:03<00:02, 21.03it/s] 64%|██████▍   | 105/164 [00:03<00:02, 24.59it/s] 68%|██████▊   | 111/164 [00:03<00:01, 31.87it/s] 71%|███████▏  | 117/164 [00:03<00:01, 37.97it/s] 74%|███████▍  | 122/164 [00:03<00:01, 39.42it/s] 77%|███████▋  | 127/164 [00:04<00:00, 37.47it/s] 81%|████████  | 133/164 [00:04<00:00, 41.68it/s] 85%|████████▍ | 139/164 [00:04<00:00, 43.91it/s] 88%|████████▊ | 144/164 [00:04<00:00, 39.07it/s] 91%|█████████ | 149/164 [00:04<00:00, 38.31it/s] 93%|█████████▎| 153/164 [00:04<00:00, 36.21it/s] 96%|█████████▌| 157/164 [00:05<00:00, 28.25it/s] 98%|█████████▊| 161/164 [00:05<00:00, 23.37it/s]100%|██████████| 164/164 [00:07<00:00,  5.23it/s]100%|██████████| 164/164 [00:07<00:00, 22.29it/s]
-humaneval (base tests)
-pass@1:	0.787
-humaneval+ (base + extra tests)
-pass@1:	0.732
-CHAIN-PRISMHE-DONE Sat Sep 26 21:33:49 CEST 2026
-=== Sun Sep 27 11:36:29 CEST 2026 PPL Prism-5600-SMSE ===
-0.01.942.065 W model has unused tensor blk.32.attn_norm.weight (size = 16384 bytes) -- ignoring
-0.01.942.076 W model has unused tensor blk.32.post_attention_norm.weight (size = 16384 bytes) -- ignoring
-0.01.942.089 W model has unused tensor blk.32.attn_q.weight (size = 35651584 bytes) -- ignoring
-0.01.942.094 W model has unused tensor blk.32.attn_k.weight (size = 4456448 bytes) -- ignoring
-0.01.942.099 W model has unused tensor blk.32.attn_v.weight (size = 4456448 bytes) -- ignoring
-0.01.942.115 W model has unused tensor blk.32.attn_output.weight (size = 17825792 bytes) -- ignoring
-0.01.942.120 W model has unused tensor blk.32.attn_q_norm.weight (size = 1024 bytes) -- ignoring
-0.01.942.125 W model has unused tensor blk.32.attn_k_norm.weight (size = 1024 bytes) -- ignoring
-0.01.942.131 W model has unused tensor blk.32.ffn_gate.weight (size = 53477376 bytes) -- ignoring
-0.01.942.139 W model has unused tensor blk.32.ffn_down.weight (size = 53477376 bytes) -- ignoring
-0.01.942.144 W model has unused tensor blk.32.ffn_up.weight (size = 53477376 bytes) -- ignoring
-0.01.942.150 W model has unused tensor blk.32.nextn.eh_proj.weight (size = 35651584 bytes) -- ignoring
-0.01.942.157 W model has unused tensor blk.32.nextn.enorm.weight (size = 16384 bytes) -- ignoring
-0.01.942.163 W model has unused tensor blk.32.nextn.hnorm.weight (size = 16384 bytes) -- ignoring
-0.01.942.177 W model has unused tensor blk.32.nextn.shared_head_norm.weight (size = 16384 bytes) -- ignoring
-0.36.570.478 I cmn          init: llama threadpool init, n_threads = 4
-0.36.719.283 I 
-0.36.719.438 I system_info: n_threads = 4 (n_threads_batch = 4) / 8 | CUDA : ARCHS = 610 | FORCE_MMQ = 1 | USE_GRAPHS = 1 | FA_QUANTS = all | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
-0.36.719.458 I perplexity: tokenizing the input ..
-0.37.425.054 I perplexity: tokenization took 705.588 ms
-0.37.425.264 I perplexity: calculating perplexity over 290 chunks, n_ctx=1024, batch_size=512, n_seq=1
-0.39.818.989 I perplexity: 2.39 seconds per pass - ETA 11.57 minutes
-[1]5.0948,[2]7.4329,[3]8.9030,[4]9.6396,[5]10.3941,[6]10.6727,[7]10.6058,[8]10.8827,[9]10.9749,[10]10.8315,[11]10.5697,[12]9.7089,[13]9.1128,[14]8.7790,[15]8.6375,[16]8.5287,[17]8.5709,[18]8.6827,[19]8.6910,[20]8.8262,[21]8.8397,[22]8.8222,[23]8.6891,[24]8.8773,[25]8.9381,[26]8.9390,[27]9.0513,[28]9.1604,[29]9.1461,[30]9.1762,[31]9.2042,[32]9.3095,[33]9.4573,[34]9.4258,[35]9.3749,[36]9.3833,[37]9.4469,[38]9.4290,[39]9.3923,[40]9.2816,[41]9.3041,[42]9.2677,[43]9.3690,[44]9.3417,[45]9.2817,[46]9.2462,[47]9.2841,[48]9.2539,[49]9.2821,[50]9.3617,[51]9.3648,[52]9.3297,[53]9.3387,[54]9.4434,[55]9.5625,[56]9.6074,[57]9.7208,[58]9.6665,[59]9.6353,[60]9.6402,[61]9.5981,[62]9.5204,[63]9.4780,[64]9.3939,[65]9.3286,[66]9.3191,[67]9.3081,[68]9.2649,[69]9.2342,[70]9.2313,[71]9.2331,[72]9.2642,[73]9.1930,[74]9.1233,[75]9.0484,[76]8.9954,[77]8.9454,[78]8.8650,[79]8.8010,[80]8.7393,[81]8.7036,[82]8.6873,[83]8.6814,[84]8.7012,[85]8.7498,[86]8.8332,[87]8.9018,[88]8.9624,[89]9.0153,[90]9.0264,[91]9.0732,[92]9.0906,[93]9.1386,[94]9.1504,[95]9.1927,[96]9.1846,[97]9.2444,[98]9.2516,[99]9.2225,[100]9.2110,[101]9.2686,[102]9.2774,[103]9.2807,[104]9.2472,[105]9.2171,[106]9.2110,[107]9.1760,[108]9.1648,[109]9.1210,[110]9.1005,[111]9.0808,[112]9.0442,[113]9.0122,[114]8.9779,[115]8.9369,[116]8.9281,[117]8.9111,[118]8.8938,[119]8.8530,[120]8.8440,[121]8.8504,[122]8.8566,[123]8.8761,[124]8.8943,[125]8.9174,[126]8.9556,[127]8.9712,[128]8.9998,[129]8.9583,[130]8.9327,[131]8.9400,[132]8.9621,[133]8.9612,[134]8.9651,[135]8.9395,[136]8.9318,[137]8.9221,[138]8.9146,[139]8.9142,[140]8.8912,[141]8.8310,[142]8.8474,[143]8.8050,[144]8.8103,[145]8.8233,[146]8.8529,[147]8.8956,[148]8.9340,[149]8.9201,[150]8.9110,[151]8.8855,[152]8.8874,[153]8.8906,[154]8.8833,[155]8.8927,[156]8.8856,[157]8.8642,[158]8.8989,[159]8.9143,[160]8.9106,[161]8.9350,[162]8.9640,[163]8.9393,[164]8.9079,[165]8.8704,[166]8.8561,[167]8.8437,[168]8.8460,[169]8.8287,[170]8.8126,[171]8.8075,[172]8.8064,[173]8.8025,[174]8.7904,[175]8.8047,[176]8.7924,[177]8.8104,[178]8.8078,[179]8.7982,[180]8.8041,[181]8.8262,[182]8.8734,[183]8.9281,[184]8.9621,[185]9.0061,[186]9.0276,[187]9.0584,[188]9.0891,[189]9.1299,[190]9.1542,[191]9.1910,[192]9.2224,[193]9.2059,[194]9.2500,[195]9.2571,[196]9.2438,[197]9.2511,[198]9.2549,[199]9.2720,[200]9.2650,[201]9.2437,[202]9.2326,[203]9.2434,[204]9.2487,[205]9.2424,[206]9.2527,[207]9.2493,[208]9.2634,[209]9.2666,[210]9.2519,[211]9.2494,[212]9.2494,[213]9.2812,[214]9.2896,[215]9.3004,[216]9.3001,[217]9.2847,[218]9.2845,[219]9.3036,[220]9.3082,[221]9.3070,[222]9.3025,[223]9.2999,[224]9.3069,[225]9.2897,[226]9.2756,[227]9.2770,[228]9.3059,[229]9.3068,[230]9.3186,[231]9.3253,[232]9.3358,[233]9.3543,[234]9.3617,[235]9.3504,[236]9.3607,[237]9.3541,[238]9.3372,[239]9.3525,[240]9.3558,[241]9.3591,[242]9.3509,[243]9.3315,[244]9.3213,[245]9.3130,[246]9.3044,[247]9.3176,[248]9.3140,[249]9.3115,[250]9.3430,[251]9.3529,[252]9.3398,[253]9.3349,[254]9.3411,[255]9.3346,[256]9.3264,[257]9.3189,[258]9.3230,[259]9.3340,[260]9.3270,[261]9.3289,[262]9.3216,[263]9.3131,[264]9.3182,[265]9.3153,[266]9.3195,[267]9.3469,[268]9.3501,[269]9.3511,[270]9.3595,[271]9.3531,[272]9.3314,[273]9.3413,[274]9.3127,[275]9.2630,[276]9.2727,[277]9.2718,[278]9.2797,[279]9.2912,[280]9.3092,[281]9.3141,[282]9.2984,[283]9.2850,[284]9.2866,[285]9.2859,[286]9.2900,[287]9.2961,[288]9.3234,[289]9.3391,[290]9.3339,
-10.37.458.176 I Final estimate: PPL = 9.3339 +/- 0.06383
-
-=== Sun Sep 27 11:47:08 CEST 2026 HE Prism-5600-SMSE ===
-serving /mnt/Vsio/Downloads/PrismCoder-9B-MERNIK-5600-SMSE.gguf on 28082
-battery start: 2026-09-27 11:47:14
-[1/164] HumanEval/0 ... OK
-[2/164] HumanEval/1 ... OK
-[3/164] HumanEval/10 ... OK
-[4/164] HumanEval/100 ... OK
-[5/164] HumanEval/101 ... OK
-[6/164] HumanEval/102 ... OK
-[7/164] HumanEval/103 ... OK
-[8/164] HumanEval/104 ... OK
-[9/164] HumanEval/105 ... OK
-[10/164] HumanEval/106 ... OK
-[11/164] HumanEval/107 ... OK
-[12/164] HumanEval/108 ... OK
-[13/164] HumanEval/109 ... OK
-[14/164] HumanEval/11 ... OK
-[15/164] HumanEval/110 ... OK
-[16/164] HumanEval/111 ... OK
-[17/164] HumanEval/112 ... OK
-[18/164] HumanEval/113 ... OK
-[19/164] HumanEval/114 ... OK
-[20/164] HumanEval/115 ... OK
-[21/164] HumanEval/116 ... OK
-[22/164] HumanEval/117 ... OK
-[23/164] HumanEval/118 ... OK
-[24/164] HumanEval/119 ... OK
-[25/164] HumanEval/12 ... OK
-[26/164] HumanEval/120 ... OK
-[27/164] HumanEval/121 ... OK
-[28/164] HumanEval/122 ... OK
-[29/164] HumanEval/123 ... OK
-[30/164] HumanEval/124 ... OK
-[31/164] HumanEval/125 ... OK
-[32/164] HumanEval/126 ... OK
-[33/164] HumanEval/127 ... OK
-[34/164] HumanEval/128 ... OK
-[35/164] HumanEval/129 ... OK
-[36/164] HumanEval/13 ... OK
-[37/164] HumanEval/130 ... OK
-[38/164] HumanEval/131 ... OK
-[39/164] HumanEval/132 ... OK
-[40/164] HumanEval/133 ... OK
-[41/164] HumanEval/134 ... OK
-[42/164] HumanEval/135 ... OK
-[43/164] HumanEval/136 ... OK
-[44/164] HumanEval/137 ... OK
-[45/164] HumanEval/138 ... OK
-[46/164] HumanEval/139 ... OK
-[47/164] HumanEval/14 ... OK
-[48/164] HumanEval/140 ... OK
-[49/164] HumanEval/141 ... OK
-[50/164] HumanEval/142 ... OK
-[51/164] HumanEval/143 ... OK
-[52/164] HumanEval/144 ... OK
-[53/164] HumanEval/145 ... OK
-[54/164] HumanEval/146 ... OK
-[55/164] HumanEval/147 ... OK
-[56/164] HumanEval/148 ... OK
-[57/164] HumanEval/149 ... OK
-[58/164] HumanEval/15 ... OK
-[59/164] HumanEval/150 ... OK
-[60/164] HumanEval/151 ... OK
-[61/164] HumanEval/152 ... OK
-[62/164] HumanEval/153 ... OK
-[63/164] HumanEval/154 ... OK
-[64/164] HumanEval/155 ... OK
-[65/164] HumanEval/156 ... OK
-[66/164] HumanEval/157 ... OK
-[67/164] HumanEval/158 ... OK
-[68/164] HumanEval/159 ... OK
-[69/164] HumanEval/16 ... OK
-[70/164] HumanEval/160 ... OK
-[71/164] HumanEval/161 ... OK
-[72/164] HumanEval/162 ... OK
-[73/164] HumanEval/163 ... OK
-[74/164] HumanEval/17 ... OK
-[75/164] HumanEval/18 ... OK
-[76/164] HumanEval/19 ... OK
-[77/164] HumanEval/2 ... OK
-[78/164] HumanEval/20 ... OK
-[79/164] HumanEval/21 ... OK
-[80/164] HumanEval/22 ... OK
-[81/164] HumanEval/23 ... OK
-[82/164] HumanEval/24 ... OK
-[83/164] HumanEval/25 ... OK
-[84/164] HumanEval/26 ... OK
-[85/164] HumanEval/27 ... OK
-[86/164] HumanEval/28 ... OK
-[87/164] HumanEval/29 ... OK
-[88/164] HumanEval/3 ... OK
-[89/164] HumanEval/30 ... OK
-[90/164] HumanEval/31 ... OK
-[91/164] HumanEval/32 ... OK
-[92/164] HumanEval/33 ... OK
-[93/164] HumanEval/34 ... OK
-[94/164] HumanEval/35 ... OK
-[95/164] HumanEval/36 ... OK
-[96/164] HumanEval/37 ... OK
-[97/164] HumanEval/38 ... OK
-[98/164] HumanEval/39 ... OK
-[99/164] HumanEval/4 ... OK
-[100/164] HumanEval/40 ... OK
-[101/164] HumanEval/41 ... OK
-[102/164] HumanEval/42 ... OK
-[103/164] HumanEval/43 ... OK
-[104/164] HumanEval/44 ... OK
-[105/164] HumanEval/45 ... OK
-[106/164] HumanEval/46 ... OK
-[107/164] HumanEval/47 ... OK
-[108/164] HumanEval/48 ... OK
-[109/164] HumanEval/49 ... OK
-[110/164] HumanEval/5 ... OK
-[111/164] HumanEval/50 ... OK
-[112/164] HumanEval/51 ... OK
-[113/164] HumanEval/52 ... OK
-[114/164] HumanEval/53 ... OK
-[115/164] HumanEval/54 ... OK
-[116/164] HumanEval/55 ... OK
-[117/164] HumanEval/56 ... OK
-[118/164] HumanEval/57 ... OK
-[119/164] HumanEval/58 ... OK
-[120/164] HumanEval/59 ... OK
-[121/164] HumanEval/6 ... OK
-[122/164] HumanEval/60 ... OK
-[123/164] HumanEval/61 ... OK
-[124/164] HumanEval/62 ... OK
-[125/164] HumanEval/63 ... OK
-[126/164] HumanEval/64 ... OK
-[127/164] HumanEval/65 ... OK
-[128/164] HumanEval/66 ... OK
-[129/164] HumanEval/67 ... OK
-[130/164] HumanEval/68 ... OK
-[131/164] HumanEval/69 ... OK
-[132/164] HumanEval/7 ... OK
-[133/164] HumanEval/70 ... OK
-[134/164] HumanEval/71 ... OK
-[135/164] HumanEval/72 ... OK
-[136/164] HumanEval/73 ... OK
-[137/164] HumanEval/74 ... OK
-[138/164] HumanEval/75 ... OK
-[139/164] HumanEval/76 ... OK
-[140/164] HumanEval/77 ... OK
-[141/164] HumanEval/78 ... OK
-[142/164] HumanEval/79 ... OK
-[143/164] HumanEval/8 ... OK
-[144/164] HumanEval/80 ... OK
-[145/164] HumanEval/81 ... OK
-[146/164] HumanEval/82 ... OK
-[147/164] HumanEval/83 ... OK
-[148/164] HumanEval/84 ... OK
-[149/164] HumanEval/85 ... OK
-[150/164] HumanEval/86 ... OK
-[151/164] HumanEval/87 ... OK
-[152/164] HumanEval/88 ... OK
-[153/164] HumanEval/89 ... OK
-[154/164] HumanEval/9 ... OK
-[155/164] HumanEval/90 ... OK
-[156/164] HumanEval/91 ... OK
-[157/164] HumanEval/92 ... OK
-[158/164] HumanEval/93 ... OK
-[159/164] HumanEval/94 ... OK
-[160/164] HumanEval/95 ... OK
-[161/164] HumanEval/96 ... OK
-[162/164] HumanEval/97 ... OK
-[163/164] HumanEval/98 ... OK
-[164/164] HumanEval/99 ... OK
-
-Saved 164 to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600smse.jsonl
-battery time: 60.8 min (22.3 s/task over 164 tasks)
-
---- Evaluating pass@1 ---
-Reading samples...
-0it [00:00, ?it/s]164it [00:00, 62807.33it/s]
-Running test suites...
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:13,  1.22it/s] 10%|█         | 17/164 [00:00<00:06, 24.37it/s] 20%|██        | 33/164 [00:01<00:02, 46.70it/s] 30%|██▉       | 49/164 [00:01<00:01, 66.72it/s] 40%|███▉      | 65/164 [00:01<00:01, 83.91it/s] 49%|████▉     | 81/164 [00:01<00:00, 97.47it/s] 59%|█████▊    | 96/164 [00:01<00:00, 108.18it/s] 68%|██████▊   | 111/164 [00:01<00:00, 116.05it/s] 76%|███████▌  | 125/164 [00:01<00:00, 121.65it/s] 85%|████████▍ | 139/164 [00:01<00:00, 121.67it/s] 93%|█████████▎| 153/164 [00:01<00:00, 121.88it/s]100%|██████████| 164/164 [00:02<00:00, 81.37it/s] 
-Writing results to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600smse.jsonl_results.jsonl...
-  0%|          | 0/164 [00:00<?, ?it/s]100%|██████████| 164/164 [00:00<00:00, 124952.93it/s]
-pass@1: {'pass@1': np.float64(0.7439024390243902)}
-own server killed — GPU free
-=== Sun Sep 27 12:48:06 CEST 2026 HE+ humaneval_prism5600smse.jsonl ===
-Load from ground-truth from /home/wepiqx/.cache/evalplus/fe585eb4df8c88d844eeb463ea4d0302.pkl
-Reading samples...
-0it [00:00, ?it/s]1it [00:00,  1.49it/s]164it [00:00, 231.34it/s]
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:12,  1.23it/s]  4%|▍         | 7/164 [00:00<00:16,  9.74it/s] 10%|▉         | 16/164 [00:01<00:06, 23.33it/s] 16%|█▌        | 26/164 [00:01<00:03, 38.17it/s] 21%|██        | 34/164 [00:01<00:03, 37.23it/s] 25%|██▌       | 41/164 [00:01<00:02, 43.26it/s] 29%|██▉       | 48/164 [00:01<00:02, 44.31it/s] 33%|███▎      | 54/164 [00:01<00:02, 41.80it/s] 37%|███▋      | 60/164 [00:02<00:03, 31.24it/s] 40%|███▉      | 65/164 [00:02<00:03, 30.48it/s] 42%|████▏     | 69/164 [00:02<00:03, 31.51it/s] 45%|████▍     | 73/164 [00:02<00:02, 31.68it/s] 47%|████▋     | 77/164 [00:02<00:02, 33.17it/s] 49%|████▉     | 81/164 [00:02<00:02, 32.78it/s] 53%|█████▎    | 87/164 [00:02<00:02, 38.41it/s] 57%|█████▋    | 93/164 [00:02<00:01, 43.09it/s] 60%|█████▉    | 98/164 [00:03<00:01, 37.18it/s] 63%|██████▎   | 103/164 [00:03<00:01, 36.06it/s] 65%|██████▌   | 107/164 [00:03<00:01, 34.32it/s] 68%|██████▊   | 111/164 [00:03<00:01, 32.68it/s] 70%|███████   | 115/164 [00:03<00:01, 33.16it/s] 73%|███████▎  | 119/164 [00:03<00:01, 30.41it/s] 76%|███████▌  | 124/164 [00:03<00:01, 33.80it/s] 79%|███████▉  | 130/164 [00:04<00:00, 39.78it/s] 82%|████████▏ | 135/164 [00:04<00:00, 39.24it/s] 86%|████████▌ | 141/164 [00:04<00:00, 43.81it/s] 90%|████████▉ | 147/164 [00:04<00:00, 46.56it/s] 93%|█████████▎| 152/164 [00:04<00:00, 46.63it/s] 97%|█████████▋| 159/164 [00:04<00:00, 52.33it/s]100%|██████████| 164/164 [00:05<00:00, 29.83it/s]
-humaneval (base tests)
-pass@1:	0.738
-humaneval+ (base + extra tests)
-pass@1:	0.707
-=== Sun Sep 27 12:48:29 CEST 2026 HE Prism-5600-SMSE mtp2 ===
-serving /mnt/Vsio/Downloads/PrismCoder-9B-MERNIK-5600-SMSE.gguf on 28082
-battery start: 2026-09-27 12:49:04
-[1/164] HumanEval/0 ... OK
-[2/164] HumanEval/1 ... OK
-[3/164] HumanEval/10 ... OK
-[4/164] HumanEval/100 ... OK
-[5/164] HumanEval/101 ... OK
-[6/164] HumanEval/102 ... OK
-[7/164] HumanEval/103 ... OK
-[8/164] HumanEval/104 ... OK
-[9/164] HumanEval/105 ... OK
-[10/164] HumanEval/106 ... OK
-[11/164] HumanEval/107 ... OK
-[12/164] HumanEval/108 ... OK
-[13/164] HumanEval/109 ... OK
-[14/164] HumanEval/11 ... OK
-[15/164] HumanEval/110 ... OK
-[16/164] HumanEval/111 ... OK
-[17/164] HumanEval/112 ... OK
-[18/164] HumanEval/113 ... OK
-[19/164] HumanEval/114 ... OK
-[20/164] HumanEval/115 ... OK
-[21/164] HumanEval/116 ... OK
-[22/164] HumanEval/117 ... OK
-[23/164] HumanEval/118 ... OK
-[24/164] HumanEval/119 ... OK
-[25/164] HumanEval/12 ... OK
-[26/164] HumanEval/120 ... OK
-[27/164] HumanEval/121 ... OK
-[28/164] HumanEval/122 ... OK
-[29/164] HumanEval/123 ... OK
-[30/164] HumanEval/124 ... OK
-[31/164] HumanEval/125 ... OK
-[32/164] HumanEval/126 ... OK
-[33/164] HumanEval/127 ... OK
-[34/164] HumanEval/128 ... OK
-[35/164] HumanEval/129 ... OK
-[36/164] HumanEval/13 ... OK
-[37/164] HumanEval/130 ... OK
-[38/164] HumanEval/131 ... OK
-[39/164] HumanEval/132 ... OK
-[40/164] HumanEval/133 ... OK
-[41/164] HumanEval/134 ... OK
-[42/164] HumanEval/135 ... OK
-[43/164] HumanEval/136 ... OK
-[44/164] HumanEval/137 ... OK
-[45/164] HumanEval/138 ... OK
-[46/164] HumanEval/139 ... OK
-[47/164] HumanEval/14 ... OK
-[48/164] HumanEval/140 ... OK
-[49/164] HumanEval/141 ... OK
-[50/164] HumanEval/142 ... OK
-[51/164] HumanEval/143 ... OK
-[52/164] HumanEval/144 ... OK
-[53/164] HumanEval/145 ... OK
-[54/164] HumanEval/146 ... OK
-[55/164] HumanEval/147 ... OK
-[56/164] HumanEval/148 ... OK
-[57/164] HumanEval/149 ... OK
-[58/164] HumanEval/15 ... OK
-[59/164] HumanEval/150 ... OK
-[60/164] HumanEval/151 ... OK
-[61/164] HumanEval/152 ... OK
-[62/164] HumanEval/153 ... OK
-[63/164] HumanEval/154 ... OK
-[64/164] HumanEval/155 ... OK
-[65/164] HumanEval/156 ... OK
-[66/164] HumanEval/157 ... OK
-[67/164] HumanEval/158 ... OK
-[68/164] HumanEval/159 ... OK
-[69/164] HumanEval/16 ... OK
-[70/164] HumanEval/160 ... OK
-[71/164] HumanEval/161 ... OK
-[72/164] HumanEval/162 ... OK
-[73/164] HumanEval/163 ... OK
-[74/164] HumanEval/17 ... OK
-[75/164] HumanEval/18 ... OK
-[76/164] HumanEval/19 ... OK
-[77/164] HumanEval/2 ... OK
-[78/164] HumanEval/20 ... OK
-[79/164] HumanEval/21 ... OK
-[80/164] HumanEval/22 ... OK
-[81/164] HumanEval/23 ... OK
-[82/164] HumanEval/24 ... OK
-[83/164] HumanEval/25 ... OK
-[84/164] HumanEval/26 ... OK
-[85/164] HumanEval/27 ... OK
-[86/164] HumanEval/28 ... OK
-[87/164] HumanEval/29 ... OK
-[88/164] HumanEval/3 ... OK
-[89/164] HumanEval/30 ... OK
-[90/164] HumanEval/31 ... OK
-[91/164] HumanEval/32 ... OK
-[92/164] HumanEval/33 ... OK
-[93/164] HumanEval/34 ... OK
-[94/164] HumanEval/35 ... OK
-[95/164] HumanEval/36 ... OK
-[96/164] HumanEval/37 ... OK
-[97/164] HumanEval/38 ... OK
-[98/164] HumanEval/39 ... OK
-[99/164] HumanEval/4 ... OK
-[100/164] HumanEval/40 ... OK
-[101/164] HumanEval/41 ... OK
-[102/164] HumanEval/42 ... OK
-[103/164] HumanEval/43 ... OK
-[104/164] HumanEval/44 ... OK
-[105/164] HumanEval/45 ... OK
-[106/164] HumanEval/46 ... OK
-[107/164] HumanEval/47 ... OK
-[108/164] HumanEval/48 ... OK
-[109/164] HumanEval/49 ... OK
-[110/164] HumanEval/5 ... OK
-[111/164] HumanEval/50 ... OK
-[112/164] HumanEval/51 ... OK
-[113/164] HumanEval/52 ... OK
-[114/164] HumanEval/53 ... OK
-[115/164] HumanEval/54 ... OK
-[116/164] HumanEval/55 ... OK
-[117/164] HumanEval/56 ... OK
-[118/164] HumanEval/57 ... OK
-[119/164] HumanEval/58 ... OK
-[120/164] HumanEval/59 ... OK
-[121/164] HumanEval/6 ... OK
-[122/164] HumanEval/60 ... OK
-[123/164] HumanEval/61 ... OK
-[124/164] HumanEval/62 ... OK
-[125/164] HumanEval/63 ... OK
-[126/164] HumanEval/64 ... OK
-[127/164] HumanEval/65 ... OK
-[128/164] HumanEval/66 ... OK
-[129/164] HumanEval/67 ... OK
-[130/164] HumanEval/68 ... OK
-[131/164] HumanEval/69 ... OK
-[132/164] HumanEval/7 ... OK
-[133/164] HumanEval/70 ... OK
-[134/164] HumanEval/71 ... OK
-[135/164] HumanEval/72 ... OK
-[136/164] HumanEval/73 ... OK
-[137/164] HumanEval/74 ... OK
-[138/164] HumanEval/75 ... OK
-[139/164] HumanEval/76 ... OK
-[140/164] HumanEval/77 ... OK
-[141/164] HumanEval/78 ... OK
-[142/164] HumanEval/79 ... OK
-[143/164] HumanEval/8 ... OK
-[144/164] HumanEval/80 ... OK
-[145/164] HumanEval/81 ... OK
-[146/164] HumanEval/82 ... OK
-[147/164] HumanEval/83 ... OK
-[148/164] HumanEval/84 ... OK
-[149/164] HumanEval/85 ... OK
-[150/164] HumanEval/86 ... OK
-[151/164] HumanEval/87 ... OK
-[152/164] HumanEval/88 ... OK
-[153/164] HumanEval/89 ... OK
-[154/164] HumanEval/9 ... OK
-[155/164] HumanEval/90 ... OK
-[156/164] HumanEval/91 ... OK
-[157/164] HumanEval/92 ... OK
-[158/164] HumanEval/93 ... OK
-[159/164] HumanEval/94 ... OK
-[160/164] HumanEval/95 ... OK
-[161/164] HumanEval/96 ... OK
-[162/164] HumanEval/97 ... OK
-[163/164] HumanEval/98 ... OK
-[164/164] HumanEval/99 ... OK
-
-Saved 164 to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600mtp2.jsonl
-battery time: 40.4 min (14.8 s/task over 164 tasks)
-
---- Evaluating pass@1 ---
-Reading samples...
-0it [00:00, ?it/s]164it [00:00, 33961.98it/s]
-Running test suites...
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:10,  1.25it/s]  9%|▉         | 15/164 [00:00<00:06, 22.20it/s] 17%|█▋        | 28/164 [00:01<00:03, 41.31it/s] 25%|██▌       | 41/164 [00:01<00:02, 57.88it/s] 33%|███▎      | 54/164 [00:01<00:01, 73.67it/s] 41%|████      | 67/164 [00:01<00:01, 83.73it/s] 50%|█████     | 82/164 [00:01<00:00, 99.92it/s] 58%|█████▊    | 95/164 [00:01<00:00, 104.90it/s] 67%|██████▋   | 110/164 [00:01<00:00, 114.79it/s] 75%|███████▌  | 123/164 [00:01<00:00, 117.02it/s] 84%|████████▍ | 138/164 [00:01<00:00, 125.82it/s] 93%|█████████▎| 152/164 [00:01<00:00, 128.08it/s]100%|██████████| 164/164 [00:02<00:00, 80.08it/s] 
-Writing results to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600mtp2.jsonl_results.jsonl...
-  0%|          | 0/164 [00:00<?, ?it/s]100%|██████████| 164/164 [00:00<00:00, 130252.96it/s]
-pass@1: {'pass@1': np.float64(0.6707317073170732)}
-own server killed — GPU free
-=== Sun Sep 27 13:29:30 CEST 2026 HE+ humaneval_prism5600mtp2.jsonl ===
-Load from ground-truth from /home/wepiqx/.cache/evalplus/fe585eb4df8c88d844eeb463ea4d0302.pkl
-Reading samples...
-0it [00:00, ?it/s]1it [00:00,  1.31it/s]164it [00:00, 203.88it/s]
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:40,  1.02it/s]  2%|▏         | 4/164 [00:01<00:34,  4.58it/s]  5%|▌         | 9/164 [00:01<00:13, 11.15it/s] 10%|▉         | 16/164 [00:01<00:06, 21.15it/s] 14%|█▍        | 23/164 [00:01<00:04, 30.19it/s] 19%|█▉        | 31/164 [00:01<00:04, 26.97it/s] 23%|██▎       | 37/164 [00:01<00:03, 32.51it/s] 26%|██▌       | 43/164 [00:01<00:03, 37.15it/s] 29%|██▉       | 48/164 [00:02<00:03, 35.22it/s] 32%|███▏      | 53/164 [00:02<00:03, 34.42it/s] 35%|███▌      | 58/164 [00:03<00:08, 11.85it/s] 37%|███▋      | 61/164 [00:03<00:07, 12.99it/s] 39%|███▉      | 64/164 [00:03<00:07, 13.95it/s] 41%|████      | 67/164 [00:03<00:06, 14.39it/s] 43%|████▎     | 70/164 [00:04<00:06, 14.98it/s] 45%|████▍     | 73/164 [00:04<00:05, 16.62it/s] 46%|████▋     | 76/164 [00:04<00:05, 17.07it/s] 48%|████▊     | 79/164 [00:04<00:05, 15.03it/s] 50%|█████     | 82/164 [00:04<00:04, 16.52it/s] 52%|█████▏    | 85/164 [00:04<00:04, 18.06it/s] 54%|█████▍    | 89/164 [00:05<00:03, 20.56it/s] 56%|█████▌    | 92/164 [00:05<00:04, 17.73it/s] 57%|█████▋    | 94/164 [00:05<00:03, 18.15it/s] 59%|█████▉    | 97/164 [00:05<00:03, 19.16it/s] 61%|██████    | 100/164 [00:05<00:03, 19.41it/s] 63%|██████▎   | 103/164 [00:05<00:03, 20.23it/s] 65%|██████▍   | 106/164 [00:05<00:02, 21.31it/s] 68%|██████▊   | 111/164 [00:06<00:01, 27.41it/s] 71%|███████   | 116/164 [00:06<00:01, 32.73it/s] 74%|███████▍  | 121/164 [00:06<00:01, 36.26it/s] 77%|███████▋  | 126/164 [00:06<00:00, 38.61it/s] 80%|███████▉  | 131/164 [00:06<00:00, 39.62it/s] 84%|████████▎ | 137/164 [00:06<00:00, 41.53it/s] 87%|████████▋ | 142/164 [00:06<00:00, 42.19it/s] 90%|████████▉ | 147/164 [00:06<00:00, 34.95it/s] 92%|█████████▏| 151/164 [00:07<00:00, 31.41it/s] 95%|█████████▍| 155/164 [00:07<00:00, 31.05it/s] 98%|█████████▊| 161/164 [00:07<00:00, 35.41it/s]100%|██████████| 164/164 [00:09<00:00, 17.33it/s]
-humaneval (base tests)
-pass@1:	0.671
-humaneval+ (base + extra tests)
-pass@1:	0.628
-=== Sun Sep 27 13:29:53 CEST 2026 HE Prism-5600-SMSE mtp3p80 ===
-serving /mnt/Vsio/Downloads/PrismCoder-9B-MERNIK-5600-SMSE.gguf on 28082
-battery start: 2026-09-27 13:30:28
-[1/164] HumanEval/0 ... OK
-[2/164] HumanEval/1 ... OK
-[3/164] HumanEval/10 ... OK
-[4/164] HumanEval/100 ... OK
-[5/164] HumanEval/101 ... OK
-[6/164] HumanEval/102 ... OK
-[7/164] HumanEval/103 ... OK
-[8/164] HumanEval/104 ... OK
-[9/164] HumanEval/105 ... OK
-[10/164] HumanEval/106 ... OK
-[11/164] HumanEval/107 ... OK
-[12/164] HumanEval/108 ... OK
-[13/164] HumanEval/109 ... OK
-[14/164] HumanEval/11 ... OK
-[15/164] HumanEval/110 ... OK
-[16/164] HumanEval/111 ... OK
-[17/164] HumanEval/112 ... OK
-[18/164] HumanEval/113 ... OK
-[19/164] HumanEval/114 ... OK
-[20/164] HumanEval/115 ... OK
-[21/164] HumanEval/116 ... OK
-[22/164] HumanEval/117 ... OK
-[23/164] HumanEval/118 ... OK
-[24/164] HumanEval/119 ... OK
-[25/164] HumanEval/12 ... OK
-[26/164] HumanEval/120 ... OK
-[27/164] HumanEval/121 ... OK
-[28/164] HumanEval/122 ... OK
-[29/164] HumanEval/123 ... OK
-[30/164] HumanEval/124 ... OK
-[31/164] HumanEval/125 ... OK
-[32/164] HumanEval/126 ... OK
-[33/164] HumanEval/127 ... OK
-[34/164] HumanEval/128 ... OK
-[35/164] HumanEval/129 ... OK
-[36/164] HumanEval/13 ... OK
-[37/164] HumanEval/130 ... OK
-[38/164] HumanEval/131 ... OK
-[39/164] HumanEval/132 ... OK
-[40/164] HumanEval/133 ... OK
-[41/164] HumanEval/134 ... OK
-[42/164] HumanEval/135 ... OK
-[43/164] HumanEval/136 ... OK
-[44/164] HumanEval/137 ... OK
-[45/164] HumanEval/138 ... OK
-[46/164] HumanEval/139 ... OK
-[47/164] HumanEval/14 ... OK
-[48/164] HumanEval/140 ... OK
-[49/164] HumanEval/141 ... OK
-[50/164] HumanEval/142 ... OK
-[51/164] HumanEval/143 ... OK
-[52/164] HumanEval/144 ... OK
-[53/164] HumanEval/145 ... OK
-[54/164] HumanEval/146 ... OK
-[55/164] HumanEval/147 ... OK
-[56/164] HumanEval/148 ... OK
-[57/164] HumanEval/149 ... OK
-[58/164] HumanEval/15 ... OK
-[59/164] HumanEval/150 ... OK
-[60/164] HumanEval/151 ... OK
-[61/164] HumanEval/152 ... OK
-[62/164] HumanEval/153 ... OK
-[63/164] HumanEval/154 ... OK
-[64/164] HumanEval/155 ... OK
-[65/164] HumanEval/156 ... OK
-[66/164] HumanEval/157 ... OK
-[67/164] HumanEval/158 ... OK
-[68/164] HumanEval/159 ... OK
-[69/164] HumanEval/16 ... OK
-[70/164] HumanEval/160 ... OK
-[71/164] HumanEval/161 ... OK
-[72/164] HumanEval/162 ... OK
-[73/164] HumanEval/163 ... OK
-[74/164] HumanEval/17 ... OK
-[75/164] HumanEval/18 ... OK
-[76/164] HumanEval/19 ... OK
-[77/164] HumanEval/2 ... OK
-[78/164] HumanEval/20 ... OK
-[79/164] HumanEval/21 ... OK
-[80/164] HumanEval/22 ... OK
-[81/164] HumanEval/23 ... OK
-[82/164] HumanEval/24 ... OK
-[83/164] HumanEval/25 ... OK
-[84/164] HumanEval/26 ... OK
-[85/164] HumanEval/27 ... OK
-[86/164] HumanEval/28 ... OK
-[87/164] HumanEval/29 ... OK
-[88/164] HumanEval/3 ... OK
-[89/164] HumanEval/30 ... OK
-[90/164] HumanEval/31 ... OK
-[91/164] HumanEval/32 ... OK
-[92/164] HumanEval/33 ... OK
-[93/164] HumanEval/34 ... OK
-[94/164] HumanEval/35 ... OK
-[95/164] HumanEval/36 ... OK
-[96/164] HumanEval/37 ... OK
-[97/164] HumanEval/38 ... OK
-[98/164] HumanEval/39 ... OK
-[99/164] HumanEval/4 ... OK
-[100/164] HumanEval/40 ... OK
-[101/164] HumanEval/41 ... OK
-[102/164] HumanEval/42 ... OK
-[103/164] HumanEval/43 ... OK
-[104/164] HumanEval/44 ... OK
-[105/164] HumanEval/45 ... OK
-[106/164] HumanEval/46 ... OK
-[107/164] HumanEval/47 ... OK
-[108/164] HumanEval/48 ... OK
-[109/164] HumanEval/49 ... OK
-[110/164] HumanEval/5 ... OK
-[111/164] HumanEval/50 ... OK
-[112/164] HumanEval/51 ... OK
-[113/164] HumanEval/52 ... OK
-[114/164] HumanEval/53 ... OK
-[115/164] HumanEval/54 ... OK
-[116/164] HumanEval/55 ... OK
-[117/164] HumanEval/56 ... OK
-[118/164] HumanEval/57 ... OK
-[119/164] HumanEval/58 ... OK
-[120/164] HumanEval/59 ... OK
-[121/164] HumanEval/6 ... OK
-[122/164] HumanEval/60 ... OK
-[123/164] HumanEval/61 ... OK
-[124/164] HumanEval/62 ... OK
-[125/164] HumanEval/63 ... OK
-[126/164] HumanEval/64 ... OK
-[127/164] HumanEval/65 ... OK
-[128/164] HumanEval/66 ... OK
-[129/164] HumanEval/67 ... OK
-[130/164] HumanEval/68 ... OK
-[131/164] HumanEval/69 ... OK
-[132/164] HumanEval/7 ... OK
-[133/164] HumanEval/70 ... OK
-[134/164] HumanEval/71 ... OK
-[135/164] HumanEval/72 ... OK
-[136/164] HumanEval/73 ... OK
-[137/164] HumanEval/74 ... OK
-[138/164] HumanEval/75 ... OK
-[139/164] HumanEval/76 ... OK
-[140/164] HumanEval/77 ... OK
-[141/164] HumanEval/78 ... OK
-[142/164] HumanEval/79 ... OK
-[143/164] HumanEval/8 ... OK
-[144/164] HumanEval/80 ... OK
-[145/164] HumanEval/81 ... OK
-[146/164] HumanEval/82 ... OK
-[147/164] HumanEval/83 ... OK
-[148/164] HumanEval/84 ... OK
-[149/164] HumanEval/85 ... OK
-[150/164] HumanEval/86 ... OK
-[151/164] HumanEval/87 ... OK
-[152/164] HumanEval/88 ... OK
-[153/164] HumanEval/89 ... OK
-[154/164] HumanEval/9 ... OK
-[155/164] HumanEval/90 ... OK
-[156/164] HumanEval/91 ... OK
-[157/164] HumanEval/92 ... OK
-[158/164] HumanEval/93 ... OK
-[159/164] HumanEval/94 ... OK
-[160/164] HumanEval/95 ... OK
-[161/164] HumanEval/96 ... OK
-[162/164] HumanEval/97 ... OK
-[163/164] HumanEval/98 ... OK
-[164/164] HumanEval/99 ... OK
-
-Saved 164 to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600mtp3p80.jsonl
-battery time: 40.5 min (14.8 s/task over 164 tasks)
-
---- Evaluating pass@1 ---
-Reading samples...
-0it [00:00, ?it/s]164it [00:00, 54222.44it/s]
-Running test suites...
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:15,  1.21it/s] 10%|▉         | 16/164 [00:00<00:06, 23.05it/s] 17%|█▋        | 28/164 [00:01<00:03, 39.78it/s] 25%|██▌       | 41/164 [00:01<00:02, 54.55it/s] 33%|███▎      | 54/164 [00:01<00:01, 70.18it/s] 40%|████      | 66/164 [00:01<00:01, 81.02it/s] 48%|████▊     | 79/164 [00:01<00:00, 92.29it/s] 55%|█████▌    | 91/164 [00:01<00:00, 97.64it/s] 63%|██████▎   | 103/164 [00:01<00:00, 102.23it/s] 71%|███████▏  | 117/164 [00:01<00:00, 111.89it/s] 80%|███████▉  | 131/164 [00:01<00:00, 114.14it/s] 88%|████████▊ | 145/164 [00:02<00:00, 118.58it/s] 96%|█████████▋| 158/164 [00:02<00:00, 118.67it/s]100%|██████████| 164/164 [00:02<00:00, 75.97it/s] 
-Writing results to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600mtp3p80.jsonl_results.jsonl...
-  0%|          | 0/164 [00:00<?, ?it/s]100%|██████████| 164/164 [00:00<00:00, 125568.79it/s]
-pass@1: {'pass@1': np.float64(0.6890243902439024)}
-own server killed — GPU free
-=== Sun Sep 27 14:11:01 CEST 2026 HE+ humaneval_prism5600mtp3p80.jsonl ===
-Load from ground-truth from /home/wepiqx/.cache/evalplus/fe585eb4df8c88d844eeb463ea4d0302.pkl
-Reading samples...
-0it [00:00, ?it/s]1it [00:00,  1.28it/s]164it [00:00, 197.17it/s]
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:22,  1.14it/s]  4%|▎         | 6/164 [00:01<00:20,  7.54it/s]  8%|▊         | 13/164 [00:01<00:08, 17.24it/s] 12%|█▏        | 20/164 [00:01<00:05, 25.92it/s] 18%|█▊        | 30/164 [00:01<00:03, 39.30it/s] 23%|██▎       | 37/164 [00:01<00:03, 33.08it/s] 27%|██▋       | 45/164 [00:01<00:02, 40.35it/s] 31%|███       | 51/164 [00:01<00:02, 42.23it/s] 35%|███▍      | 57/164 [00:02<00:03, 32.26it/s] 38%|███▊      | 62/164 [00:02<00:03, 30.21it/s] 40%|████      | 66/164 [00:02<00:03, 29.89it/s] 43%|████▎     | 70/164 [00:02<00:03, 28.55it/s] 45%|████▌     | 74/164 [00:02<00:03, 29.28it/s] 48%|████▊     | 78/164 [00:02<00:02, 31.44it/s] 50%|█████     | 82/164 [00:03<00:02, 28.78it/s] 53%|█████▎    | 87/164 [00:03<00:02, 32.10it/s] 55%|█████▌    | 91/164 [00:03<00:02, 30.78it/s] 58%|█████▊    | 95/164 [00:03<00:02, 31.01it/s] 60%|██████    | 99/164 [00:03<00:02, 29.24it/s] 63%|██████▎   | 103/164 [00:03<00:02, 28.09it/s] 65%|██████▍   | 106/164 [00:03<00:02, 26.60it/s] 66%|██████▋   | 109/164 [00:04<00:02, 27.23it/s] 68%|██████▊   | 112/164 [00:04<00:01, 27.41it/s] 72%|███████▏  | 118/164 [00:04<00:01, 35.29it/s] 76%|███████▌  | 125/164 [00:04<00:00, 42.40it/s] 80%|███████▉  | 131/164 [00:04<00:00, 46.36it/s] 83%|████████▎ | 136/164 [00:04<00:00, 47.28it/s] 86%|████████▌ | 141/164 [00:04<00:00, 46.83it/s] 89%|████████▉ | 146/164 [00:04<00:00, 42.81it/s] 92%|█████████▏| 151/164 [00:05<00:00, 31.75it/s] 95%|█████████▍| 155/164 [00:05<00:00, 27.86it/s] 97%|█████████▋| 159/164 [00:05<00:00, 18.12it/s] 99%|█████████▉| 162/164 [00:06<00:00, 11.61it/s]100%|██████████| 164/164 [00:08<00:00,  3.43it/s]100%|██████████| 164/164 [00:08<00:00, 18.63it/s]
-humaneval (base tests)
-pass@1:	0.689
-humaneval+ (base + extra tests)
-pass@1:	0.659
-=== Sun Sep 27 14:11:25 CEST 2026 HE Prism-5600-SMSE mtp8p80 ===
-serving /mnt/Vsio/Downloads/PrismCoder-9B-MERNIK-5600-SMSE.gguf on 28082
-battery start: 2026-09-27 14:12:01
-[1/164] HumanEval/0 ... OK
-[2/164] HumanEval/1 ... OK
-[3/164] HumanEval/10 ... OK
-[4/164] HumanEval/100 ... OK
-[5/164] HumanEval/101 ... OK
-[6/164] HumanEval/102 ... OK
-[7/164] HumanEval/103 ... OK
-[8/164] HumanEval/104 ... OK
-[9/164] HumanEval/105 ... OK
-[10/164] HumanEval/106 ... OK
-[11/164] HumanEval/107 ... OK
-[12/164] HumanEval/108 ... OK
-[13/164] HumanEval/109 ... OK
-[14/164] HumanEval/11 ... OK
-[15/164] HumanEval/110 ... OK
-[16/164] HumanEval/111 ... OK
-[17/164] HumanEval/112 ... OK
-[18/164] HumanEval/113 ... OK
-[19/164] HumanEval/114 ... OK
-[20/164] HumanEval/115 ... OK
-[21/164] HumanEval/116 ... OK
-[22/164] HumanEval/117 ... OK
-[23/164] HumanEval/118 ... OK
-[24/164] HumanEval/119 ... OK
-[25/164] HumanEval/12 ... OK
-[26/164] HumanEval/120 ... OK
-[27/164] HumanEval/121 ... OK
-[28/164] HumanEval/122 ... OK
-[29/164] HumanEval/123 ... OK
-[30/164] HumanEval/124 ... OK
-[31/164] HumanEval/125 ... OK
-[32/164] HumanEval/126 ... OK
-[33/164] HumanEval/127 ... OK
-[34/164] HumanEval/128 ... OK
-[35/164] HumanEval/129 ... OK
-[36/164] HumanEval/13 ... OK
-[37/164] HumanEval/130 ... OK
-[38/164] HumanEval/131 ... OK
-[39/164] HumanEval/132 ... OK
-[40/164] HumanEval/133 ... OK
-[41/164] HumanEval/134 ... OK
-[42/164] HumanEval/135 ... OK
-[43/164] HumanEval/136 ... OK
-[44/164] HumanEval/137 ... OK
-[45/164] HumanEval/138 ... OK
-[46/164] HumanEval/139 ... OK
-[47/164] HumanEval/14 ... OK
-[48/164] HumanEval/140 ... OK
-[49/164] HumanEval/141 ... OK
-[50/164] HumanEval/142 ... OK
-[51/164] HumanEval/143 ... OK
-[52/164] HumanEval/144 ... OK
-[53/164] HumanEval/145 ... OK
-[54/164] HumanEval/146 ... OK
-[55/164] HumanEval/147 ... OK
-[56/164] HumanEval/148 ... OK
-[57/164] HumanEval/149 ... OK
-[58/164] HumanEval/15 ... OK
-[59/164] HumanEval/150 ... OK
-[60/164] HumanEval/151 ... OK
-[61/164] HumanEval/152 ... OK
-[62/164] HumanEval/153 ... OK
-[63/164] HumanEval/154 ... OK
-[64/164] HumanEval/155 ... OK
-[65/164] HumanEval/156 ... OK
-[66/164] HumanEval/157 ... OK
-[67/164] HumanEval/158 ... OK
-[68/164] HumanEval/159 ... OK
-[69/164] HumanEval/16 ... OK
-[70/164] HumanEval/160 ... OK
-[71/164] HumanEval/161 ... OK
-[72/164] HumanEval/162 ... OK
-[73/164] HumanEval/163 ... OK
-[74/164] HumanEval/17 ... OK
-[75/164] HumanEval/18 ... OK
-[76/164] HumanEval/19 ... OK
-[77/164] HumanEval/2 ... OK
-[78/164] HumanEval/20 ... OK
-[79/164] HumanEval/21 ... OK
-[80/164] HumanEval/22 ... OK
-[81/164] HumanEval/23 ... OK
-[82/164] HumanEval/24 ... OK
-[83/164] HumanEval/25 ... OK
-[84/164] HumanEval/26 ... OK
-[85/164] HumanEval/27 ... OK
-[86/164] HumanEval/28 ... OK
-[87/164] HumanEval/29 ... OK
-[88/164] HumanEval/3 ... OK
-[89/164] HumanEval/30 ... OK
-[90/164] HumanEval/31 ... OK
-[91/164] HumanEval/32 ... OK
-[92/164] HumanEval/33 ... OK
-[93/164] HumanEval/34 ... OK
-[94/164] HumanEval/35 ... OK
-[95/164] HumanEval/36 ... OK
-[96/164] HumanEval/37 ... OK
-[97/164] HumanEval/38 ... OK
-[98/164] HumanEval/39 ... OK
-[99/164] HumanEval/4 ... OK
-[100/164] HumanEval/40 ... OK
-[101/164] HumanEval/41 ... OK
-[102/164] HumanEval/42 ... OK
-[103/164] HumanEval/43 ... OK
-[104/164] HumanEval/44 ... OK
-[105/164] HumanEval/45 ... OK
-[106/164] HumanEval/46 ... OK
-[107/164] HumanEval/47 ... OK
-[108/164] HumanEval/48 ... OK
-[109/164] HumanEval/49 ... OK
-[110/164] HumanEval/5 ... OK
-[111/164] HumanEval/50 ... OK
-[112/164] HumanEval/51 ... OK
-[113/164] HumanEval/52 ... OK
-[114/164] HumanEval/53 ... OK
-[115/164] HumanEval/54 ... OK
-[116/164] HumanEval/55 ... OK
-[117/164] HumanEval/56 ... OK
-[118/164] HumanEval/57 ... OK
-[119/164] HumanEval/58 ... OK
-[120/164] HumanEval/59 ... OK
-[121/164] HumanEval/6 ... OK
-[122/164] HumanEval/60 ... OK
-[123/164] HumanEval/61 ... OK
-[124/164] HumanEval/62 ... OK
-[125/164] HumanEval/63 ... OK
-[126/164] HumanEval/64 ... OK
-[127/164] HumanEval/65 ... OK
-[128/164] HumanEval/66 ... OK
-[129/164] HumanEval/67 ... OK
-[130/164] HumanEval/68 ... OK
-[131/164] HumanEval/69 ... OK
-[132/164] HumanEval/7 ... OK
-[133/164] HumanEval/70 ... OK
-[134/164] HumanEval/71 ... OK
-[135/164] HumanEval/72 ... OK
-[136/164] HumanEval/73 ... OK
-[137/164] HumanEval/74 ... OK
-[138/164] HumanEval/75 ... OK
-[139/164] HumanEval/76 ... OK
-[140/164] HumanEval/77 ... OK
-[141/164] HumanEval/78 ... OK
-[142/164] HumanEval/79 ... OK
-[143/164] HumanEval/8 ... OK
-[144/164] HumanEval/80 ... OK
-[145/164] HumanEval/81 ... OK
-[146/164] HumanEval/82 ... OK
-[147/164] HumanEval/83 ... OK
-[148/164] HumanEval/84 ... OK
-[149/164] HumanEval/85 ... OK
-[150/164] HumanEval/86 ... OK
-[151/164] HumanEval/87 ... OK
-[152/164] HumanEval/88 ... OK
-[153/164] HumanEval/89 ... OK
-[154/164] HumanEval/9 ... OK
-[155/164] HumanEval/90 ... OK
-[156/164] HumanEval/91 ... OK
-[157/164] HumanEval/92 ... OK
-[158/164] HumanEval/93 ... OK
-[159/164] HumanEval/94 ... OK
-[160/164] HumanEval/95 ... OK
-[161/164] HumanEval/96 ... OK
-[162/164] HumanEval/97 ... OK
-[163/164] HumanEval/98 ... OK
-[164/164] HumanEval/99 ... OK
-
-Saved 164 to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600mtp8p80.jsonl
-battery time: 45.6 min (16.7 s/task over 164 tasks)
-
---- Evaluating pass@1 ---
-Reading samples...
-0it [00:00, ?it/s]164it [00:00, 47511.11it/s]
-Running test suites...
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:17,  1.18it/s]  8%|▊         | 13/164 [00:00<00:08, 18.27it/s] 15%|█▌        | 25/164 [00:01<00:03, 35.43it/s] 23%|██▎       | 37/164 [00:01<00:02, 51.61it/s] 30%|██▉       | 49/164 [00:01<00:01, 65.52it/s] 37%|███▋      | 61/164 [00:01<00:01, 77.00it/s] 45%|████▌     | 74/164 [00:01<00:00, 90.10it/s] 52%|█████▏    | 86/164 [00:01<00:00, 96.52it/s] 60%|██████    | 99/164 [00:01<00:00, 103.47it/s] 68%|██████▊   | 112/164 [00:01<00:00, 107.55it/s] 76%|███████▌  | 124/164 [00:01<00:00, 106.01it/s] 84%|████████▎ | 137/164 [00:02<00:00, 111.41it/s] 91%|█████████ | 149/164 [00:02<00:00, 113.07it/s] 98%|█████████▊| 161/164 [00:02<00:00, 114.06it/s]100%|██████████| 164/164 [00:02<00:00, 73.08it/s] 
-Writing results to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600mtp8p80.jsonl_results.jsonl...
-  0%|          | 0/164 [00:00<?, ?it/s]100%|██████████| 164/164 [00:00<00:00, 117083.55it/s]
-pass@1: {'pass@1': np.float64(0.725609756097561)}
-own server killed — GPU free
-=== Sun Sep 27 14:57:38 CEST 2026 HE+ humaneval_prism5600mtp8p80.jsonl ===
-Load from ground-truth from /home/wepiqx/.cache/evalplus/fe585eb4df8c88d844eeb463ea4d0302.pkl
-Reading samples...
-0it [00:00, ?it/s]1it [00:00,  1.33it/s]164it [00:00, 208.84it/s]
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:40,  1.02it/s]  4%|▎         | 6/164 [00:01<00:21,  7.21it/s]  9%|▉         | 15/164 [00:01<00:07, 19.56it/s] 15%|█▌        | 25/164 [00:01<00:04, 32.59it/s] 20%|█▉        | 32/164 [00:01<00:04, 28.91it/s] 24%|██▍       | 40/164 [00:01<00:03, 36.12it/s] 28%|██▊       | 46/164 [00:01<00:03, 38.36it/s] 32%|███▏      | 52/164 [00:01<00:02, 42.23it/s] 35%|███▌      | 58/164 [00:03<00:07, 14.10it/s] 38%|███▊      | 62/164 [00:03<00:06, 15.99it/s] 40%|████      | 66/164 [00:03<00:05, 16.72it/s] 43%|████▎     | 70/164 [00:03<00:05, 15.98it/s] 45%|████▍     | 73/164 [00:03<00:05, 17.38it/s] 46%|████▋     | 76/164 [00:03<00:05, 17.58it/s] 48%|████▊     | 79/164 [00:04<00:04, 19.25it/s] 50%|█████     | 82/164 [00:04<00:04, 19.97it/s] 52%|█████▏    | 85/164 [00:04<00:03, 19.78it/s] 54%|█████▎    | 88/164 [00:04<00:03, 21.66it/s] 55%|█████▌    | 91/164 [00:04<00:03, 20.74it/s] 57%|█████▋    | 94/164 [00:04<00:03, 21.88it/s] 59%|█████▉    | 97/164 [00:04<00:03, 22.15it/s] 61%|██████    | 100/164 [00:05<00:02, 22.35it/s] 63%|██████▎   | 103/164 [00:05<00:02, 23.31it/s] 66%|██████▌   | 108/164 [00:05<00:01, 28.58it/s] 70%|██████▉   | 114/164 [00:05<00:01, 34.15it/s] 73%|███████▎  | 120/164 [00:05<00:01, 38.17it/s] 76%|███████▌  | 124/164 [00:05<00:01, 38.45it/s] 78%|███████▊  | 128/164 [00:05<00:00, 37.47it/s] 81%|████████  | 133/164 [00:05<00:00, 40.74it/s] 84%|████████▍ | 138/164 [00:05<00:00, 43.21it/s] 87%|████████▋ | 143/164 [00:06<00:00, 40.00it/s] 91%|█████████ | 149/164 [00:06<00:00, 40.84it/s] 94%|█████████▍| 154/164 [00:06<00:00, 37.47it/s] 97%|█████████▋| 159/164 [00:06<00:00, 38.78it/s] 99%|█████████▉| 163/164 [00:06<00:00, 23.72it/s]100%|██████████| 164/164 [00:09<00:00, 17.51it/s]
-humaneval (base tests)
-pass@1:	0.726
-humaneval+ (base + extra tests)
-pass@1:	0.677
-=== Sun Sep 27 14:58:02 CEST 2026 HE Prism-5600-SMSE mtp5ngram ===
-serving /mnt/Vsio/Downloads/PrismCoder-9B-MERNIK-5600-SMSE.gguf on 28082
-battery start: 2026-09-27 14:58:37
-[1/164] HumanEval/0 ... OK
-[2/164] HumanEval/1 ... OK
-[3/164] HumanEval/10 ... OK
-[4/164] HumanEval/100 ... OK
-[5/164] HumanEval/101 ... OK
-[6/164] HumanEval/102 ... OK
-[7/164] HumanEval/103 ... OK
-[8/164] HumanEval/104 ... OK
-[9/164] HumanEval/105 ... OK
-[10/164] HumanEval/106 ... OK
-[11/164] HumanEval/107 ... OK
-[12/164] HumanEval/108 ... OK
-[13/164] HumanEval/109 ... OK
-[14/164] HumanEval/11 ... OK
-[15/164] HumanEval/110 ... OK
-[16/164] HumanEval/111 ... OK
-[17/164] HumanEval/112 ... OK
-[18/164] HumanEval/113 ... OK
-[19/164] HumanEval/114 ... OK
-[20/164] HumanEval/115 ... OK
-[21/164] HumanEval/116 ... OK
-[22/164] HumanEval/117 ... OK
-[23/164] HumanEval/118 ... OK
-[24/164] HumanEval/119 ... OK
-[25/164] HumanEval/12 ... OK
-[26/164] HumanEval/120 ... OK
-[27/164] HumanEval/121 ... OK
-[28/164] HumanEval/122 ... OK
-[29/164] HumanEval/123 ... OK
-[30/164] HumanEval/124 ... OK
-[31/164] HumanEval/125 ... OK
-[32/164] HumanEval/126 ... OK
-[33/164] HumanEval/127 ... OK
-[34/164] HumanEval/128 ... OK
-[35/164] HumanEval/129 ... OK
-[36/164] HumanEval/13 ... OK
-[37/164] HumanEval/130 ... OK
-[38/164] HumanEval/131 ... OK
-[39/164] HumanEval/132 ... OK
-[40/164] HumanEval/133 ... OK
-[41/164] HumanEval/134 ... OK
-[42/164] HumanEval/135 ... OK
-[43/164] HumanEval/136 ... OK
-[44/164] HumanEval/137 ... OK
-[45/164] HumanEval/138 ... OK
-[46/164] HumanEval/139 ... OK
-[47/164] HumanEval/14 ... OK
-[48/164] HumanEval/140 ... OK
-[49/164] HumanEval/141 ... OK
-[50/164] HumanEval/142 ... OK
-[51/164] HumanEval/143 ... OK
-[52/164] HumanEval/144 ... OK
-[53/164] HumanEval/145 ... OK
-[54/164] HumanEval/146 ... OK
-[55/164] HumanEval/147 ... OK
-[56/164] HumanEval/148 ... OK
-[57/164] HumanEval/149 ... OK
-[58/164] HumanEval/15 ... OK
-[59/164] HumanEval/150 ... OK
-[60/164] HumanEval/151 ... OK
-[61/164] HumanEval/152 ... OK
-[62/164] HumanEval/153 ... OK
-[63/164] HumanEval/154 ... OK
-[64/164] HumanEval/155 ... OK
-[65/164] HumanEval/156 ... OK
-[66/164] HumanEval/157 ... OK
-[67/164] HumanEval/158 ... OK
-[68/164] HumanEval/159 ... OK
-[69/164] HumanEval/16 ... OK
-[70/164] HumanEval/160 ... OK
-[71/164] HumanEval/161 ... OK
-[72/164] HumanEval/162 ... OK
-[73/164] HumanEval/163 ... OK
-[74/164] HumanEval/17 ... OK
-[75/164] HumanEval/18 ... OK
-[76/164] HumanEval/19 ... OK
-[77/164] HumanEval/2 ... OK
-[78/164] HumanEval/20 ... OK
-[79/164] HumanEval/21 ... OK
-[80/164] HumanEval/22 ... OK
-[81/164] HumanEval/23 ... OK
-[82/164] HumanEval/24 ... OK
-[83/164] HumanEval/25 ... OK
-[84/164] HumanEval/26 ... OK
-[85/164] HumanEval/27 ... OK
-[86/164] HumanEval/28 ... OK
-[87/164] HumanEval/29 ... OK
-[88/164] HumanEval/3 ... OK
-[89/164] HumanEval/30 ... OK
-[90/164] HumanEval/31 ... OK
-[91/164] HumanEval/32 ... OK
-[92/164] HumanEval/33 ... OK
-[93/164] HumanEval/34 ... OK
-[94/164] HumanEval/35 ... OK
-[95/164] HumanEval/36 ... OK
-[96/164] HumanEval/37 ... OK
-[97/164] HumanEval/38 ... OK
-[98/164] HumanEval/39 ... OK
-[99/164] HumanEval/4 ... OK
-[100/164] HumanEval/40 ... OK
-[101/164] HumanEval/41 ... OK
-[102/164] HumanEval/42 ... OK
-[103/164] HumanEval/43 ... OK
-[104/164] HumanEval/44 ... OK
-[105/164] HumanEval/45 ... OK
-[106/164] HumanEval/46 ... OK
-[107/164] HumanEval/47 ... OK
-[108/164] HumanEval/48 ... OK
-[109/164] HumanEval/49 ... OK
-[110/164] HumanEval/5 ... OK
-[111/164] HumanEval/50 ... OK
-[112/164] HumanEval/51 ... OK
-[113/164] HumanEval/52 ... OK
-[114/164] HumanEval/53 ... OK
-[115/164] HumanEval/54 ... OK
-[116/164] HumanEval/55 ... OK
-[117/164] HumanEval/56 ... OK
-[118/164] HumanEval/57 ... OK
-[119/164] HumanEval/58 ... OK
-[120/164] HumanEval/59 ... OK
-[121/164] HumanEval/6 ... OK
-[122/164] HumanEval/60 ... OK
-[123/164] HumanEval/61 ... OK
-[124/164] HumanEval/62 ... OK
-[125/164] HumanEval/63 ... OK
-[126/164] HumanEval/64 ... OK
-[127/164] HumanEval/65 ... OK
-[128/164] HumanEval/66 ... OK
-[129/164] HumanEval/67 ... OK
-[130/164] HumanEval/68 ... OK
-[131/164] HumanEval/69 ... OK
-[132/164] HumanEval/7 ... OK
-[133/164] HumanEval/70 ... OK
-[134/164] HumanEval/71 ... OK
-[135/164] HumanEval/72 ... OK
-[136/164] HumanEval/73 ... OK
-[137/164] HumanEval/74 ... OK
-[138/164] HumanEval/75 ... OK
-[139/164] HumanEval/76 ... OK
-[140/164] HumanEval/77 ... OK
-[141/164] HumanEval/78 ... OK
-[142/164] HumanEval/79 ... OK
-[143/164] HumanEval/8 ... OK
-[144/164] HumanEval/80 ... OK
-[145/164] HumanEval/81 ... OK
-[146/164] HumanEval/82 ... OK
-[147/164] HumanEval/83 ... OK
-[148/164] HumanEval/84 ... OK
-[149/164] HumanEval/85 ... OK
-[150/164] HumanEval/86 ... OK
-[151/164] HumanEval/87 ... OK
-[152/164] HumanEval/88 ... OK
-[153/164] HumanEval/89 ... OK
-[154/164] HumanEval/9 ... OK
-[155/164] HumanEval/90 ... OK
-[156/164] HumanEval/91 ... OK
-[157/164] HumanEval/92 ... OK
-[158/164] HumanEval/93 ... OK
-[159/164] HumanEval/94 ... OK
-[160/164] HumanEval/95 ... OK
-[161/164] HumanEval/96 ... OK
-[162/164] HumanEval/97 ... OK
-[163/164] HumanEval/98 ... OK
-[164/164] HumanEval/99 ... OK
-
-Saved 164 to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600mtp5ngram.jsonl
-battery time: 39.9 min (14.6 s/task over 164 tasks)
-
---- Evaluating pass@1 ---
-Reading samples...
-0it [00:00, ?it/s]164it [00:00, 33674.35it/s]
-Running test suites...
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:00<02:25,  1.12it/s]  8%|▊         | 13/164 [00:01<00:08, 17.31it/s] 15%|█▌        | 25/164 [00:01<00:04, 33.35it/s] 23%|██▎       | 37/164 [00:01<00:02, 49.03it/s] 29%|██▉       | 48/164 [00:01<00:01, 61.35it/s] 36%|███▌      | 59/164 [00:01<00:01, 70.60it/s] 43%|████▎     | 71/164 [00:01<00:01, 80.32it/s] 51%|█████     | 83/164 [00:01<00:00, 89.40it/s] 57%|█████▋    | 94/164 [00:01<00:00, 94.60it/s] 65%|██████▍   | 106/164 [00:01<00:00, 98.23it/s] 72%|███████▏  | 118/164 [00:01<00:00, 102.38it/s] 79%|███████▉  | 130/164 [00:02<00:00, 102.93it/s] 87%|████████▋ | 142/164 [00:02<00:00, 106.72it/s] 94%|█████████▍| 154/164 [00:02<00:00, 107.73it/s]100%|██████████| 164/164 [00:02<00:00, 68.79it/s] 
-Writing results to /mnt/Vsio/MERNIK/eval_results/humaneval_prism5600mtp5ngram.jsonl_results.jsonl...
-  0%|          | 0/164 [00:00<?, ?it/s]100%|██████████| 164/164 [00:00<00:00, 116291.78it/s]
-pass@1: {'pass@1': np.float64(0.7134146341463414)}
-own server killed — GPU free
-=== Sun Sep 27 15:38:33 CEST 2026 HE+ humaneval_prism5600mtp5ngram.jsonl ===
-Load from ground-truth from /home/wepiqx/.cache/evalplus/fe585eb4df8c88d844eeb463ea4d0302.pkl
-Reading samples...
-0it [00:00, ?it/s]1it [00:00,  1.32it/s]164it [00:00, 206.93it/s]
-  0%|          | 0/164 [00:00<?, ?it/s]  1%|          | 1/164 [00:01<02:43,  1.00s/it]  2%|▏         | 4/164 [00:01<00:34,  4.58it/s]  6%|▌         | 10/164 [00:01<00:12, 12.71it/s] 11%|█         | 18/164 [00:01<00:06, 24.13it/s] 18%|█▊        | 29/164 [00:01<00:03, 40.20it/s] 22%|██▏       | 36/164 [00:01<00:03, 36.60it/s] 26%|██▌       | 42/164 [00:01<00:03, 37.39it/s] 29%|██▉       | 48/164 [00:01<00:03, 38.27it/s] 32%|███▏      | 53/164 [00:02<00:02, 37.21it/s] 35%|███▌      | 58/164 [00:03<00:08, 11.86it/s] 38%|███▊      | 62/164 [00:03<00:07, 13.65it/s] 40%|███▉      | 65/164 [00:03<00:06, 14.61it/s] 41%|████▏     | 68/164 [00:03<00:06, 15.32it/s] 43%|████▎     | 71/164 [00:03<00:05, 16.63it/s] 45%|████▌     | 74/164 [00:04<00:04, 18.24it/s] 47%|████▋     | 77/164 [00:04<00:04, 19.79it/s] 49%|████▉     | 80/164 [00:04<00:04, 18.65it/s] 51%|█████     | 83/164 [00:04<00:04, 19.05it/s] 52%|█████▏    | 86/164 [00:04<00:03, 19.91it/s] 54%|█████▍    | 89/164 [00:04<00:04, 18.47it/s] 56%|█████▌    | 92/164 [00:05<00:06, 11.31it/s] 57%|█████▋    | 94/164 [00:05<00:05, 12.04it/s] 59%|█████▊    | 96/164 [00:05<00:07,  9.27it/s] 60%|██████    | 99/164 [00:05<00:05, 11.75it/s] 62%|██████▏   | 102/164 [00:06<00:04, 14.04it/s] 65%|██████▌   | 107/164 [00:06<00:02, 20.03it/s] 69%|██████▉   | 113/164 [00:06<00:01, 26.81it/s] 73%|███████▎  | 119/164 [00:06<00:01, 31.65it/s] 76%|███████▌  | 125/164 [00:06<00:01, 36.97it/s] 80%|████████  | 132/164 [00:06<00:00, 43.44it/s] 85%|████████▌ | 140/164 [00:06<00:00, 52.10it/s] 92%|█████████▏| 151/164 [00:06<00:00, 65.05it/s] 98%|█████████▊| 160/164 [00:06<00:00, 67.09it/s]100%|██████████| 164/164 [00:09<00:00, 17.52it/s]
-humaneval (base tests)
-pass@1:	0.707
-humaneval+ (base + extra tests)
-pass@1:	0.652
-=== Sun Sep 27 15:48:01 CEST 2026 HE Prism-5600-SMSE mtp16p80 (sanmai combo) ===
-own server died during load, see /tmp/he_serve_28082.log
-CHAIN-MTP16-DONE Sun Sep 27 15:48:36 CEST 2026

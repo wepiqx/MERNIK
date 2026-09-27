@@ -6,3 +6,11 @@ __pycache__/
 *.sweep_tmp.gguf
 nohup.out
 /tmp/
+# private two-agent channel: local only, never push
+AGENTS.md
+# experimental scratch: local only, never push
+gnom/
+provenance/
+tests/
+tinynet.py
+train_net.py
