@@ -9,8 +9,9 @@ from model_reader import read_model
 from imatrix_reader import read_imatrix, detect_tied_groups, build_importance_table
 from classifier import optimal_classify, optimal_classify_topdown, compute_stats
 from config_generator import generate_flags, format_flags
-from quantizer import run_dry_run, run_quantization
+from quantizer import run_dry_run_ex, run_quantization
 from constants import CLASS_HARD_FLOORS
+import preflight
 
 
 def _get_base_type(model: dict) -> str:
@@ -27,6 +28,15 @@ def main():
                         help="Imatrix GGUF path (can be specified multiple times)")
     parser.add_argument("--imatrix-method", choices=["max", "mean"], default="max",
                         help="How to combine multiple imatrix: max (conservative) or mean (default: max)")
+    parser.add_argument("--imatrix-legacy-combine", action="store_true",
+                        help="LEGACY: with several --imatrix files, allocate on "
+                             "the max/mean combination but hand llama-quantize "
+                             "only the first one (the two importance sources "
+                             "then disagree inside a single build)")
+    parser.add_argument("--imatrix-tol", type=float, default=0.01,
+                        help="Max tolerated relative importance spread across "
+                             "--imatrix files before the lens counts as "
+                             "truncated (default 1%%)")
     parser.add_argument("--size", type=float, default=6800,
                         help="Target file size in MiB (default: 6800 = ~6.6 GB)")
     parser.add_argument("--output", default=None, help="Output GGUF path")
@@ -41,10 +51,21 @@ def main():
     parser.add_argument("--pin-norms", action="store_true",
                         help="Top-down native norms shield: keep norms/small "
                              "tensors at F16 outside the budget")
+    parser.add_argument("--legacy-1d", action="store_true",
+                        help="LEGACY: treat 1D tensors (norms/biases) and "
+                             "ssm_conv1d as quantizable, priced at F16. The "
+                             "binary writes them as F32 regardless, so this "
+                             "only reproduces pre-2026-09-28 tables — and the "
+                             "pre-flight audit will (correctly) report every "
+                             "one of them as a mismatch")
     parser.add_argument("--free-pins", action="store_true",
                          help="EXPERIMENTAL: let output/token_embd/MTP/routers fight "
                               "for budget instead of fixed pins")
-    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "mix", "balance"],
+    parser.add_argument("--squeeze", action="store_true",
+                         help="SQUEEZE mode (separate path): only IQ1_S or F16, "
+                              "nothing between. Dungeon or palace per tensor; "
+                              "the queue rescues kings to F16. Bottom-up only.")
+    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "mix", "smse", "srmse", "balance"],
                         default="mse",
                         help="BATTLEFIELD: utility metric for the queue "
                              "(default: mse)")
@@ -85,6 +106,12 @@ def main():
                         help="Result tag (default: from --output basename)")
     parser.add_argument("--show-floors", action="store_true",
                         help="Print class hard floors and exit")
+    parser.add_argument("--no-preflight", action="store_true",
+                        help="Skip the dry-run audit (intended-vs-actual tier "
+                             "diff, real size, real geometry)")
+    parser.add_argument("--strict-preflight", action="store_true",
+                        help="Abort if the binary will not write the assigned "
+                             "tiers (default: warn loudly and continue)")
 
     args = parser.parse_args()
 
@@ -104,6 +131,10 @@ def main():
     if not args.model or not args.imatrix:
         parser.print_usage()
         print("main.py: error: --model and --imatrix are required")
+        sys.exit(1)
+    if args.squeeze and args.top_down:
+        parser.print_usage()
+        print("main.py: error: --squeeze is bottom-up only (no --top-down)")
         sys.exit(1)
 
     target_mib = args.size
@@ -134,9 +165,49 @@ def main():
     for im in imatrix_list:
         print(f"  {im['path']}: {im['n_tensors']} tensors, datasets={im['meta'].get('imatrix.datasets', '?')}")
 
-    from imatrix_reader import combine_imatrix
-    imatrix = combine_imatrix(imatrix_list, method=args.imatrix_method)
-    print(f"  Combined: {imatrix['n_tensors']} tensors")
+    # The binary reads ONE imatrix and re-derives importance from it. So with
+    # several files, either both sides use the same one, or the build quietly
+    # mixes two lenses: the queue allocating on max(A,B) while the binary
+    # rounds with A alone (that is what quantizer.py used to do, with only a
+    # warning). Writing our own merged imatrix was rejected on purpose — the
+    # metadata (imatrix.datasets/chunk_count/chunk_size) has to be byte-exact
+    # or the binary refuses it, and a subtly wrong imatrix degrades every
+    # weight with no error anywhere. Merge upstream instead.
+    from imatrix_reader import combine_imatrix, imatrix_divergence
+    quant_imatrix = list(args.imatrix)
+    if len(args.imatrix) > 1:
+        div = imatrix_divergence(imatrix_list)
+        worst = div[0][0] if div else 0.0
+        print(f"  {len(args.imatrix)} imatrix files — llama-quantize accepts ONE. "
+              f"Queue and binary will both use: {os.path.basename(args.imatrix[0])}")
+        if worst > args.imatrix_tol:
+            print(f"\n  !! LENS TRUNCATED: importance differs by up to "
+                  f"{worst*100:.1f}% between files (tolerance "
+                  f"{args.imatrix_tol*100:.1f}%).")
+            for rel, name, b, v in div[:5]:
+                print(f"     {name[:48]:48s} {b:12.1f} vs {v:12.1f}  ({rel*100:+.1f}%)")
+            print("     The extra lenses will NOT reach the binary. To combine "
+                  "them for real:\n       llama-imatrix -o merged.gguf --in-file A "
+                  "--in-file B <model> -ngl 99\n     then pass --imatrix "
+                  "merged.gguf alone.")
+            if not args.imatrix_legacy_combine:
+                print("     Refusing to build a split-brain file. "
+                      "(--imatrix-legacy-combine to override)")
+                sys.exit(1)
+            print("     --imatrix-legacy-combine: continuing anyway (legacy "
+                  "behaviour, kept for reproducing 2026-09 builds)")
+        else:
+            print(f"  lenses agree within {worst*100:.2f}% — using one file for "
+                  f"both sides loses nothing")
+        if args.imatrix_legacy_combine:
+            imatrix = combine_imatrix(imatrix_list, method=args.imatrix_method)
+            print(f"  Combined for the queue ({args.imatrix_method}): "
+                  f"{imatrix['n_tensors']} tensors")
+        else:
+            imatrix = combine_imatrix(imatrix_list[:1])
+    else:
+        imatrix = combine_imatrix(imatrix_list, method=args.imatrix_method)
+        print(f"  Combined: {imatrix['n_tensors']} tensors")
 
     print("\n[3/4] Detecting tied groups...")
     tied_groups = detect_tied_groups(imatrix)
@@ -188,23 +259,66 @@ def main():
         allow_q3=args.allow_q3_or_lower,
         free_pins=args.free_pins,
         uopt=uopt,
+        legacy_1d=args.legacy_1d,
         **({"pin_norms": args.pin_norms} if args.top_down else {
             "relief": relief,
             "relief_thr": args.relief_thr,
+            "allowed_tiers": (["IQ1_S", "F16"] if args.squeeze else None),
         }),
     )
-    
+    if args.squeeze:
+        print("  SQUEEZE mode: dungeon IQ1_S or palace F16, nothing between")
+    if args.top_down and args.pin_norms:
+        # SPEC (mailbox 2026-09-28): TDN is a provable no-op under the 1D
+        # law — the shield protects only tensors already pinned F32. Warn
+        # instead of letting anyone re-run that experiment blind.
+        probe, _ = optimal_classify_topdown(
+            imp_table, tied_groups, model,
+            target_size_mib=target_mib,
+            allow_q3=args.allow_q3_or_lower,
+            free_pins=args.free_pins,
+            uopt=uopt,
+            legacy_1d=args.legacy_1d,
+            pin_norms=False)
+        diff = sum(1 for k, v in assignments.items()
+                   if probe.get(k) != v)
+        if diff == 0:
+            print("  WARNING: --pin-norms changed 0 tensors vs plain "
+                  "--top-down (1D law already pins them F32) — shield is "
+                  "a no-op here, do not re-run this experiment")
+
     ne_map = {k: v["n_elements"] for k, v in model.get("tensors", {}).items()}
     for tname, info in imp_table.items():
         if tname not in ne_map:
             ne_map[tname] = info["n_elements"]
 
+    # 1D tensors (norms, biases) are F32 in the artifact whatever the tier
+    # says. Loud about it, because --pin-norms and the old norms-shield law
+    # were both reasoning about precision the binary never spends.
+    from classifier import _f32_map
+    f32_map = _f32_map(model.get("tensors", {}))
+    n_f32 = sum(1 for v in f32_map.values() if v)
+    if n_f32 and not args.legacy_1d:
+        mib_f32 = sum(ne_map.get(k, 0) for k, v in f32_map.items() if v) * 4 / 1024 / 1024
+        print(f"  physical F32: {n_f32} tensors pinned outside the budget "
+              f"({mib_f32:.1f} MiB) — 1D tensors and ssm_conv1d, which "
+              f"llama.cpp never quantizes\n"
+              f"    (use --legacy-1d to reproduce pre-2026-09-28 budgets)")
+
     # Передаем padded_ne_map для корректного вывода логов на экран
-    _show_tier_summary(assignments, imp_table, ne_map, padded_ne_map)
+    _show_tier_summary(assignments, imp_table, ne_map, padded_ne_map, f32_map)
+
+    from classifier import _LAST_RUN_INFO
+    if _LAST_RUN_INFO.get("polish_steps"):
+        print(f"  budget tail: {_LAST_RUN_INFO['polish_steps']} multi-rung step(s) "
+              f"recovered, {_LAST_RUN_INFO['slack_mib']:.0f} MiB still unspent "
+              f"(no ladder rung fits — the geometry, not a silent drop)")
+    if not args.top_down:
+        _show_ceiling(model, ne_map, f32_map, target_mib)
 
     # Fail fast: even the base floors don't fit the budget — no valid
     # config exists (greedy only upgrades, never downgrades).
-    stats = compute_stats(assignments, ne_map, padded_ne_map)
+    stats = compute_stats(assignments, ne_map, padded_ne_map, f32_map)
     if stats["total_mib"] > target_mib:
         hint = "Raise --size." if (args.top_down and args.allow_q3_or_lower) \
             else "Raise --size or pass --allow-q3-or-lower."
@@ -214,7 +328,7 @@ def main():
 
     base_type = _get_base_type(model)
     flags = generate_flags(assignments, model, base_type, target_mib)
-    flags["imatrix"] = args.imatrix
+    flags["imatrix"] = quant_imatrix
 
     print(f"\nConfig (base={flags['base_type']}):")
     print(format_flags(flags))
@@ -223,8 +337,22 @@ def main():
         return
 
     print("\n--- Dry Run ---")
-    dry_size = run_dry_run(flags, args.model)
+    dry_size, dry_raw = run_dry_run_ex(flags, args.model)
     _show_size_result(dry_size, target_mib)
+
+    # Preflight: the dry run already told us what the binary will ACTUALLY
+    # write, per tensor. It used to be discarded here. Free audit, and the
+    # only place a shadowed --tensor-type rule can be caught before 30 min
+    # of quantization and 6 GB of disk.
+    if not args.no_preflight and dry_raw:
+        report = preflight.audit(assignments, dry_raw,
+                                 target_mib=target_mib,
+                                 est_mib=stats["total_mib"])
+        if report["mismatches"] and args.strict_preflight:
+            print("\nABORT: --strict-preflight — the binary disagrees with the "
+                  "assignment map. Fix the rules (or drop the flag) before "
+                  "spending the quantization.")
+            sys.exit(1)
 
     if not args.run:
         print("\nDry run only. Use --run to execute quantization.")
@@ -247,8 +375,45 @@ def main():
         main_verify(args.output, args.verify, args.verify_tag)
 
 
-def _show_tier_summary(assignments, imp_table, ne_map, padded_ne_map=None):
-    stats = compute_stats(assignments, ne_map, padded_ne_map)
+def _show_ceiling(model, ne_map, f32_map, target_mib):
+    """Loud when --size is above what the tier policy can physically reach.
+
+    Bottom-up caps every class at CLASS_MAX_TIER (Q8_0 for projections and
+    FFN), so there is a hard ceiling on the output size: MiniCPM5-2B
+    saturates at 2359.4 MiB, and --size 2600 silently produced a 2359 MiB
+    file. On an 8 GB card that is the difference between a model that loads
+    and one that does not.
+    """
+    from constants import CLASS_MAX_TIER, EMBD_DEPLOY_TIER, TIER_BPW, \
+        get_tensor_class, get_tensor_type, EMBD_PIN_TYPES
+    total, by_class = 0.0, {}
+    for n, n_el in ne_map.items():
+        ttype = get_tensor_type(n)
+        if f32_map.get(n, False):
+            tier = "F32"
+        elif ttype in EMBD_PIN_TYPES:
+            tier = EMBD_DEPLOY_TIER
+        else:
+            tier = CLASS_MAX_TIER.get(get_tensor_class(ttype), "Q8_0")
+        bpw = 32.0 if tier == "F32" else TIER_BPW.get(tier, 0.0)
+        total += n_el * bpw / 8 / 1024 / 1024
+        by_class[get_tensor_class(ttype)] = by_class.get(get_tensor_class(ttype), 0) + \
+            n_el * bpw / 8 / 1024 / 1024
+    if target_mib and total < target_mib - 0.5:
+        print(f"\n  !! SIZE ABOVE THE TIER CEILING: policy maxes out at "
+              f"{total:.0f} MiB, you asked for {target_mib:.0f} MiB.")
+        print(f"     The build will be ~{target_mib - total:.0f} MiB smaller than "
+              f"requested, no matter what the queue does.")
+        top = sorted(by_class.items(), key=lambda kv: -kv[1])[:3]
+        print("     blocked by: " + ", ".join(f"{c} @ {CLASS_MAX_TIER.get(c, 'Q8_0')}"
+                                              for c, _ in top))
+        print("     Raise CLASS_MAX_TIER in constants.py if you really want the "
+              "bytes (F16 costs 2x Q8_0).")
+    return total
+
+
+def _show_tier_summary(assignments, imp_table, ne_map, padded_ne_map=None, f32_map=None):
+    stats = compute_stats(assignments, ne_map, padded_ne_map, f32_map)
     
     print("\n  Tier distribution:")
     for tier in sorted(stats["by_tier_count"].keys()):

@@ -17,10 +17,11 @@ import time
 
 import requests
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import protocol
+
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-SERVER_BIN = os.environ.get(
-    "LLAMA_SERVER",
-    os.path.expanduser("~/llama.cpp/build/bin/llama-server"))
+SERVER_BIN = protocol.SERVER_BIN
 GPQA_PORT = int(os.environ.get("VERIFY_GPQA_PORT", 28081))
 HE_PORT = int(os.environ.get("VERIFY_HE_PORT", 28082))
 
@@ -72,17 +73,16 @@ def run_he(model, tag):
             "running, retry when free. Nothing was scored." % HE_PORT)
     log = open("/tmp/verify_he_server_%d.log" % HE_PORT, "w")
     srv = subprocess.Popen(
-        [SERVER_BIN, "-m", model, "--port", str(HE_PORT), "-ngl", "99",
-         "-c", "8192", "--jinja", "--log-disable"],
+        [SERVER_BIN, "-m", model, "--port", str(HE_PORT)]
+        + protocol.SERVER_ARGS,
         stdout=log, stderr=subprocess.STDOUT)
     try:
         wait_health(HE_PORT)
         out = os.path.join(REPO_ROOT, "eval_results",
                            "humaneval_%s.jsonl" % tag)
         env = dict(os.environ)
-        # protocol defaults (MERNIK.md); explicit env always wins
-        env.setdefault("HE_PRESENCE", "0.0")
-        env.setdefault("HE_MAX_TOKENS", "2048")
+        # Protocol lives in protocol.py now; explicit env still wins, but the
+        # defaults here used to be a SECOND hand-maintained copy of them.
         env["HUMANEVAL_OUT"] = out
         env["HUMANEVAL_SERVER"] = "http://127.0.0.1:%d" % HE_PORT
         cmd = [sys.executable, "-u",

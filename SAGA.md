@@ -72,6 +72,26 @@ matches the working file 15/15**, MERNIK classifies it (MTP → Q8_0).
 - Morning fix: rebuild graft with `eh_proj` as F32, re-quant, retest draft.
   If acceptance prints: first OxCoder+MTP in the world.
 
+## MTP draft duels (first global test, 2026-09-27, PrismCoder native MTP)
+
+Same model (Prism-5600-SMSE), same HE protocol — only spec flags vary.
+Metric is time (battery min + s/task); verdict must hold if lossless.
+
+| Run | Flags | Battery | HE | HE+ |
+|:----|:------|--------:|:--:|:---:|
+| base | — | 60.8 min (22.3 s/task) | 74.39% (122/164) | 70.7 |
+| mtp2 | draft-mtp, n-max 2 | 40.4 min (14.8 s/task) | 67.07% (110/164) | 62.8 |
+| mtp3p80 | draft-mtp, n-max 3, p-min 0.80 | 40.5 min (14.8 s/task) | 68.90% (113/164) | 65.9 |
+| mtp8p80 | draft-mtp, n-max 8, p-min 0.80 | 45.6 min (16.7 s/task) | 72.56% (119/164) | 67.7 |
+| mtp5ngram | draft-mtp + ngram-mod, n-max 5, p-min 0.75 | **39.9 min (14.6 s/task)** | 71.34% (117/164) | 65.2 — fastest AND closest: combo wins overall |
+
+Speedup 1.51× confirmed — but verdict −7.3pp (12 tasks, ~2σ). NOT
+proven lossless here: needs the pattern across n3/n8/ngram runs
+(scattered = sampling noise, clustered ~67 = systematic draft bias).
+MTP tax question (464MB head vs trunk budget) stays open until then.
+Update: longer drafts trade speed back for accuracy (n8: 16.7 s/task,
+−1.8pp) — a speed/verdict curve, not a free lunch.
+
 ## The method behind the madness
 
 Every failure was measured, written down, and turned into the next fix —

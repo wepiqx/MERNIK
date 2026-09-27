@@ -3,6 +3,29 @@ import numpy as np
 from typing import List
 
 
+def imatrix_divergence(imatrix_list: List[dict]) -> List[tuple]:
+    """Per-tensor relative spread of importance across several imatrix.
+
+    max-vs-first, relative to the first file's value. Used to decide whether
+    passing only one imatrix to both MERNIK and llama-quantize is honest
+    (they agree) or a silent truncation of the lens (they do not).
+    """
+    if len(imatrix_list) < 2:
+        return []
+    base = imatrix_list[0]["tensors"]
+    out = []
+    for im in imatrix_list[1:]:
+        for name, t in im["tensors"].items():
+            if name not in base:
+                continue
+            b = base[name]["importance_mean"]
+            v = t["importance_mean"]
+            denom = max(abs(b), 1e-12)
+            out.append((abs(v - b) / denom, name, b, v))
+    out.sort(reverse=True)
+    return out
+
+
 def read_imatrix(path: str) -> dict:
     """Parse imatrix GGUF, return per-tensor importance data."""
     r = gguf.GGUFReader(path)
@@ -54,7 +77,15 @@ def read_imatrix(path: str) -> dict:
 
 def combine_imatrix(imatrix_list: List[dict], method: str = "max") -> dict:
     """Combine multiple imatrix into one by aggregating importance.
-    
+
+    NOTE (scar 2026-09-28): this aggregates PER-TENSOR MEANS (max of means),
+    which is NOT the same operator as merging the per-column arrays and then
+    averaging (mean of elementwise max) — mean(max) >= max(mean), strictly.
+    The binary only ever reads one imatrix file, so the build's real
+    importance is whatever that single file holds. main.py therefore writes
+    the merged file first and reads the queue's numbers back from it; this
+    function is for exploration and for the explicit --no-merge-imatrix path.
+
     Args:
         imatrix_list: List of imatrix dicts from read_imatrix()
         method: "max", "mean", or "weighted_mean"

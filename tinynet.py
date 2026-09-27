@@ -233,8 +233,8 @@ def boost_predict(ensemble, X, ymu, ysd, shrinkage=0.3, activation="mish"):
 # each expert learns its own type's damage physics with ~45 params).
 # Total: 6 experts x 45 = 270 params — same budget as the single net.
 
-MOE_DIMS = [9, 4, 1]
-MOE_FEAT_IDX = [6, 7, 8, 9, 10, 11, 12, 13, 14]  # layer..w-stats (no one-hot)
+MOE_DIMS = [10, 4, 1]
+MOE_FEAT_IDX = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]  # layer..w-stats (no one-hot)
 
 
 def moe_split(X):
@@ -321,7 +321,8 @@ def qsa_gate_train(X, resid, seed=7, lr=0.05, epochs=500, l2=1e-4,
                    log_every=250):
     rng = np.random.default_rng(seed)
     Xs, _, _ = standardize(X)
-    Gf = rng.normal(0, 0.1, (15,))
+    N_IN = Xs.shape[1]
+    Gf = rng.normal(0, 0.1, (N_IN,))
     bf = 0.0
     mG, mb = np.zeros(15), 0.0
     n = len(X)
@@ -360,7 +361,8 @@ def liquid_train_gate(X, y, experts, lr=0.05, epochs=800, l2=1e-4, seed=7,
     mu, sd = E.mean(axis=0), E.std(axis=0) + 1e-12
     En = (E - mu) / sd
     Xs, _, _ = standardize(X)
-    G = rng.normal(0, 0.1, (15, 6))
+    N_IN = Xs.shape[1]
+    G = rng.normal(0, 0.1, (N_IN, 6))
     b = np.zeros(6)
     mG, mb = np.zeros_like(G), np.zeros_like(b)
     n = len(X)
@@ -457,11 +459,12 @@ def featurize(name, n_el, timp_mean, timp_max, frag=0.0, econc=0.0,
         m4 = float(((f - f.mean()) ** 4).mean())
         kurt = m4 / (std ** 4 + 1e-12) - 3.0
         mxm = float(np.abs(f).max() / (np.abs(f).mean() + 1e-12))
+        outl = float((np.abs(f) > 6.0 * (std + 1e-12)).mean())
         feats += [np.log10(std + 1e-12), float(np.clip(kurt, -2, 50)) / 10.0,
-                  np.log10(mxm + 1)]
+                  np.log10(mxm + 1), outl]
     else:
         feats += [0.0, 0.0, 0.0]
     return feats
 
 
-N_FEATS = 15
+N_FEATS = 16

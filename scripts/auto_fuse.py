@@ -41,14 +41,17 @@ def load_imatrix(path):
     return read_imatrix(path)["tensors"]
 
 
-def rank_vote(ia, ib, ic=None, base="a"):
+def rank_vote(ia, ib, ic=None, idn=None, base="a"):
     """Best relative rank wins. Returns {block: donor} for non-base wins."""
     donors = {"a": ia, "b": ib}
     if ic is not None:
         donors["c"] = ic
+    if idn is not None:
+        donors["d"] = idn
     common = set(ia) & set(ib)
-    if ic is not None:
-        common &= set(ic)
+    for extra in (ic, idn):
+        if extra is not None:
+            common &= set(extra)
     per = {k: defaultdict(list) for k in donors}
     for n in common:
         b = layer_of(n)
@@ -91,9 +94,11 @@ def main():
     ap.add_argument("--a", required=True)
     ap.add_argument("--b", required=True)
     ap.add_argument("--c", default=None)
+    ap.add_argument("--d", default=None, help="fourth donor BF16")
     ap.add_argument("--ia", required=True, help="imatrix for A")
     ap.add_argument("--ib", required=True, help="imatrix for B")
     ap.add_argument("--ic", default=None, help="imatrix for C")
+    ap.add_argument("--id", default=None, help="imatrix for D")
     ap.add_argument("--rule", choices=["rank-vote"], default="rank-vote")
     ap.add_argument("--patch", default=None,
                     help="manual overrides, e.g. '31:c'")
@@ -103,9 +108,15 @@ def main():
 
     ia, ib = load_imatrix(args.ia), load_imatrix(args.ib)
     ic = load_imatrix(args.ic) if args.ic and args.c else None
-    amap = rank_vote(ia, ib, ic)
+    idn = load_imatrix(args.id) if args.id and args.d else None
+    donors = {"a": ia, "b": ib}
+    if ic is not None:
+        donors["c"] = ic
+    if idn is not None:
+        donors["d"] = idn
+    amap = rank_vote(ia, ib, ic, idn)
     amap.update(parse_patch(args.patch))
-    letters = {"a": "A", "b": "B", "c": "C"}
+    letters = {"a": "A", "b": "B", "c": "C", "d": "D"}
     desc = ", ".join(f"{b}:{letters[d]}" for b, d in sorted(amap.items()))
     print("auto map (%s): %s" % (args.rule, desc or "(all base)"))
     print(json.dumps({"rule": args.rule, "map": amap}))
@@ -118,6 +129,8 @@ def main():
            "--map", ",".join(f"{b}:{d}" for b, d in sorted(amap.items()))]
     if args.c:
         cmd += ["--c", args.c]
+    if args.d:
+        cmd += ["--d", args.d]
     print("exec:", " ".join(cmd), flush=True)
     rc = subprocess.call(cmd)
     if rc != 0:

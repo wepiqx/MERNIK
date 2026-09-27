@@ -1,0 +1,17 @@
+[
+  {"features": "gnom/features/spark17.npz",
+   "labels": "gnom/labels/spark17_damage_q4.jsonl",
+   "model": "spark17", "base_bpw": 5.5, "drop_bpw": 4.5},
+  {"features": "gnom/features/spark17.npz",
+   "labels": "gnom/labels/spark17_damage_q3.jsonl",
+   "model": "spark17", "base_bpw": 5.5, "drop_bpw": 3.44},
+  {"features": "gnom/features/spark4b.npz",
+   "labels": "gnom/labels/damage_4b.jsonl",
+   "model": "spark4b", "base_bpw": 5.5, "drop_bpw": 4.5},
+  {"features": "gnom/features/minicpm.npz",
+   "labels": "gnom/labels/damage_v3_q5q2.jsonl",
+   "model": "minicpm", "base_bpw": 5.5, "drop_bpw": 2.5},
+  {"features": "gnom/features/minicpm.npz",
+   "labels": "gnom/labels/damage_minicpm.jsonl",
+   "model": "minicpm", "base_bpw": 5.5, "drop_bpw": 4.5}
+]

@@ -1,9 +1,8 @@
 __pycache__/
 *.pyc
 *.gguf
+*.dat
 .sweep_*
 *.sweep_tmp.gguf
 nohup.out
 /tmp/
-MIMO.md
-RINIQ-NEXT.md

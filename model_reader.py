@@ -107,6 +107,9 @@ def read_model(path: str) -> dict:
         tensors[name] = {
             "shape": shape,
             "n_elements": n_elements,
+            # rank-1: llama.cpp writes these as F32 and never quantizes them,
+            # so the allocator prices and pins them accordingly (classifier._f32_map)
+            "rank1": len(shape) <= 1,
             "size_mib": n_elements * 2 / 1024 / 1024,
         }
 

@@ -1,3 +1,7 @@
+---
+license: apache-2.0
+---
+
 # MERNIK — Measure-First Quantization Protocol
 
 **MERNIK** ("the one who measures") is the evolution of the ASHQ1 battlefield zoo: fewer utility duels, more verdicts. The method (priority queue allocation) is built; MERNIK is how we prove and certify it.
@@ -60,7 +64,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--size MIB` | Target file size in MiB (the primary budget knob) |
 | `--output O.gguf` | Output path (default: `<model>-MERNIK.gguf`) |
 | `--run` | Execute `llama-quantize` (without it: dry-run estimate only) |
-| `--utility NAME` | Queue gain metric: `mse` (default) / `rmse` / `smape` / `logcosh` / `ssim` / `smape_ssim` / `smape_frag` / `mix` |
+| `--utility NAME` | Queue gain metric: `mse` (default) / `rmse` / `smape` / `logcosh` / `ssim` / `smape_ssim` / `smape_frag` / `mix` / `smse` (`balance` = deprecated alias) / `srmse` |
 | `--mix-base NAME` | MIX utility: gain for non-king groups (`mse`/`rmse`/`smape`/`logcosh`) |
 | `--mix-top-frac F` | MIX utility: fraction of top-importance king groups (default: 0.2) |
 | `--top-down` | Reverse allocation: everything from F16, downgrade cheapest-loss-first |
@@ -87,12 +91,14 @@ python scripts/audit_tiers.py --model M-6500.gguf --layer 31
 
 Every tensor starts at a floor tier based on its functional class. A global max-heap drains the target budget best-first by sum(importance) × Δ / MiB. Tied groups (identical imatrix energy) upgrade as a single unit with summed importance. Structural pins — MTP heads (→ Q8_0), output/token embeddings (→ Q5_K), MoE routers (→ F16) — sit outside the budget queue.
 
-### Utility Lenses: MSE vs SMAPE vs RMSE vs MIX
+### Utility Lenses: MSE vs SMAPE vs RMSE vs MIX vs SMSE vs SRMSE
 
 * **MSE (default / spread):** Relative-blind absolute gain. Tiers spread evenly (Q5/Q6-heavy middle). Best PPL/KLD on dense 9B.
 * **SMAPE (barbell):** Junk to the Q4 floor, kings to Q8 penthouses. Owns small budgets, loses big ones (budget law).
 * **RMSE:** Perfectionist rescale of MSE. Zoo: beats MSE on PPL twice. First verdict (RINIQ-M2-6500-RMSE-Q38): PPL 7.5411, GPQA 50.00%, **HE 88.41%** — takes recognition, loses verdict by 3pp to MSE. Budget law extended.
 * **MIX (per-group):** Kings by MSE, rest by `--mix-base`. Formulas live on different scales (mse Δ ~1e-3 vs smape ~1.2), so `_scale()` normalizes every formula to O(1) first — without it smape junk outbids mse kings 800:1 and the mix collapses. Dry-run geometry is new (wide Q5 spread, no Q8); verdict queued.
+* **SMSE (blend 👑, ex-BALANCE):** Geometric mean of the SMAPE-relative and MSE-absolute halves (both O(1)-normalized, MIX lesson). SMAPE's `(ec+en)` denominator silently cancels the sub-4 toxicity penalty; the blend carries real toxicity through its absolute half. First verdict (MiMo-4500, allow-q3): PPL 9.4092 vs SMAPE 10.5343 (−1.12), **HE 54.88% vs 29.88% (+25pp)** — rescue from the lava. Second verdict (MiMo-5100): PPL 8.7389 vs 8.7435 (tie), HE 71.34% vs 70.12% (+1.2pp), 3 empties — DUEL 0/3 (HE p=0.88, HE+ p=0.76 pointing the other way, empties p=0.13): NOISE, crown demoted 2026-09-28. Numbers stay, verdict withdrawn. Third verdict (MiMo-6500): PPL 8.7275 vs 8.7655 (tie), HE 72.56% vs 75.00% (−2.4pp) — LOSES big: at 6500 the middle decides (MSE Q6 67 vs SMSE 41), not penthouses (SMSE had more Q8, 125 vs 108). Verdict: SMSE owns small+medium budgets, MSE owns big. The bet behind it: any tier below Q4 hurts, and fewer is better.
+* **SRMSE (SMAPE×RMSE, queued):** Relative lens × COMPRESSED absolute (sqrt squeezes toxicity ×1.41 instead of ×2.0). Prediction: "SMAPE with manners" — PPL at/above SMAPE everywhere, HE between SMAPE and SMSE. Duel MiMo-5100-SRMSE running.
 
 ### Distribution Comparison @ 6500 MiB (427 tensors, incl. 177 F16 norms/1D)
 
@@ -107,9 +113,17 @@ Q8_0      108 (1417 MiB)     149 (2913 MiB)       110 (1417)   85 (1287 MiB)
 
 Takeaway: MSE fills the middle (Q5+Q6 = 94 tensors). SMAPE hollows it (10 tensors) to double the Q4 floor and gain 41 extra Q8 penthouses.
 
-### Norms Shield & Attention Core Insights
+### Norms Shield & Attention Core Insights (RE-LABELED 2026-09-28)
 
-TD-MSE: downgrading ~30 small norm tensors to Q4 left PPL unaffected (7.7701 vs 7.7695) but dropped HumanEval by −3.7pp. Norms are free real estate for perplexity, but load-bearing walls for code. Norms Shield (TDN): native shielding recovers +1.2pp; post-hoc forcing disrupts greedy paths — shields must be native. Audit: RINIQ builds keep all 105 norm tensors intact F32.
+TD-MSE vs MSE: −3.7pp HE with identical PPL (7.7701 vs 7.7695). Old
+reading ("norms are load-bearing walls for code") is MECHANICALLY
+IMPOSSIBLE: the binary writes 1D tensors as F32 whatever the tier says
+(preflight-proven), so no norm was ever requantized. What the numbers
+measure is budget redirect: top-down routing moved ~5 MiB between tied
+attention groups while the "shield" guarded precision that was never
+spent. Norms Shield (TDN) +1.2pp stands as a measured effect with a
+redirect mechanism, not a precision mechanism. `--pin-norms` now warns
+when it changes 0 tensors (mailbox SPEC, implemented in main.py).
 
 ---
 
@@ -136,12 +150,18 @@ presence_penalty 0.0, repetition_penalty 1.0, max_tokens 2048
 
 ### The Budget Law
 
-SMAPE owns small budgets; MSE owns big budgets.
+SMAPE owns small budgets; MSE owns big budgets — as LEDGER
+measurements (identity of pre-sidecar artefacts: permanent-unverifiable,
+see manifest; the lava leg survives on 3/3 columns + effect size).
 
 | Target Budget | MSE Utility | SMAPE Utility | Winning Lens |
 |:--------------|:------------|:--------------|:-------------|
 | 6500 MiB | PPL 7.7695 / HE 85.98% | PPL 7.8252 / HE 82.32% | MSE spread (+3.7pp) |
 | 5100 MiB | PPL 7.7962 / HE 79.88% | PPL 7.8012 / HE 82.93% | SMAPE barbell (+3.0pp) |
+
+### The Sub-4 Law (confirmed 2026-09-23)
+
+Any tier below Q4 hurts, and fewer is better. `--allow-q3-or-lower` at ~4 GB is lava in every family: MiMo-4500-SMAPE (PPL 10.53 / HE 29.88%) lands exactly where NeoHorse-3650-Q2 did (10.36 / 23.78%) — same physics, different bones. SMSE-4500 (9.41 / **54.88%**, +25pp) proves limiting sub-4 exposure rescues the build. TOX (×2.0 effective-MSE penalty, still in `constants.py`) called it; SMSE proves it on the verdict column.
 
 ### Reference Results I: NeoHorse-1-9B (official BF16 98.17% @ undisclosed ctx)
 
@@ -150,7 +170,7 @@ SMAPE owns small budgets; MSE owns big budgets.
 | MERNIK-6500-MSE | 6.83 GB | 7.7695 | 0.0453 | 85.98% (141/164) | Outperforms stock Q6_K |
 | MERNIK-6500-SMAPE | 6.83 GB | 7.8252 | 0.0476 | 82.32% (135/164) | Ties stock Q6_K |
 | MERNIK-6500-TD-MSE | 6.83 GB | 7.7701 | 0.0452 | 82.32% | −3.7pp code loss vs MSE |
-| MERNIK-6500-TDN-MSE | 6.83 GB | 7.7701 | — | 83.54% | Norms shield recovers +1.2pp |
+| MERNIK-6500-TDN-MSE | 6.83 GB | 7.7701 | — | 83.54% | +1.2pp measured, mechanism = budget redirect (see §3) |
 | MERNIK-6500-TDN-SMAPE | 6.83 GB | — | — | 79.27% | Post-hoc shield disrupts greedy path |
 | MERNIK-6500-TD-SMAPE | 6.83 GB | 7.8184 | 0.0505 | 82.32% | Holds Q6 level with 236 tensors at Q4 |
 | Q6_K (stock) | 7.36 GB | 7.9419 | 0.0118 | 82.32% (135/164) | Stock baseline |

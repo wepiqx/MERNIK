@@ -12,17 +12,19 @@ import os
 import signal
 import socket
 import subprocess
+import sys
 import time
 from urllib.parse import urlparse
 import requests
 from human_eval.data import read_problems, write_jsonl
 from human_eval.evaluation import evaluate_functional_correctness
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import protocol
+
 SERVER_URL = os.environ.get("HUMANEVAL_SERVER", "http://127.0.0.1:28082")
 SERVE_MODEL = os.environ.get("HUMANEVAL_SERVE_MODEL")
-SERVER_BIN = os.environ.get(
-    "LLAMA_SERVER",
-    os.path.expanduser("~/llama.cpp/build/bin/llama-server"))
+SERVER_BIN = protocol.SERVER_BIN
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_FILE = os.environ.get(
     "HUMANEVAL_OUT",
@@ -37,22 +39,15 @@ def _f(name, default):
         return float(default)
 
 
-# NeoHorse reported protocol (SGLang v0.5.17); override via env, e.g.
-# HE_PRESENCE=0 if presence_penalty turns out harmful.
-SAMPLE = {
-    "temperature": _f("HE_TEMP", 1.0),
-    "top_p": _f("HE_TOP_P", 0.95),
-    "top_k": int(os.environ.get("HE_TOP_K", 20)),
-    "min_p": _f("HE_MIN_P", 0.0),
-    "presence_penalty": _f("HE_PRESENCE", 1.5),
-    "repetition_penalty": _f("HE_REPEAT", 1.0),
-}
-THINKING = os.environ.get("HE_THINKING", "1") == "1"
+# Protocol lives in protocol.py — one source of truth, drift-proof.
+# (This runner used to default presence_penalty to 1.5 and max_tokens to
+# 1024 while the documented protocol says 0.0 / 2048.)
+SAMPLE = {k: v for k, v in protocol.sample_params().items() if k != "max_tokens"}
 
 
 def generate(problem, max_tokens=None):
     if max_tokens is None:
-        max_tokens = int(os.environ.get("HE_MAX_TOKENS", 1024))
+        max_tokens = protocol.sample_params()["max_tokens"]
     resp = requests.post(
         f"{SERVER_URL}/v1/chat/completions",
         json={
@@ -97,8 +92,8 @@ def _serve_own_model():
     log = open("/tmp/he_serve_%d.log" % port, "w")
     extra = os.environ.get("HUMANEVAL_SERVER_ARGS", "").split()
     p = subprocess.Popen(
-        [SERVER_BIN, "-m", SERVE_MODEL, "--port", str(port), "-ngl", "99",
-         "-c", "8192", "--jinja", "--log-disable"] + extra,
+        [SERVER_BIN, "-m", SERVE_MODEL, "--port", str(port)]
+        + protocol.SERVER_ARGS + extra,
         stdout=log, stderr=subprocess.STDOUT)
     for _ in range(120):
         try:
@@ -132,6 +127,13 @@ def _battery():
     # server (that failure mode already cost us one battery).
     t0 = time.time()
     print(f"battery start: {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
+    # Protocol stamp: results used to carry no provenance, so a battery run
+    # off-protocol was indistinguishable from a clean one. Sidecar file.
+    meta = protocol.battery_meta(
+        SERVER_URL, SERVE_MODEL,
+        extra=os.environ.get("HUMANEVAL_SERVER_ARGS", "").split())
+    meta["out"] = os.path.basename(OUTPUT_FILE)
+    print(protocol.banner(meta), flush=True)
     try:
         r = requests.get(f"{SERVER_URL}/health", timeout=10)
         r.raise_for_status()
@@ -166,8 +168,15 @@ def _battery():
 
     write_jsonl(OUTPUT_FILE, results)
     dt = time.time() - t0
+    meta["finished"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    meta["battery_min"] = round(dt / 60, 1)
+    meta["s_per_task"] = round(dt / len(results), 1)
+    meta["n_tasks"] = len(results)
+    meta["empties"] = sum(1 for r in results if not r["completion"].strip())
+    side = protocol.write_meta(OUTPUT_FILE, meta)
     print(f"\nSaved {len(results)} to {OUTPUT_FILE}")
     print(f"battery time: {dt/60:.1f} min ({dt/len(results):.1f} s/task over {len(results)} tasks)")
+    print(f"empties: {meta['empties']}/{len(results)}   protocol sidecar: {side}")
 
     print("\n--- Evaluating pass@1 ---")
     r = evaluate_functional_correctness(sample_file=OUTPUT_FILE, k=[1], n_workers=4)

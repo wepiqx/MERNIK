@@ -15,17 +15,19 @@ import os
 import signal
 import socket
 import subprocess
+import sys
 import time
 from urllib.parse import urlparse
 import requests
 from human_eval.data import read_problems, write_jsonl
 from human_eval.evaluation import evaluate_functional_correctness
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import protocol
+
 SERVER_URL = os.environ.get("HUMANEVAL_SERVER", "http://127.0.0.1:28082")
 SERVE_MODEL = os.environ.get("HUMANEVAL_SERVE_MODEL")
-SERVER_BIN = os.environ.get(
-    "LLAMA_SERVER",
-    os.path.expanduser("~/llama.cpp/build/bin/llama-server"))
+SERVER_BIN = protocol.SERVER_BIN
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_FILE = os.environ.get(
     "HUMANEVAL_OUT",
@@ -40,14 +42,9 @@ def _f(name, default):
         return float(default)
 
 
-SAMPLE = {
-    "temperature": _f("HE_TEMP", 1.0),
-    "top_p": _f("HE_TOP_P", 0.95),
-    "top_k": int(os.environ.get("HE_TOP_K", 20)),
-    "min_p": _f("HE_MIN_P", 0.0),
-    "presence_penalty": _f("HE_PRESENCE", 0.0),
-    "repetition_penalty": _f("HE_REPEAT", 1.0),
-}
+# Same protocol module as the chat runner (this file used to default
+# max_tokens to 1024, the chat one to 2048 — silent 2x split).
+SAMPLE = {k: v for k, v in protocol.sample_params().items() if k != "max_tokens"}
 
 
 def _port_busy(port):
@@ -63,8 +60,8 @@ def _serve_own_model():
     log = open("/tmp/he_raw_serve_%d.log" % port, "w")
     extra = os.environ.get("HUMANEVAL_SERVER_ARGS", "").split()
     p = subprocess.Popen(
-        [SERVER_BIN, "-m", SERVE_MODEL, "--port", str(port), "-ngl", "99",
-         "-c", "8192", "--jinja", "--log-disable"] + extra,
+        [SERVER_BIN, "-m", SERVE_MODEL, "--port", str(port)]
+        + protocol.SERVER_ARGS + extra,
         stdout=log, stderr=subprocess.STDOUT)
     for _ in range(120):
         try:
@@ -83,7 +80,7 @@ def _serve_own_model():
 
 def generate(prompt, max_tokens=None):
     if max_tokens is None:
-        max_tokens = int(os.environ.get("HE_MAX_TOKENS", 1024))
+        max_tokens = protocol.sample_params()["max_tokens"]
     resp = requests.post(
         f"{SERVER_URL}/v1/completions",
         json={"prompt": prompt, "max_tokens": max_tokens, **SAMPLE},
@@ -139,6 +136,10 @@ def main():
             time.sleep(0.1)
         write_jsonl(OUTPUT_FILE, results)
         print(f"\nSaved {len(results)} to {OUTPUT_FILE}")
+        side = protocol.write_meta(OUTPUT_FILE, protocol.battery_meta(
+            SERVER_URL, SERVE_MODEL,
+            extra=os.environ.get("HUMANEVAL_SERVER_ARGS", "").split()))
+        print(f"protocol sidecar: {side}")
         print("\n--- Evaluating pass@1 ---")
         r = evaluate_functional_correctness(sample_file=OUTPUT_FILE, k=[1],
                                             n_workers=4)

@@ -1,0 +1,7 @@
+{"unit": "BASELINE", "ppl": 59.6866}
+{"unit": "attn_gate@0+attn_qkv@0", "tensors": ["blk.0.attn_gate.weight", "blk.0.attn_qkv.weight"], "ppl": 60.2582, "damage": 0.5716000000000037}
+{"unit": "attn_output@0", "tensors": ["blk.0.attn_output.weight"], "ppl": 58.8014, "damage": -0.8851999999999975}
+{"unit": "ffn_down@0", "tensors": ["blk.0.ffn_down.weight"], "ppl": 60.705, "damage": 1.0183999999999997}
+{"unit": "ffn_gate@0+ffn_up@0", "tensors": ["blk.0.ffn_gate.weight", "blk.0.ffn_up.weight"], "ppl": 58.1129, "damage": -1.5736999999999952}
+{"unit": "attn_gate@1+attn_qkv@1", "tensors": ["blk.1.attn_gate.weight", "blk.1.attn_qkv.weight"], "ppl": 61.2228, "damage": 1.536200000000001}
+{"unit": "attn_output@1", "tensors": ["blk.1.attn_output.weight"], "ppl": 60.9199, "damage": 1.2332999999999998}

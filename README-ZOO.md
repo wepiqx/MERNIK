@@ -120,6 +120,11 @@ quant||PPL) DONE ×2 (v1 Q5→Q4 + v2 Q5→Q3). Best result: mixed-effects
 first positive signal, but `netdmg` duel FAILED (70.94): 0.3 isn't enough
 to steer the queue. Zero-shot on 9B detonated (−99s) → scale-invariant
 features fixed the scale (−0.22..+0.09, sane) — validation pending.
+Gnom-0.2 (2026-09-26, `gnom/`): 626 pooled labels (1.7B/2B/4B),
+trunk+model-bias/moeshared/trunk vs LOMO exam — best LOMO 0.060
+(bar 0.45), timp baseline 0.195 unbeaten. Mapping verified 626/626:
+PPL-damage is noise + model-local physics, unlearnable statically.
+Thesis closed with receipts; next is KLD-damage, pipeline ready.
 
 ## Teacher (damage sweep)
 

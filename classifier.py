@@ -8,12 +8,17 @@ from dataclasses import dataclass, field
 from constants import (
     TIER_ORDER, TIER_BPW, GGUF_OVERHEAD_FACTOR, CLASS_MAX_TIER,
     CAN_Q3, ALLOW_LOWER_FLOOR, MTP_DEPLOY_TIER, EMBD_DEPLOY_TIER,
-    EMBD_PIN_TYPES, ROUTER_PIN_TYPES, TOXICITY_SUB4, get_tensor_class, get_tensor_type,
-    is_mtp_tensor,
+    EMBD_PIN_TYPES, ROUTER_PIN_TYPES, TOXICITY_SUB4, F32_BPW,
+    FORCE_F32_TYPES,
+    get_tensor_class, get_tensor_type, is_mtp_tensor,
 )
 
 # Выносим делитель в константу (8 бит * 1024 байт * 1024 кбайт)
 BITS_IN_MIB = 8 * 1024 * 1024.0
+
+# Filled in by the last classify() call so main.py can report the tail of the
+# budget without threading a third return value through everything.
+_LAST_RUN_INFO: Dict[str, float] = {"slack_mib": 0.0, "polish_steps": 0}
 
 # Предвычисляем множители размеров для каждого тира (ускорение математики)
 TIER_SIZE_MULTIPLIER = {
@@ -47,21 +52,50 @@ class UpgradeItem:
     cost_delta: float = field(compare=False)
 
 
-def _tier_index(tier: str) -> int:
-    if tier not in TIER_ORDER:
+def _tier_index(tier: str, order: list | None = None) -> int:
+    order = order or TIER_ORDER
+    if tier not in order:
         raise ValueError(f"Unknown tier: {tier}")
-    return TIER_ORDER.index(tier)
+    return order.index(tier)
 
-def _tier_at(idx: int) -> str:
-    if not (0 <= idx < len(TIER_ORDER)):
+def _tier_at(idx: int, order: list | None = None) -> str:
+    order = order or TIER_ORDER
+    if not (0 <= idx < len(order)):
         raise IndexError(f"Tier index {idx} out of range")
-    return TIER_ORDER[idx]
+    return order[idx]
 
-def _size_mib(tier: str, n_elements: int) -> float:
-    """Размер тензора в MiB с учётом оверхеда GGUF."""
+# SQUEEZE mode: binary allocation — every tensor is either dungeon or
+# palace, nothing in between. Separate path, other modes untouched.
+
+def _size_mib(tier: str, n_elements: int, force_f32: bool = False) -> float:
+    """Размер тензора в MiB с учётом оверхеда GGUF.
+
+    1D tensors (norms, biases) are F32 in the file whatever the tier says —
+    llama.cpp does not quantize 1D. Accounting them at the assigned tier
+    both under-counts the budget and hides the fact that the assignment is
+    a no-op, so they are priced at F32 bits instead.
+    """
     if n_elements <= 0:
         return 0.0
+    if force_f32:
+        return n_elements * (F32_BPW / BITS_IN_MIB) * GGUF_OVERHEAD_FACTOR
     return n_elements * TIER_SIZE_MULTIPLIER.get(tier, 0.0)
+
+def _f32_map(model_tensors: Dict[str, Any]) -> Dict[str, bool]:
+    """Tensors the binary will write as F32 whatever tier we assign.
+
+    Two proven sources: 1D tensors (norms, biases — llama.cpp does not
+    quantize rank-1), and the types in FORCE_F32_TYPES (ssm_conv1d, caught by
+    preflight on RINIQ-M2). Anything assigned here is pinned outside the
+    budget: keeping it in the queue only produces decisions that never land.
+    """
+    out = {}
+    for k, v in model_tensors.items():
+        shape = v.get("shape") or []
+        out[k] = bool(v.get("rank1", len(shape) <= 1)) or \
+            get_tensor_type(k) in FORCE_F32_TYPES
+    return out
+
 
 @lru_cache(maxsize=64)
 def _mse_eff(tier: str) -> float:
@@ -157,8 +191,9 @@ def _gain_mode(mode: str, cur_tier: str, next_tier: str,
         if ec + en <= 0:
             return 0.0
         return 2.0 * (ec - en) / (ec + en)
-    if mode == "balance":
-        # Kings need the people, people need kings (scar 2026-09-22):
+    if mode in ("smse", "balance"):
+        # SMSE (ex-BALANCE, renamed 2026-09-23: SMAPE+MSE blend) —
+        # 'balance' kept as a deprecated alias.
         # geometric blend of the relative lens (SMAPE barbell shape) and
         # the absolute lens (MSE weight + live sub-4 toxicity). Both halves
         # O(1)-normalized first (MIX lesson), so neither outbids 800:1.
@@ -177,6 +212,24 @@ def _gain_mode(mode: str, cur_tier: str, next_tier: str,
         if s_ref <= 0.0 or m_ref <= 0.0:
             return 0.0
         return math.sqrt((rel / s_ref) * (aba / m_ref))
+    if mode == "srmse":
+        # SMAPE x RMSE blend (2026-09-23, proposed as "what if"): relative
+        # lens x COMPRESSED absolute (sqrt). sqrt compresses the toxicity
+        # multiplier (x1.41 instead of x2.0), so this carries LESS toxicity
+        # than SMSE — expect a gentler barbell: more penthouses, weaker
+        # lava rescue. Verdict duel queued (MiMo-5100-SRMSE vs SMSE).
+        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
+        if ec + en <= 0:
+            return 0.0
+        rel = 2.0 * (ec - en) / (ec + en)
+        rba = math.sqrt(ec) - math.sqrt(en)
+        if rel <= 0.0 or rba <= 0.0:
+            return 0.0
+        s_ref = _scale("smape", cur_tier, next_tier, uopt or {})
+        r_ref = _scale("rmse", cur_tier, next_tier, uopt or {})
+        if s_ref <= 0.0 or r_ref <= 0.0:
+            return 0.0
+        return math.sqrt((rel / s_ref) * (rba / r_ref))
     if mode == "ssim":
         # Measured structural gain, per group MEMBER (not rep): members of a
         # tied group share importance but not weights, so ΔSSIM differs per
@@ -302,6 +355,108 @@ def _ssim_table(path: str | None) -> Dict[str, Dict[str, float]]:
     return table
 
 
+def _step_cost(cur_tier: str, next_tier: str, g_elements: int,
+               g_elements_padded: int) -> float:
+    """MiB delta of one ladder step, honouring K-quant padding."""
+    cur_n = g_elements_padded if cur_tier in K_QUANTS else g_elements
+    next_n = g_elements_padded if next_tier in K_QUANTS else g_elements
+    return _size_mib(next_tier, next_n) - _size_mib(cur_tier, cur_n)
+
+
+def _best_step_within(group_id, group_registry, assignments,
+                      tensor_importance, importance_table, slack,
+                      ceiling=None, uopt=None, order=None):
+    """Best ladder step this group can take with `slack` MiB left.
+
+    The greedy drain only ever offers cur->cur+1, and a step that does not
+    fit is dropped from the queue for good (the budget only shrinks from
+    there). So the tail of the budget goes unspent: a group whose next rung
+    is 400 MiB stays at its floor with 300 MiB idle, even though a higher
+    rung might cost less than the near one. This walks the whole reachable
+    window and returns the best value-per-MiB step inside it.
+    """
+    order = order or TIER_ORDER
+    g_names, g_elements, g_elements_padded, g_f32 = group_registry[group_id]
+    if g_f32 or slack <= 0:
+        return None
+    rep_name = g_names[0]
+    cur_tier = assignments[rep_name]
+    cur_idx = _tier_index(cur_tier, order)
+
+    rep_info = importance_table.get(rep_name, {})
+    ttype = rep_info["type"] if "type" in rep_info else get_tensor_type(rep_name)
+    max_tier = ceiling or CLASS_MAX_TIER.get(get_tensor_class(ttype), "Q8_0")
+    top_idx = min(_tier_index(max_tier, order), len(order) - 1)
+    if cur_idx >= top_idx:
+        return None
+
+    total_g_imp = sum(tensor_importance.get(n, 0) for n in g_names)
+    best = None
+    idx = cur_idx + 1
+    while idx <= top_idx:
+        cand = _tier_at(idx, order)
+        cost = _step_cost(cur_tier, cand, g_elements, g_elements_padded)
+        if cost > slack:
+            idx += 1
+            continue
+        gain = _gain(cur_tier, cand, g_names, tensor_importance, uopt or {})
+        if gain < 0:
+            idx += 1
+            continue
+        if cost == 0:
+            util = float("inf")
+        elif gain == 0:
+            idx += 1
+            continue
+        else:
+            util = (total_g_imp * gain) / cost
+        if best is None or util > best[0]:
+            best = (util, cand, cost)
+        idx += 1
+    return best
+
+
+def _polish_slack(assignments, group_registry, current_size, effective_target,
+                  tensor_importance, importance_table, uopt=None, order=None,
+                  ceiling_of=None):
+    """Spend the tail of the budget that the single-rung greedy left idle.
+
+    Returns (current_size, steps_taken). Terminates when no group can use the
+    remaining slack. Bounded: each iteration raises some group's tier, and
+    tiers only move up, so it cannot cycle.
+    """
+    order = order or TIER_ORDER
+    taken = 0
+    while True:
+        slack = effective_target - current_size
+        if slack <= 0:
+            break
+        best = None
+        for g_id in group_registry:
+            cand = _best_step_within(
+                g_id, group_registry, assignments, tensor_importance,
+                importance_table, slack,
+                ceiling=(ceiling_of(g_id) if ceiling_of else None),
+                uopt=uopt, order=order)
+            if cand is None:
+                continue
+            util, tier, cost = cand
+            if best is None or util > best[0]:
+                best = (util, g_id, tier, cost)
+        if best is None:
+            break
+        _, g_id, tier, cost = best
+        for n in group_registry[g_id][0]:
+            assignments[n] = tier
+        current_size += cost
+        taken += 1
+    # main.py reports this: leftover slack that no rung can absorb is a
+    # property of the geometry (the next step is too big), not a silent bug.
+    _LAST_RUN_INFO["slack_mib"] = max(0.0, effective_target - current_size)
+    _LAST_RUN_INFO["polish_steps"] = taken
+    return current_size, taken
+
+
 def _push_upgrade(group_id: int,
                    group_registry: Dict[int, Tuple[List[str], int, int]],
                    assignments: Dict[str, str],
@@ -309,23 +464,26 @@ def _push_upgrade(group_id: int,
                    upgrade_queue: List[UpgradeItem],
                    importance_table: Dict[str, Any],
                    ceiling: str | None = None,
-                   uopt: Dict[str, Any] | None = None):
-    
-    # Храним 3 элемента: имена, реальный размер, размер с padding
-    g_names, g_elements, g_elements_padded = group_registry[group_id]
+                   uopt: Dict[str, Any] | None = None,
+                   order: list | None = None):
+    order = order or TIER_ORDER
+    # Храним 4 элемента: имена, реальный размер, размер с padding, признак 1D
+    g_names, g_elements, g_elements_padded, g_f32 = group_registry[group_id]
+    if g_f32:
+        return  # F32 in the file whatever we assign — no decision to make
     rep_name = g_names[0]
     cur_tier = assignments[rep_name]
-    cur_idx = _tier_index(cur_tier)
+    cur_idx = _tier_index(cur_tier, order)
 
     rep_info = importance_table.get(rep_name, {})
     ttype = rep_info["type"] if "type" in rep_info else get_tensor_type(rep_name)
     cls = get_tensor_class(ttype)
     max_tier = ceiling or CLASS_MAX_TIER.get(cls, "Q8_0")
 
-    if cur_idx >= _tier_index(max_tier) or cur_idx >= len(TIER_ORDER) - 1:
+    if cur_idx >= _tier_index(max_tier, order) or cur_idx >= len(order) - 1:
         return
 
-    next_tier = _tier_at(cur_idx + 1)
+    next_tier = _tier_at(cur_idx + 1, order)
     
     # Выбираем размер в зависимости от того, относится ли тир к K-quants
     cur_size_g = g_elements_padded if cur_tier in K_QUANTS else g_elements
@@ -362,8 +520,11 @@ def _base_floor(ttype: str, cls: str, allow_q3: bool, has_imatrix: bool,
     return "Q4_K"
 
 
-def compute_initial_assignments(non_mtp_names: Set[str], mtp_names: Set[str], 
-                                importance_table: Dict, allow_q3: bool, is_qat: bool = False) -> Dict[str, str]:
+def compute_initial_assignments(non_mtp_names: Set[str], mtp_names: Set[str],
+                                importance_table: Dict, allow_q3: bool, is_qat: bool = False,
+                                floor: str | None = None,
+                                f32_map: Dict[str, bool] | None = None) -> Dict[str, str]:
+    f32_map = f32_map or {}
     assignments = {name: MTP_DEPLOY_TIER for name in mtp_names}
 
     for name in non_mtp_names:
@@ -374,49 +535,66 @@ def compute_initial_assignments(non_mtp_names: Set[str], mtp_names: Set[str],
 
         # output/token_embd are pinned in optimal_classify (never reach here
         # via non_mtp_names) — kept out of the upgrade budget entirely.
-        if cls in ("norms", "ssm_params"):
+        if f32_map.get(name, False):
+            # norms/biases: llama.cpp writes 1D as F32 regardless of the
+            # rules. Assigning anything else is a decision that never lands
+            # (preflight caught 75 of them doing exactly that on MiniCPM5-2B).
+            assignments[name] = "F32"
+        elif cls in ("norms", "ssm_params"):
             assignments[name] = "F16"
         else:
-            assignments[name] = _base_floor(ttype, cls, allow_q3, has_imatrix, is_qat)
+            assignments[name] = floor or _base_floor(ttype, cls, allow_q3, has_imatrix, is_qat)
 
     return assignments
 
 
-def build_groups(tied_groups: List[List[str]], non_mtp_names: Set[str], 
-                 ne_map: Dict[str, int], padded_ne_map: Dict[str, int]) -> Dict[int, Tuple[List[str], int, int]]:
+def build_groups(tied_groups: List[List[str]], non_mtp_names: Set[str],
+                 ne_map: Dict[str, int], padded_ne_map: Dict[str, int],
+                 f32_map: Dict[str, bool] | None = None) -> Dict[int, Tuple[List[str], int, int, bool]]:
+    f32_map = f32_map or {}
     group_registry = {}
     assigned_tensors = set()
-    
+
     for group_idx, group in enumerate(tied_groups):
         clean_group = [n for n in group if n in non_mtp_names]
         if clean_group:
             g_elements = sum(ne_map.get(n, 0) for n in clean_group)
             g_elements_padded = sum(padded_ne_map.get(n, 0) for n in clean_group)
-            group_registry[group_idx] = (clean_group, g_elements, g_elements_padded)
+            g_f32 = all(f32_map.get(n, False) for n in clean_group)
+            group_registry[group_idx] = (clean_group, g_elements, g_elements_padded, g_f32)
             assigned_tensors.update(clean_group)
 
     unassigned_tensors = non_mtp_names - assigned_tensors
     next_group_idx = len(group_registry)
-    
+
     for name in unassigned_tensors:
-        group_registry[next_group_idx] = ([name], ne_map.get(name, 0), padded_ne_map.get(name, 0))
+        group_registry[next_group_idx] = ([name], ne_map.get(name, 0),
+                                           padded_ne_map.get(name, 0),
+                                           f32_map.get(name, False))
         next_group_idx += 1
-            
+
     return group_registry
 
 
-def optimal_classify(importance_table: dict, tied_groups: list, model: dict, 
+def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
                      target_size_mib: float, allow_q3: bool = False,
                      free_pins: bool = False,
                      uopt: Dict[str, Any] | None = None,
                      relief: Dict[str, float] | None = None,
-                     relief_thr: float = -0.5) -> Tuple[dict, dict]:
+                     relief_thr: float = -0.5,
+                     allowed_tiers: list | None = None,
+                     legacy_1d: bool = False) -> Tuple[dict, dict]:
     """relief: {sweep_unit_tag: Q5->Q4 damage}. Groups with damage below
     relief_thr get ceiling Q4 (their measured sweet spot): the queue never
-    upgrades them above Q4, and the saved budget flows to other groups."""
+    upgrades them above Q4, and the saved budget flows to other groups.
+    allowed_tiers: restrict the ladder (SQUEEZE mode, e.g. ["IQ1_S", "F16"]
+    = dungeon or palace, nothing between). Floor/ceiling follow the list;
+    relief ceilings are ignored in squeeze mode."""
     if target_size_mib <= 0:
         raise ValueError("target_size_mib must be positive")
     uopt = uopt or {"mode": "mse"}
+    order = allowed_tiers or TIER_ORDER
+    squeeze = allowed_tiers is not None
 
     features = model.get("features", {})
     has_mtp = features.get("has_mtp", False) and not free_pins
@@ -428,6 +606,11 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
     for tname, info in importance_table.items():
         if tname not in ne_map:
             ne_map[tname] = info["n_elements"]
+
+    # 1D tensors (norms, biases) are F32 in the file no matter what tier the
+    # rules ask for. They are pinned and priced at F32 so the budget matches
+    # the artifact and the queue stops spending decisions on them.
+    f32_map = {} if legacy_1d else _f32_map(model_tensors)
 
     # --- Вычисление MoE Padding (Целочисленное выравнивание) ---
     moe_d_ff = features.get("moe_intermediate_size", 0)
@@ -465,12 +648,15 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
         raw_imp = importance_table.get(name, {}).get("importance_mean", 0.0)
         tensor_importance[name] = raw_imp
 
-    assignments = compute_initial_assignments(non_mtp_names, mtp_names, importance_table, allow_q3, is_qat)
+    assignments = compute_initial_assignments(non_mtp_names, mtp_names, importance_table, allow_q3, is_qat,
+                                              floor=(order[0] if squeeze else None),
+                                              f32_map=f32_map)
     for n in embd_names:
         assignments[n] = EMBD_DEPLOY_TIER
     for n in router_names:
         assignments[n] = "F16"
-    group_registry = build_groups(tied_groups, non_mtp_names, ne_map, padded_ne_map)
+    group_registry = build_groups(tied_groups, non_mtp_names, ne_map, padded_ne_map,
+                                  f32_map=f32_map)
 
     # Relief ceilings: measured sweet spots from the damage sweep.
     def _unit_tag(unit):
@@ -479,18 +665,20 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
                         if n.startswith("blk.")) or "global"
     relief_ceiling: Dict[int, str] = {}
     if relief:
-        for g_id, (g_names, _, _) in group_registry.items():
+        for g_id, (g_names, _, _, _) in group_registry.items():
             d = relief.get(_unit_tag(g_names))
             if d is not None and d < relief_thr:
                 relief_ceiling[g_id] = "Q4_K"
 
-    mtp_cost = sum(_size_mib(MTP_DEPLOY_TIER, ne_map.get(n, 0)) for n in mtp_names)
-    embd_cost = sum(_size_mib(EMBD_DEPLOY_TIER, ne_map.get(n, 0)) for n in embd_names)
-    router_cost = sum(_size_mib("F16", ne_map.get(n, 0)) for n in router_names)
+    mtp_cost = sum(_size_mib(MTP_DEPLOY_TIER, ne_map.get(n, 0), f32_map.get(n, False)) for n in mtp_names)
+    embd_cost = sum(_size_mib(EMBD_DEPLOY_TIER, ne_map.get(n, 0), f32_map.get(n, False)) for n in embd_names)
+    router_cost = sum(_size_mib("F16", ne_map.get(n, 0), f32_map.get(n, False)) for n in router_names)
     effective_target = target_size_mib - mtp_cost - embd_cost - router_cost
-    
+
     current_size = sum(
-        _size_mib(assignments[n], padded_ne_map.get(n, ne_map.get(n, 0)) if assignments[n] in K_QUANTS else ne_map.get(n, 0))
+        _size_mib(assignments[n],
+                  padded_ne_map.get(n, ne_map.get(n, 0)) if assignments[n] in K_QUANTS else ne_map.get(n, 0),
+                  f32_map.get(n, False))
         for n in non_mtp_names
     )
 
@@ -499,20 +687,28 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
 
     upgrade_queue = []
     for g_id in group_registry:
-        _push_upgrade(g_id, group_registry, assignments, tensor_importance, upgrade_queue, importance_table, ceiling=relief_ceiling.get(g_id), uopt=uopt)
+        _push_upgrade(g_id, group_registry, assignments, tensor_importance, upgrade_queue, importance_table, ceiling=(order[-1] if squeeze else relief_ceiling.get(g_id)), uopt=uopt, order=order)
 
     while upgrade_queue:
         item = heapq.heappop(upgrade_queue)
         g_id, next_tier, cost_delta = item.group_id, item.next_tier, item.cost_delta
-        
+
         if cost_delta > 0 and current_size + cost_delta > effective_target:
             continue
-            
-        for n in group_registry[g_id][0]:
+
+        for n in group_registry[item.group_id][0]:
             assignments[n] = next_tier
         current_size += cost_delta
-        
-        _push_upgrade(g_id, group_registry, assignments, tensor_importance, upgrade_queue, importance_table, ceiling=relief_ceiling.get(g_id), uopt=uopt)
+
+        _push_upgrade(item.group_id, group_registry, assignments, tensor_importance, upgrade_queue, importance_table, ceiling=(order[-1] if squeeze else relief_ceiling.get(item.group_id)), uopt=uopt, order=order)
+
+    # Tail of the budget: the drain only offers cur->cur+1, so whatever is
+    # left when the cheapest single rungs stop fitting stays unspent.
+    if not squeeze:
+        current_size, polished = _polish_slack(
+            assignments, group_registry, current_size, effective_target,
+            tensor_importance, importance_table, uopt=uopt, order=order,
+            ceiling_of=lambda g_id: relief_ceiling.get(g_id))
 
     return assignments, padded_ne_map
 
@@ -538,7 +734,9 @@ def _push_downgrade(group_id: int,
                     tensor_importance: Dict[str, float],
                     downgrade_queue: List[DowngradeItem],
                     uopt: Dict[str, Any] | None = None):
-    g_names, g_elements, g_elements_padded = group_registry[group_id]
+    g_names, g_elements, g_elements_padded, g_f32 = group_registry[group_id]
+    if g_f32:
+        return  # F32 in the file whatever we assign — no decision to make
     rep_name = g_names[0]
     cur_tier = assignments[rep_name]
     cur_idx = _tier_index(cur_tier)
@@ -580,7 +778,8 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
                              target_size_mib: float, allow_q3: bool = False,
                              free_pins: bool = False,
                              uopt: Dict[str, Any] | None = None,
-                             pin_norms: bool = False) -> Tuple[dict, dict]:
+                             pin_norms: bool = False,
+                             legacy_1d: bool = False) -> Tuple[dict, dict]:
     """Top-down classification: start at F16, downgrade to fit.
 
     pin_norms: keep norms/small tensors at F16 outside the budget (the
@@ -603,6 +802,12 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
         if tname not in ne_map:
             ne_map[tname] = info["n_elements"]
 
+    # 1D tensors are F32 in the file whatever the tier says. They are pinned
+    # here (outside the budget) and priced at F32 — top-down used to feed
+    # them into the downgrade queue, "freeing" megabytes that the binary
+    # never gave back, and generating rules that cannot take effect.
+    f32_map = {} if legacy_1d else _f32_map(model_tensors)
+
     # --- MoE padding (same as bottom-up) ---
     moe_d_ff = features.get("moe_intermediate_size", 0)
     padded_ne_map = dict(ne_map)
@@ -621,17 +826,17 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
         n for n in rest
         if importance_table.get(n, {}).get("type", get_tensor_type(n)) in EMBD_PIN_TYPES
     } if not free_pins else set()
-    # No pinning here: literally every other tensor (norms, 1D, biases —
-    # anything) starts at F16 and fights for budget — except MoE routers,
-    # which stay F16 outside the budget. Note the estimate assumes the binary
-    # quantizes the rest too, while llama.cpp physically keeps 1D/*_norm.weight
-    # at F16 — estimate vs binary will diverge by that amount.
+    # No pinning here: every other 2D tensor starts at F16 and fights for
+    # budget — except MoE routers (F16) and 1D tensors (F32, physically:
+    # llama.cpp does not quantize 1D, verified via --dry-run).
     flex_names = rest - embd_names
     router_names = {
         n for n in flex_names
         if importance_table.get(n, {}).get("type", get_tensor_type(n)) in ROUTER_PIN_TYPES
     } if not free_pins else set()
     flex_names -= router_names
+    one_d_names = {n for n in flex_names if f32_map.get(n, False)}
+    flex_names -= one_d_names
     # Native norms shield: norms/small tensors stay F16 outside the budget
     # (post-hoc forcing was proven to disrupt the greedy path — TDN-SMAPE).
     norm_names = {
@@ -649,15 +854,18 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
         assignments[n] = EMBD_DEPLOY_TIER
     for n in router_names:
         assignments[n] = "F16"
+    for n in one_d_names:
+        assignments[n] = "F32"
     for n in norm_names:
         assignments[n] = "F16"
     for n in flex_names:
         assignments[n] = "F16"
 
     # Groups over flex tensors only, with per-group floors
-    group_registry = build_groups(tied_groups, flex_names, ne_map, padded_ne_map)
+    group_registry = build_groups(tied_groups, flex_names, ne_map, padded_ne_map,
+                                  f32_map=f32_map)
     group_floors = {}
-    for g_id, (g_names, _, _) in group_registry.items():
+    for g_id, (g_names, _, _, _) in group_registry.items():
         floors = []
         for n in g_names:
             rep_info = importance_table.get(n, {})
@@ -668,10 +876,11 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
         group_floors[g_id] = _tier_at(min(floors))
 
     fixed_cost = (
-        sum(_size_mib(MTP_DEPLOY_TIER, ne_map.get(n, 0)) for n in mtp_names)
-        + sum(_size_mib(EMBD_DEPLOY_TIER, ne_map.get(n, 0)) for n in embd_names)
-        + sum(_size_mib("F16", ne_map.get(n, 0)) for n in router_names)
-        + sum(_size_mib("F16", ne_map.get(n, 0)) for n in norm_names)
+        sum(_size_mib(MTP_DEPLOY_TIER, ne_map.get(n, 0), f32_map.get(n, False)) for n in mtp_names)
+        + sum(_size_mib(EMBD_DEPLOY_TIER, ne_map.get(n, 0), f32_map.get(n, False)) for n in embd_names)
+        + sum(_size_mib("F16", ne_map.get(n, 0), f32_map.get(n, False)) for n in router_names)
+        + sum(_size_mib("F32", ne_map.get(n, 0), True) for n in one_d_names)
+        + sum(_size_mib("F16", ne_map.get(n, 0), f32_map.get(n, False)) for n in norm_names)
     )
     effective_target = target_size_mib - fixed_cost
     current_size = sum(_size_mib("F16", ne_map.get(n, 0)) for n in flex_names)
@@ -711,25 +920,33 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
         _push_upgrade(item.group_id, group_registry, assignments, tensor_importance,
                       upgrade_queue, importance_table, ceiling="F16", uopt=uopt)
 
+    # Same tail-of-budget gap as bottom-up: single-rung steps only.
+    current_size, polished = _polish_slack(
+        assignments, group_registry, current_size, effective_target,
+        tensor_importance, importance_table, uopt=uopt, order=TIER_ORDER,
+        ceiling_of=lambda g_id: "F16")
+
     return assignments, padded_ne_map
 
 
-def compute_stats(assignments: dict, ne_map: dict = None, padded_ne_map: dict = None) -> dict:
+def compute_stats(assignments: dict, ne_map: dict = None, padded_ne_map: dict = None,
+                  f32_map: dict = None) -> dict:
     """Собирает статистику по тирам с точным учётом K_QUANTS padding."""
+    f32_map = f32_map or {}
     stats = {"by_tier_count": {}, "by_tier_mib": {}, "total_mib": 0.0, "tensor_count": 0}
     for name, tier in assignments.items():
         if not isinstance(tier, str):
             continue
         stats["tensor_count"] += 1
         stats["by_tier_count"][tier] = stats["by_tier_count"].get(tier, 0) + 1
-        
+
         if ne_map:
             if padded_ne_map and tier in K_QUANTS:
                 elements = padded_ne_map.get(name, ne_map.get(name, 0))
             else:
                 elements = ne_map.get(name, 0)
-                
-            size = _size_mib(tier, elements)
+
+            size = _size_mib(tier, elements, f32_map.get(name, False))
             stats["by_tier_mib"][tier] = stats["by_tier_mib"].get(tier, 0.0) + size
             stats["total_mib"] += size
             

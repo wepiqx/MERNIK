@@ -1,0 +1,112 @@
+{"unit": "attn_gate@0+attn_qkv@0", "tensors": ["blk.0.attn_gate.weight", "blk.0.attn_qkv.weight"], "ssim_damage": 0.02627142175874602, "damage": 0.02627142175874602}
+{"unit": "attn_output@0", "tensors": ["blk.0.attn_output.weight"], "ssim_damage": 0.006361626298036676, "damage": 0.006361626298036676}
+{"unit": "ffn_down@0", "tensors": ["blk.0.ffn_down.weight"], "ssim_damage": 0.006978097106616675, "damage": 0.006978097106616675}
+{"unit": "ffn_gate@0+ffn_up@0", "tensors": ["blk.0.ffn_gate.weight", "blk.0.ffn_up.weight"], "ssim_damage": 0.006722797766238513, "damage": 0.006722797766238513}
+{"unit": "attn_gate@1+attn_qkv@1", "tensors": ["blk.1.attn_gate.weight", "blk.1.attn_qkv.weight"], "ssim_damage": 0.010305245196003123, "damage": 0.010305245196003123}
+{"unit": "attn_output@1", "tensors": ["blk.1.attn_output.weight"], "ssim_damage": 0.007137592339832441, "damage": 0.007137592339832441}
+{"unit": "ffn_down@1", "tensors": ["blk.1.ffn_down.weight"], "ssim_damage": 0.00728504055144061, "damage": 0.00728504055144061}
+{"unit": "ffn_gate@1+ffn_up@1", "tensors": ["blk.1.ffn_gate.weight", "blk.1.ffn_up.weight"], "ssim_damage": 0.007696074782957433, "damage": 0.007696074782957433}
+{"unit": "attn_gate@10+attn_qkv@10", "tensors": ["blk.10.attn_gate.weight", "blk.10.attn_qkv.weight"], "ssim_damage": 0.008651506794801268, "damage": 0.008651506794801268}
+{"unit": "attn_output@10", "tensors": ["blk.10.attn_output.weight"], "ssim_damage": 0.007998379194218109, "damage": 0.007998379194218109}
+{"unit": "ffn_down@10", "tensors": ["blk.10.ffn_down.weight"], "ssim_damage": 0.00542432965447978, "damage": 0.00542432965447978}
+{"unit": "ffn_gate@10+ffn_up@10", "tensors": ["blk.10.ffn_gate.weight", "blk.10.ffn_up.weight"], "ssim_damage": 0.006342139364490387, "damage": 0.006342139364490387}
+{"unit": "attn_gate@11+attn_qkv@11", "tensors": ["blk.11.attn_gate.weight", "blk.11.attn_qkv.weight"], "ssim_damage": 0.009526794501371644, "damage": 0.009526794501371644}
+{"unit": "attn_output@11", "tensors": ["blk.11.attn_output.weight"], "ssim_damage": 0.008232621472130951, "damage": 0.008232621472130951}
+{"unit": "ffn_down@11", "tensors": ["blk.11.ffn_down.weight"], "ssim_damage": 0.006490352655897701, "damage": 0.006490352655897701}
+{"unit": "ffn_gate@11+ffn_up@11", "tensors": ["blk.11.ffn_gate.weight", "blk.11.ffn_up.weight"], "ssim_damage": 0.0062530660683738585, "damage": 0.0062530660683738585}
+{"unit": "attn_gate@12+attn_qkv@12", "tensors": ["blk.12.attn_gate.weight", "blk.12.attn_qkv.weight"], "ssim_damage": 0.009129344045487172, "damage": 0.009129344045487172}
+{"unit": "attn_output@12", "tensors": ["blk.12.attn_output.weight"], "ssim_damage": 0.00790741233493995, "damage": 0.00790741233493995}
+{"unit": "ffn_down@12", "tensors": ["blk.12.ffn_down.weight"], "ssim_damage": 0.007242820040098581, "damage": 0.007242820040098581}
+{"unit": "ffn_gate@12+ffn_up@12", "tensors": ["blk.12.ffn_gate.weight", "blk.12.ffn_up.weight"], "ssim_damage": 0.00650333250110739, "damage": 0.00650333250110739}
+{"unit": "attn_gate@13+attn_qkv@13", "tensors": ["blk.13.attn_gate.weight", "blk.13.attn_qkv.weight"], "ssim_damage": 0.008551597700569657, "damage": 0.008551597700569657}
+{"unit": "attn_output@13", "tensors": ["blk.13.attn_output.weight"], "ssim_damage": 0.007726173184909703, "damage": 0.007726173184909703}
+{"unit": "ffn_down@13", "tensors": ["blk.13.ffn_down.weight"], "ssim_damage": 0.007073055699270734, "damage": 0.007073055699270734}
+{"unit": "ffn_gate@13+ffn_up@13", "tensors": ["blk.13.ffn_gate.weight", "blk.13.ffn_up.weight"], "ssim_damage": 0.005924594971211093, "damage": 0.005924594971211093}
+{"unit": "attn_gate@14+attn_qkv@14", "tensors": ["blk.14.attn_gate.weight", "blk.14.attn_qkv.weight"], "ssim_damage": 0.008447799347453563, "damage": 0.008447799347453563}
+{"unit": "attn_output@14", "tensors": ["blk.14.attn_output.weight"], "ssim_damage": 0.008005810319707568, "damage": 0.008005810319707568}
+{"unit": "ffn_down@14", "tensors": ["blk.14.ffn_down.weight"], "ssim_damage": 0.00692065430667022, "damage": 0.00692065430667022}
+{"unit": "ffn_gate@14+ffn_up@14", "tensors": ["blk.14.ffn_gate.weight", "blk.14.ffn_up.weight"], "ssim_damage": 0.006245278078330031, "damage": 0.006245278078330031}
+{"unit": "attn_gate@15+attn_qkv@15", "tensors": ["blk.15.attn_gate.weight", "blk.15.attn_qkv.weight"], "ssim_damage": 0.009430539088275888, "damage": 0.009430539088275888}
+{"unit": "attn_output@15", "tensors": ["blk.15.attn_output.weight"], "ssim_damage": 0.007212217071715255, "damage": 0.007212217071715255}
+{"unit": "ffn_down@15", "tensors": ["blk.15.ffn_down.weight"], "ssim_damage": 0.0069055394943581564, "damage": 0.0069055394943581564}
+{"unit": "ffn_gate@15+ffn_up@15", "tensors": ["blk.15.ffn_gate.weight", "blk.15.ffn_up.weight"], "ssim_damage": 0.006169186318497017, "damage": 0.006169186318497017}
+{"unit": "attn_gate@16+attn_qkv@16", "tensors": ["blk.16.attn_gate.weight", "blk.16.attn_qkv.weight"], "ssim_damage": 0.009667722942394512, "damage": 0.009667722942394512}
+{"unit": "attn_output@16", "tensors": ["blk.16.attn_output.weight"], "ssim_damage": 0.007711527065504228, "damage": 0.007711527065504228}
+{"unit": "ffn_down@16", "tensors": ["blk.16.ffn_down.weight"], "ssim_damage": 0.007108131904531151, "damage": 0.007108131904531151}
+{"unit": "ffn_gate@16+ffn_up@16", "tensors": ["blk.16.ffn_gate.weight", "blk.16.ffn_up.weight"], "ssim_damage": 0.00653966534451382, "damage": 0.00653966534451382}
+{"unit": "attn_gate@17+attn_qkv@17", "tensors": ["blk.17.attn_gate.weight", "blk.17.attn_qkv.weight"], "ssim_damage": 0.00917661431863026, "damage": 0.00917661431863026}
+{"unit": "attn_output@17", "tensors": ["blk.17.attn_output.weight"], "ssim_damage": 0.007442174269188446, "damage": 0.007442174269188446}
+{"unit": "ffn_down@17", "tensors": ["blk.17.ffn_down.weight"], "ssim_damage": 0.007219551234755122, "damage": 0.007219551234755122}
+{"unit": "ffn_gate@17+ffn_up@17", "tensors": ["blk.17.ffn_gate.weight", "blk.17.ffn_up.weight"], "ssim_damage": 0.006840024265053609, "damage": 0.006840024265053609}
+{"unit": "attn_gate@18+attn_qkv@18", "tensors": ["blk.18.attn_gate.weight", "blk.18.attn_qkv.weight"], "ssim_damage": 0.008418215473124584, "damage": 0.008418215473124584}
+{"unit": "attn_output@18", "tensors": ["blk.18.attn_output.weight"], "ssim_damage": 0.007322968270411033, "damage": 0.007322968270411033}
+{"unit": "ffn_down@18", "tensors": ["blk.18.ffn_down.weight"], "ssim_damage": 0.0069672592120719554, "damage": 0.0069672592120719554}
+{"unit": "ffn_gate@18+ffn_up@18", "tensors": ["blk.18.ffn_gate.weight", "blk.18.ffn_up.weight"], "ssim_damage": 0.006659200105663211, "damage": 0.006659200105663211}
+{"unit": "attn_gate@19+attn_qkv@19", "tensors": ["blk.19.attn_gate.weight", "blk.19.attn_qkv.weight"], "ssim_damage": 0.00930399064235552, "damage": 0.00930399064235552}
+{"unit": "attn_output@19", "tensors": ["blk.19.attn_output.weight"], "ssim_damage": 0.00729144586049143, "damage": 0.00729144586049143}
+{"unit": "ffn_down@19", "tensors": ["blk.19.ffn_down.weight"], "ssim_damage": 0.005901315635743847, "damage": 0.005901315635743847}
+{"unit": "ffn_gate@19+ffn_up@19", "tensors": ["blk.19.ffn_gate.weight", "blk.19.ffn_up.weight"], "ssim_damage": 0.006762042781901243, "damage": 0.006762042781901243}
+{"unit": "attn_gate@2+attn_qkv@2", "tensors": ["blk.2.attn_gate.weight", "blk.2.attn_qkv.weight"], "ssim_damage": 0.009332358568451986, "damage": 0.009332358568451986}
+{"unit": "attn_output@2", "tensors": ["blk.2.attn_output.weight"], "ssim_damage": 0.007328145791546758, "damage": 0.007328145791546758}
+{"unit": "ffn_down@2", "tensors": ["blk.2.ffn_down.weight"], "ssim_damage": 0.0074027644307621135, "damage": 0.0074027644307621135}
+{"unit": "ffn_gate@2+ffn_up@2", "tensors": ["blk.2.ffn_gate.weight", "blk.2.ffn_up.weight"], "ssim_damage": 0.007782831464367391, "damage": 0.007782831464367391}
+{"unit": "attn_gate@20+attn_qkv@20", "tensors": ["blk.20.attn_gate.weight", "blk.20.attn_qkv.weight"], "ssim_damage": 0.008655650577889404, "damage": 0.008655650577889404}
+{"unit": "attn_output@20", "tensors": ["blk.20.attn_output.weight"], "ssim_damage": 0.006840334923210616, "damage": 0.006840334923210616}
+{"unit": "ffn_down@20", "tensors": ["blk.20.ffn_down.weight"], "ssim_damage": 0.006763679832244898, "damage": 0.006763679832244898}
+{"unit": "ffn_gate@20+ffn_up@20", "tensors": ["blk.20.ffn_gate.weight", "blk.20.ffn_up.weight"], "ssim_damage": 0.006816542072337468, "damage": 0.006816542072337468}
+{"unit": "attn_gate@21+attn_qkv@21", "tensors": ["blk.21.attn_gate.weight", "blk.21.attn_qkv.weight"], "ssim_damage": 0.009852024378860293, "damage": 0.009852024378860293}
+{"unit": "attn_output@21", "tensors": ["blk.21.attn_output.weight"], "ssim_damage": 0.007144679529069709, "damage": 0.007144679529069709}
+{"unit": "ffn_down@21", "tensors": ["blk.21.ffn_down.weight"], "ssim_damage": 0.0073851409048047685, "damage": 0.0073851409048047685}
+{"unit": "ffn_gate@21+ffn_up@21", "tensors": ["blk.21.ffn_gate.weight", "blk.21.ffn_up.weight"], "ssim_damage": 0.006762819215898129, "damage": 0.006762819215898129}
+{"unit": "attn_gate@22+attn_qkv@22", "tensors": ["blk.22.attn_gate.weight", "blk.22.attn_qkv.weight"], "ssim_damage": 0.008605610285485047, "damage": 0.008605610285485047}
+{"unit": "attn_output@22", "tensors": ["blk.22.attn_output.weight"], "ssim_damage": 0.007693780690321461, "damage": 0.007693780690321461}
+{"unit": "ffn_down@22", "tensors": ["blk.22.ffn_down.weight"], "ssim_damage": 0.007106234034856901, "damage": 0.007106234034856901}
+{"unit": "ffn_gate@22+ffn_up@22", "tensors": ["blk.22.ffn_gate.weight", "blk.22.ffn_up.weight"], "ssim_damage": 0.006998493148714556, "damage": 0.006998493148714556}
+{"unit": "attn_gate@23+attn_qkv@23", "tensors": ["blk.23.attn_gate.weight", "blk.23.attn_qkv.weight"], "ssim_damage": 0.00899598701638218, "damage": 0.00899598701638218}
+{"unit": "attn_output@23", "tensors": ["blk.23.attn_output.weight"], "ssim_damage": 0.006268565858526243, "damage": 0.006268565858526243}
+{"unit": "ffn_down@23", "tensors": ["blk.23.ffn_down.weight"], "ssim_damage": 0.008342737234562839, "damage": 0.008342737234562839}
+{"unit": "ffn_gate@23+ffn_up@23", "tensors": ["blk.23.ffn_gate.weight", "blk.23.ffn_up.weight"], "ssim_damage": 0.006746883318687686, "damage": 0.006746883318687686}
+{"unit": "attn_gate@24+attn_qkv@24", "tensors": ["blk.24.attn_gate.weight", "blk.24.attn_qkv.weight"], "ssim_damage": 0.011195169826214314, "damage": 0.011195169826214314}
+{"unit": "attn_output@24", "tensors": ["blk.24.attn_output.weight"], "ssim_damage": 0.007846909569640462, "damage": 0.007846909569640462}
+{"unit": "ffn_down@24", "tensors": ["blk.24.ffn_down.weight"], "ssim_damage": 0.00836068680421954, "damage": 0.00836068680421954}
+{"unit": "ffn_gate@24+ffn_up@24", "tensors": ["blk.24.ffn_gate.weight", "blk.24.ffn_up.weight"], "ssim_damage": 0.007178093442572374, "damage": 0.007178093442572374}
+{"unit": "attn_gate@25+attn_qkv@25", "tensors": ["blk.25.attn_gate.weight", "blk.25.attn_qkv.weight"], "ssim_damage": 0.009254312535137917, "damage": 0.009254312535137917}
+{"unit": "attn_output@25", "tensors": ["blk.25.attn_output.weight"], "ssim_damage": 0.00832818844665912, "damage": 0.00832818844665912}
+{"unit": "ffn_down@25", "tensors": ["blk.25.ffn_down.weight"], "ssim_damage": 0.008082128082128515, "damage": 0.008082128082128515}
+{"unit": "ffn_gate@25+ffn_up@25", "tensors": ["blk.25.ffn_gate.weight", "blk.25.ffn_up.weight"], "ssim_damage": 0.007044218825982334, "damage": 0.007044218825982334}
+{"unit": "attn_gate@26+attn_qkv@26", "tensors": ["blk.26.attn_gate.weight", "blk.26.attn_qkv.weight"], "ssim_damage": 0.009716839366249504, "damage": 0.009716839366249504}
+{"unit": "attn_output@26", "tensors": ["blk.26.attn_output.weight"], "ssim_damage": 0.008522506896801747, "damage": 0.008522506896801747}
+{"unit": "ffn_down@26", "tensors": ["blk.26.ffn_down.weight"], "ssim_damage": 0.006110062524709567, "damage": 0.006110062524709567}
+{"unit": "ffn_gate@26+ffn_up@26", "tensors": ["blk.26.ffn_gate.weight", "blk.26.ffn_up.weight"], "ssim_damage": 0.006732693605342105, "damage": 0.006732693605342105}
+{"unit": "attn_gate@27+attn_qkv@27", "tensors": ["blk.27.attn_gate.weight", "blk.27.attn_qkv.weight"], "ssim_damage": 0.0108031465250342, "damage": 0.0108031465250342}
+{"unit": "attn_output@27", "tensors": ["blk.27.attn_output.weight"], "ssim_damage": 0.00756170777032453, "damage": 0.00756170777032453}
+{"unit": "ffn_down@27", "tensors": ["blk.27.ffn_down.weight"], "ssim_damage": 0.004739844555984387, "damage": 0.004739844555984387}
+{"unit": "ffn_gate@27+ffn_up@27", "tensors": ["blk.27.ffn_gate.weight", "blk.27.ffn_up.weight"], "ssim_damage": 0.005829920579844092, "damage": 0.005829920579844092}
+{"unit": "attn_gate@3+attn_qkv@3", "tensors": ["blk.3.attn_gate.weight", "blk.3.attn_qkv.weight"], "ssim_damage": 0.009438783935280673, "damage": 0.009438783935280673}
+{"unit": "attn_output@3", "tensors": ["blk.3.attn_output.weight"], "ssim_damage": 0.006720679184633869, "damage": 0.006720679184633869}
+{"unit": "ffn_down@3", "tensors": ["blk.3.ffn_down.weight"], "ssim_damage": 0.006719559465074323, "damage": 0.006719559465074323}
+{"unit": "ffn_gate@3+ffn_up@3", "tensors": ["blk.3.ffn_gate.weight", "blk.3.ffn_up.weight"], "ssim_damage": 0.007592914500792735, "damage": 0.007592914500792735}
+{"unit": "attn_gate@4+attn_qkv@4", "tensors": ["blk.4.attn_gate.weight", "blk.4.attn_qkv.weight"], "ssim_damage": 0.009459772067513224, "damage": 0.009459772067513224}
+{"unit": "attn_output@4", "tensors": ["blk.4.attn_output.weight"], "ssim_damage": 0.007815172580450608, "damage": 0.007815172580450608}
+{"unit": "ffn_down@4", "tensors": ["blk.4.ffn_down.weight"], "ssim_damage": 0.007119547070272817, "damage": 0.007119547070272817}
+{"unit": "ffn_gate@4+ffn_up@4", "tensors": ["blk.4.ffn_gate.weight", "blk.4.ffn_up.weight"], "ssim_damage": 0.007313682136696146, "damage": 0.007313682136696146}
+{"unit": "attn_gate@5+attn_qkv@5", "tensors": ["blk.5.attn_gate.weight", "blk.5.attn_qkv.weight"], "ssim_damage": 0.009702252428024164, "damage": 0.009702252428024164}
+{"unit": "attn_output@5", "tensors": ["blk.5.attn_output.weight"], "ssim_damage": 0.007938727987335383, "damage": 0.007938727987335383}
+{"unit": "ffn_down@5", "tensors": ["blk.5.ffn_down.weight"], "ssim_damage": 0.0071062020116272025, "damage": 0.0071062020116272025}
+{"unit": "ffn_gate@5+ffn_up@5", "tensors": ["blk.5.ffn_gate.weight", "blk.5.ffn_up.weight"], "ssim_damage": 0.0068749211456342494, "damage": 0.0068749211456342494}
+{"unit": "attn_gate@6+attn_qkv@6", "tensors": ["blk.6.attn_gate.weight", "blk.6.attn_qkv.weight"], "ssim_damage": 0.008136218473733898, "damage": 0.008136218473733898}
+{"unit": "attn_output@6", "tensors": ["blk.6.attn_output.weight"], "ssim_damage": 0.0083473471906843, "damage": 0.0083473471906843}
+{"unit": "ffn_down@6", "tensors": ["blk.6.ffn_down.weight"], "ssim_damage": 0.005329541941946925, "damage": 0.005329541941946925}
+{"unit": "ffn_gate@6+ffn_up@6", "tensors": ["blk.6.ffn_gate.weight", "blk.6.ffn_up.weight"], "ssim_damage": 0.0071998157526319065, "damage": 0.0071998157526319065}
+{"unit": "attn_gate@7+attn_qkv@7", "tensors": ["blk.7.attn_gate.weight", "blk.7.attn_qkv.weight"], "ssim_damage": 0.009019612131370133, "damage": 0.009019612131370133}
+{"unit": "attn_output@7", "tensors": ["blk.7.attn_output.weight"], "ssim_damage": 0.007031652065177323, "damage": 0.007031652065177323}
+{"unit": "ffn_down@7", "tensors": ["blk.7.ffn_down.weight"], "ssim_damage": 0.006127138770040376, "damage": 0.006127138770040376}
+{"unit": "ffn_gate@7+ffn_up@7", "tensors": ["blk.7.ffn_gate.weight", "blk.7.ffn_up.weight"], "ssim_damage": 0.006770993370968687, "damage": 0.006770993370968687}
+{"unit": "attn_gate@8+attn_qkv@8", "tensors": ["blk.8.attn_gate.weight", "blk.8.attn_qkv.weight"], "ssim_damage": 0.008715613579004996, "damage": 0.008715613579004996}
+{"unit": "attn_output@8", "tensors": ["blk.8.attn_output.weight"], "ssim_damage": 0.008061749938179338, "damage": 0.008061749938179338}
+{"unit": "ffn_down@8", "tensors": ["blk.8.ffn_down.weight"], "ssim_damage": 0.0064331103160863825, "damage": 0.0064331103160863825}
+{"unit": "ffn_gate@8+ffn_up@8", "tensors": ["blk.8.ffn_gate.weight", "blk.8.ffn_up.weight"], "ssim_damage": 0.006931789584184842, "damage": 0.006931789584184842}
+{"unit": "attn_gate@9+attn_qkv@9", "tensors": ["blk.9.attn_gate.weight", "blk.9.attn_qkv.weight"], "ssim_damage": 0.00943923479724217, "damage": 0.00943923479724217}
+{"unit": "attn_output@9", "tensors": ["blk.9.attn_output.weight"], "ssim_damage": 0.007467186297291245, "damage": 0.007467186297291245}
+{"unit": "ffn_down@9", "tensors": ["blk.9.ffn_down.weight"], "ssim_damage": 0.006596713992777999, "damage": 0.006596713992777999}
+{"unit": "ffn_gate@9+ffn_up@9", "tensors": ["blk.9.ffn_gate.weight", "blk.9.ffn_up.weight"], "ssim_damage": 0.006464236767624322, "damage": 0.006464236767624322}

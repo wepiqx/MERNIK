@@ -1,0 +1,5 @@
+[
+  {"features": "gnom/features/spark17.npz",
+   "labels": "gnom/labels/damage_17_kld.jsonl",
+   "model": "kld17", "base_bpw": 5.5, "drop_bpw": 4.5, "metric": "damage_kld"}
+]

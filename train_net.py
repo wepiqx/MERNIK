@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tinynet import init_params, train, forward, standardize
 ACT = 'mish'
 
-DIMS_SMALL = [15, 8, 4, 1]
+DIMS_SMALL = [16, 8, 4, 1]
 
 
 def load_features(path):
@@ -145,7 +145,7 @@ def main():
         print(f"real labels pooled: n={len(y)}")
 
     from tinynet import fit_mixed, mixed_predict
-    DIMS = [17, 8, 4, 1] if X.shape[1] == 17 else DIMS_SMALL
+    DIMS = [18, 8, 4, 1] if X.shape[1] == 18 else DIMS_SMALL
     if args.synthetic:
         tags = tags0 if 'tags0' in dir() else list(range(len(X)))
         gtags = list(tags)

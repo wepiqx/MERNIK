@@ -45,8 +45,14 @@ def _build_cmd(flags: dict, model_in: str, model_out: str, dry_run: bool = False
     return cmd
 
 
-def run_dry_run(flags: dict, model_in: str) -> float | None:
-    """Run llama-quantize --dry-run and return quant size in MiB."""
+def run_dry_run_ex(flags: dict, model_in: str):
+    """Run llama-quantize --dry-run.
+
+    Returns (size_mib | None, raw_output). The raw text is NOT noise: it
+    carries the per-tensor type the binary will actually write plus the
+    override log — the only ground truth about what lands in the file.
+    preflight.audit() consumes it; nothing else should discard it.
+    """
     cmd = _build_cmd(flags, model_in, "/dev/null", dry_run=True)
 
     result = subprocess.run(
@@ -58,12 +64,14 @@ def run_dry_run(flags: dict, model_in: str) -> float | None:
     )
 
     output = (result.stdout or "") + (result.stderr or "")
-    size = parse_quant_size(output)
-    if size is not None:
-        return size
+    return parse_quant_size(output), output
 
-    print("STDERR:", result.stderr[:2000])
-    return None
+
+def run_dry_run(flags: dict, model_in: str) -> float | None:
+    size, output = run_dry_run_ex(flags, model_in)
+    if size is None:
+        print("STDERR:", output[:2000])
+    return size
 
 
 def run_quantization(flags: dict, model_in: str, model_out: str, dry_run: bool = False) -> bool:

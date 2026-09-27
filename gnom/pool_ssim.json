@@ -1,0 +1,5 @@
+[
+  {"features": "gnom/features/spark17.npz",
+   "labels": "gnom/labels/ssim_17_q4.jsonl",
+   "model": "ssim17", "base_bpw": 5.5, "drop_bpw": 4.5}
+]

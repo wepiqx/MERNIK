@@ -1,0 +1,169 @@
+{"unit": "BASELINE", "ppl": 13.3632}
+{"unit": "attn_k@0+attn_q@0+attn_v@0", "tensors": ["blk.0.attn_k.weight", "blk.0.attn_q.weight", "blk.0.attn_v.weight"], "ppl": 13.3452, "damage": -0.018000000000000682}
+{"unit": "attn_output@0", "tensors": ["blk.0.attn_output.weight"], "ppl": 13.3706, "damage": 0.007399999999998741}
+{"unit": "ffn_down@0", "tensors": ["blk.0.ffn_down.weight"], "ppl": 13.3795, "damage": 0.016299999999999315}
+{"unit": "ffn_gate@0+ffn_up@0", "tensors": ["blk.0.ffn_gate.weight", "blk.0.ffn_up.weight"], "ppl": 13.3967, "damage": 0.03349999999999831}
+{"unit": "attn_k@1+attn_q@1+attn_v@1", "tensors": ["blk.1.attn_k.weight", "blk.1.attn_q.weight", "blk.1.attn_v.weight"], "ppl": 13.4055, "damage": 0.042299999999999116}
+{"unit": "attn_output@1", "tensors": ["blk.1.attn_output.weight"], "ppl": 13.3877, "damage": 0.024499999999999744}
+{"unit": "ffn_down@1", "tensors": ["blk.1.ffn_down.weight"], "ppl": 13.3848, "damage": 0.021599999999999397}
+{"unit": "ffn_gate@1+ffn_up@1", "tensors": ["blk.1.ffn_gate.weight", "blk.1.ffn_up.weight"], "ppl": 13.4105, "damage": 0.0472999999999999}
+{"unit": "attn_k@10+attn_q@10+attn_v@10", "tensors": ["blk.10.attn_k.weight", "blk.10.attn_q.weight", "blk.10.attn_v.weight"], "ppl": 13.3977, "damage": 0.03449999999999953}
+{"unit": "attn_output@10", "tensors": ["blk.10.attn_output.weight"], "ppl": 13.3808, "damage": 0.017599999999999838}
+{"unit": "ffn_down@10", "tensors": ["blk.10.ffn_down.weight"], "ppl": 13.3554, "damage": -0.007800000000001361}
+{"unit": "ffn_gate@10+ffn_up@10", "tensors": ["blk.10.ffn_gate.weight", "blk.10.ffn_up.weight"], "ppl": 13.3513, "damage": -0.011900000000000688}
+{"unit": "attn_k@11+attn_q@11+attn_v@11", "tensors": ["blk.11.attn_k.weight", "blk.11.attn_q.weight", "blk.11.attn_v.weight"], "ppl": 13.3744, "damage": 0.011199999999998766}
+{"unit": "attn_output@11", "tensors": ["blk.11.attn_output.weight"], "ppl": 13.4224, "damage": 0.05919999999999881}
+{"unit": "ffn_down@11", "tensors": ["blk.11.ffn_down.weight"], "ppl": 13.3684, "damage": 0.005199999999998539}
+{"unit": "ffn_gate@11+ffn_up@11", "tensors": ["blk.11.ffn_gate.weight", "blk.11.ffn_up.weight"], "ppl": 13.4043, "damage": 0.04109999999999836}
+{"unit": "attn_k@12+attn_q@12+attn_v@12", "tensors": ["blk.12.attn_k.weight", "blk.12.attn_q.weight", "blk.12.attn_v.weight"], "ppl": 13.4102, "damage": 0.04699999999999882}
+{"unit": "attn_output@12", "tensors": ["blk.12.attn_output.weight"], "ppl": 13.3409, "damage": -0.02230000000000132}
+{"unit": "ffn_down@12", "tensors": ["blk.12.ffn_down.weight"], "ppl": 13.3919, "damage": 0.028699999999998838}
+{"unit": "ffn_gate@12+ffn_up@12", "tensors": ["blk.12.ffn_gate.weight", "blk.12.ffn_up.weight"], "ppl": 13.396, "damage": 0.03279999999999994}
+{"unit": "attn_k@13+attn_q@13+attn_v@13", "tensors": ["blk.13.attn_k.weight", "blk.13.attn_q.weight", "blk.13.attn_v.weight"], "ppl": 13.3735, "damage": 0.010299999999999088}
+{"unit": "attn_output@13", "tensors": ["blk.13.attn_output.weight"], "ppl": 13.4247, "damage": 0.06149999999999878}
+{"unit": "ffn_down@13", "tensors": ["blk.13.ffn_down.weight"], "ppl": 13.3665, "damage": 0.0032999999999994145}
+{"unit": "ffn_gate@13+ffn_up@13", "tensors": ["blk.13.ffn_gate.weight", "blk.13.ffn_up.weight"], "ppl": 13.3936, "damage": 0.03039999999999843}
+{"unit": "attn_k@14+attn_q@14+attn_v@14", "tensors": ["blk.14.attn_k.weight", "blk.14.attn_q.weight", "blk.14.attn_v.weight"], "ppl": 13.3908, "damage": 0.027599999999999625}
+{"unit": "attn_output@14", "tensors": ["blk.14.attn_output.weight"], "ppl": 13.3558, "damage": -0.007400000000000517}
+{"unit": "ffn_down@14", "tensors": ["blk.14.ffn_down.weight"], "ppl": 13.392, "damage": 0.028799999999998604}
+{"unit": "ffn_gate@14+ffn_up@14", "tensors": ["blk.14.ffn_gate.weight", "blk.14.ffn_up.weight"], "ppl": 13.4279, "damage": 0.06469999999999843}
+{"unit": "attn_k@15+attn_q@15+attn_v@15", "tensors": ["blk.15.attn_k.weight", "blk.15.attn_q.weight", "blk.15.attn_v.weight"], "ppl": 13.4277, "damage": 0.06449999999999889}
+{"unit": "attn_output@15", "tensors": ["blk.15.attn_output.weight"], "ppl": 13.3576, "damage": -0.00560000000000116}
+{"unit": "ffn_down@15", "tensors": ["blk.15.ffn_down.weight"], "ppl": 13.3537, "damage": -0.009500000000000952}
+{"unit": "ffn_gate@15+ffn_up@15", "tensors": ["blk.15.ffn_gate.weight", "blk.15.ffn_up.weight"], "ppl": 13.3987, "damage": 0.03549999999999898}
+{"unit": "attn_k@16+attn_q@16+attn_v@16", "tensors": ["blk.16.attn_k.weight", "blk.16.attn_q.weight", "blk.16.attn_v.weight"], "ppl": 13.3982, "damage": 0.034999999999998366}
+{"unit": "attn_output@16", "tensors": ["blk.16.attn_output.weight"], "ppl": 13.3988, "damage": 0.035599999999998744}
+{"unit": "ffn_down@16", "tensors": ["blk.16.ffn_down.weight"], "ppl": 13.3691, "damage": 0.005899999999998684}
+{"unit": "ffn_gate@16+ffn_up@16", "tensors": ["blk.16.ffn_gate.weight", "blk.16.ffn_up.weight"], "ppl": 13.3887, "damage": 0.02549999999999919}
+{"unit": "attn_k@17+attn_q@17+attn_v@17", "tensors": ["blk.17.attn_k.weight", "blk.17.attn_q.weight", "blk.17.attn_v.weight"], "ppl": 13.387, "damage": 0.0237999999999996}
+{"unit": "attn_output@17", "tensors": ["blk.17.attn_output.weight"], "ppl": 13.3829, "damage": 0.019699999999998496}
+{"unit": "ffn_down@17", "tensors": ["blk.17.ffn_down.weight"], "ppl": 13.3644, "damage": 0.0011999999999989797}
+{"unit": "ffn_gate@17+ffn_up@17", "tensors": ["blk.17.ffn_gate.weight", "blk.17.ffn_up.weight"], "ppl": 13.4057, "damage": 0.04249999999999865}
+{"unit": "attn_k@18+attn_q@18+attn_v@18", "tensors": ["blk.18.attn_k.weight", "blk.18.attn_q.weight", "blk.18.attn_v.weight"], "ppl": 13.3733, "damage": 0.010099999999999554}
+{"unit": "attn_output@18", "tensors": ["blk.18.attn_output.weight"], "ppl": 13.377, "damage": 0.013799999999999812}
+{"unit": "ffn_down@18", "tensors": ["blk.18.ffn_down.weight"], "ppl": 13.3683, "damage": 0.005099999999998772}
+{"unit": "ffn_gate@18+ffn_up@18", "tensors": ["blk.18.ffn_gate.weight", "blk.18.ffn_up.weight"], "ppl": 13.3792, "damage": 0.016000000000000014}
+{"unit": "attn_k@19+attn_q@19+attn_v@19", "tensors": ["blk.19.attn_k.weight", "blk.19.attn_q.weight", "blk.19.attn_v.weight"], "ppl": 13.3771, "damage": 0.01389999999999958}
+{"unit": "attn_output@19", "tensors": ["blk.19.attn_output.weight"], "ppl": 13.3763, "damage": 0.013099999999999667}
+{"unit": "ffn_down@19", "tensors": ["blk.19.ffn_down.weight"], "ppl": 13.3876, "damage": 0.024399999999999977}
+{"unit": "ffn_gate@19+ffn_up@19", "tensors": ["blk.19.ffn_gate.weight", "blk.19.ffn_up.weight"], "ppl": 13.3929, "damage": 0.029699999999998283}
+{"unit": "attn_k@2+attn_q@2+attn_v@2", "tensors": ["blk.2.attn_k.weight", "blk.2.attn_q.weight", "blk.2.attn_v.weight"], "ppl": 13.3608, "damage": -0.002400000000001512}
+{"unit": "attn_output@2", "tensors": ["blk.2.attn_output.weight"], "ppl": 13.3585, "damage": -0.004700000000001481}
+{"unit": "ffn_down@2", "tensors": ["blk.2.ffn_down.weight"], "ppl": 13.3646, "damage": 0.0013999999999985135}
+{"unit": "ffn_gate@2+ffn_up@2", "tensors": ["blk.2.ffn_gate.weight", "blk.2.ffn_up.weight"], "ppl": 13.3962, "damage": 0.032999999999999474}
+{"unit": "attn_k@20+attn_q@20+attn_v@20", "tensors": ["blk.20.attn_k.weight", "blk.20.attn_q.weight", "blk.20.attn_v.weight"], "ppl": 13.3871, "damage": 0.023899999999999366}
+{"unit": "attn_output@20", "tensors": ["blk.20.attn_output.weight"], "ppl": 13.3771, "damage": 0.01389999999999958}
+{"unit": "ffn_down@20", "tensors": ["blk.20.ffn_down.weight"], "ppl": 13.3653, "damage": 0.0020999999999986585}
+{"unit": "ffn_gate@20+ffn_up@20", "tensors": ["blk.20.ffn_gate.weight", "blk.20.ffn_up.weight"], "ppl": 13.3734, "damage": 0.01019999999999932}
+{"unit": "attn_k@21+attn_q@21+attn_v@21", "tensors": ["blk.21.attn_k.weight", "blk.21.attn_q.weight", "blk.21.attn_v.weight"], "ppl": 13.3595, "damage": -0.0037000000000002586}
+{"unit": "attn_output@21", "tensors": ["blk.21.attn_output.weight"], "ppl": 13.4029, "damage": 0.039699999999999847}
+{"unit": "ffn_down@21", "tensors": ["blk.21.ffn_down.weight"], "ppl": 13.3649, "damage": 0.0016999999999995907}
+{"unit": "ffn_gate@21+ffn_up@21", "tensors": ["blk.21.ffn_gate.weight", "blk.21.ffn_up.weight"], "ppl": 13.4033, "damage": 0.040099999999998914}
+{"unit": "attn_k@22+attn_q@22+attn_v@22", "tensors": ["blk.22.attn_k.weight", "blk.22.attn_q.weight", "blk.22.attn_v.weight"], "ppl": 13.4083, "damage": 0.045099999999999696}
+{"unit": "attn_output@22", "tensors": ["blk.22.attn_output.weight"], "ppl": 13.423, "damage": 0.05979999999999919}
+{"unit": "ffn_down@22", "tensors": ["blk.22.ffn_down.weight"], "ppl": 13.3792, "damage": 0.016000000000000014}
+{"unit": "ffn_gate@22+ffn_up@22", "tensors": ["blk.22.ffn_gate.weight", "blk.22.ffn_up.weight"], "ppl": 13.4058, "damage": 0.04259999999999842}
+{"unit": "attn_k@23+attn_q@23+attn_v@23", "tensors": ["blk.23.attn_k.weight", "blk.23.attn_q.weight", "blk.23.attn_v.weight"], "ppl": 13.3778, "damage": 0.014599999999999724}
+{"unit": "attn_output@23", "tensors": ["blk.23.attn_output.weight"], "ppl": 13.361, "damage": -0.002200000000000202}
+{"unit": "ffn_down@23", "tensors": ["blk.23.ffn_down.weight"], "ppl": 13.3902, "damage": 0.026999999999999247}
+{"unit": "ffn_gate@23+ffn_up@23", "tensors": ["blk.23.ffn_gate.weight", "blk.23.ffn_up.weight"], "ppl": 13.4089, "damage": 0.0456999999999983}
+{"unit": "attn_k@24+attn_q@24+attn_v@24", "tensors": ["blk.24.attn_k.weight", "blk.24.attn_q.weight", "blk.24.attn_v.weight"], "ppl": 13.3844, "damage": 0.021199999999998553}
+{"unit": "attn_output@24", "tensors": ["blk.24.attn_output.weight"], "ppl": 13.3739, "damage": 0.010699999999999932}
+{"unit": "ffn_down@24", "tensors": ["blk.24.ffn_down.weight"], "ppl": 13.3745, "damage": 0.011299999999998533}
+{"unit": "ffn_gate@24+ffn_up@24", "tensors": ["blk.24.ffn_gate.weight", "blk.24.ffn_up.weight"], "ppl": 13.4155, "damage": 0.0522999999999989}
+{"unit": "attn_k@25+attn_q@25+attn_v@25", "tensors": ["blk.25.attn_k.weight", "blk.25.attn_q.weight", "blk.25.attn_v.weight"], "ppl": 13.3737, "damage": 0.010499999999998622}
+{"unit": "attn_output@25", "tensors": ["blk.25.attn_output.weight"], "ppl": 13.3714, "damage": 0.008199999999998653}
+{"unit": "ffn_down@25", "tensors": ["blk.25.ffn_down.weight"], "ppl": 13.3747, "damage": 0.011499999999999844}
+{"unit": "ffn_gate@25+ffn_up@25", "tensors": ["blk.25.ffn_gate.weight", "blk.25.ffn_up.weight"], "ppl": 13.4064, "damage": 0.043199999999998795}
+{"unit": "attn_k@26+attn_q@26+attn_v@26", "tensors": ["blk.26.attn_k.weight", "blk.26.attn_q.weight", "blk.26.attn_v.weight"], "ppl": 13.3929, "damage": 0.029699999999998283}
+{"unit": "attn_output@26", "tensors": ["blk.26.attn_output.weight"], "ppl": 13.378, "damage": 0.014799999999999258}
+{"unit": "ffn_down@26", "tensors": ["blk.26.ffn_down.weight"], "ppl": 13.3669, "damage": 0.0036999999999984823}
+{"unit": "ffn_gate@26+ffn_up@26", "tensors": ["blk.26.ffn_gate.weight", "blk.26.ffn_up.weight"], "ppl": 13.4079, "damage": 0.04469999999999885}
+{"unit": "attn_k@27+attn_q@27+attn_v@27", "tensors": ["blk.27.attn_k.weight", "blk.27.attn_q.weight", "blk.27.attn_v.weight"], "ppl": 13.3714, "damage": 0.008199999999998653}
+{"unit": "attn_output@27", "tensors": ["blk.27.attn_output.weight"], "ppl": 13.3597, "damage": -0.0035000000000007248}
+{"unit": "ffn_down@27", "tensors": ["blk.27.ffn_down.weight"], "ppl": 13.3677, "damage": 0.004499999999998394}
+{"unit": "ffn_gate@27+ffn_up@27", "tensors": ["blk.27.ffn_gate.weight", "blk.27.ffn_up.weight"], "ppl": 13.3812, "damage": 0.017999999999998906}
+{"unit": "attn_k@28+attn_q@28+attn_v@28", "tensors": ["blk.28.attn_k.weight", "blk.28.attn_q.weight", "blk.28.attn_v.weight"], "ppl": 13.3999, "damage": 0.03669999999999973}
+{"unit": "attn_output@28", "tensors": ["blk.28.attn_output.weight"], "ppl": 13.3752, "damage": 0.011999999999998678}
+{"unit": "ffn_down@28", "tensors": ["blk.28.ffn_down.weight"], "ppl": 13.3855, "damage": 0.022299999999999542}
+{"unit": "ffn_gate@28+ffn_up@28", "tensors": ["blk.28.ffn_gate.weight", "blk.28.ffn_up.weight"], "ppl": 13.4116, "damage": 0.04839999999999911}
+{"unit": "attn_k@29+attn_q@29+attn_v@29", "tensors": ["blk.29.attn_k.weight", "blk.29.attn_q.weight", "blk.29.attn_v.weight"], "ppl": 13.3843, "damage": 0.021099999999998786}
+{"unit": "attn_output@29", "tensors": ["blk.29.attn_output.weight"], "ppl": 13.367, "damage": 0.0038000000000000256}
+{"unit": "ffn_down@29", "tensors": ["blk.29.ffn_down.weight"], "ppl": 13.3699, "damage": 0.006699999999998596}
+{"unit": "ffn_gate@29+ffn_up@29", "tensors": ["blk.29.ffn_gate.weight", "blk.29.ffn_up.weight"], "ppl": 13.384, "damage": 0.020799999999999486}
+{"unit": "attn_k@3+attn_q@3+attn_v@3", "tensors": ["blk.3.attn_k.weight", "blk.3.attn_q.weight", "blk.3.attn_v.weight"], "ppl": 13.3383, "damage": -0.02490000000000059}
+{"unit": "attn_output@3", "tensors": ["blk.3.attn_output.weight"], "ppl": 13.3527, "damage": -0.010500000000000398}
+{"unit": "ffn_down@3", "tensors": ["blk.3.ffn_down.weight"], "ppl": 13.3923, "damage": 0.02909999999999968}
+{"unit": "ffn_gate@3+ffn_up@3", "tensors": ["blk.3.ffn_gate.weight", "blk.3.ffn_up.weight"], "ppl": 13.3997, "damage": 0.03649999999999842}
+{"unit": "attn_k@30+attn_q@30+attn_v@30", "tensors": ["blk.30.attn_k.weight", "blk.30.attn_q.weight", "blk.30.attn_v.weight"], "ppl": 13.4037, "damage": 0.04049999999999976}
+{"unit": "attn_output@30", "tensors": ["blk.30.attn_output.weight"], "ppl": 13.3711, "damage": 0.007899999999999352}
+{"unit": "ffn_down@30", "tensors": ["blk.30.ffn_down.weight"], "ppl": 13.394, "damage": 0.030799999999999272}
+{"unit": "ffn_gate@30+ffn_up@30", "tensors": ["blk.30.ffn_gate.weight", "blk.30.ffn_up.weight"], "ppl": 13.3915, "damage": 0.02829999999999977}
+{"unit": "attn_k@31+attn_q@31+attn_v@31", "tensors": ["blk.31.attn_k.weight", "blk.31.attn_q.weight", "blk.31.attn_v.weight"], "ppl": 13.3756, "damage": 0.012399999999999523}
+{"unit": "attn_output@31", "tensors": ["blk.31.attn_output.weight"], "ppl": 13.3617, "damage": -0.0015000000000000568}
+{"unit": "ffn_down@31", "tensors": ["blk.31.ffn_down.weight"], "ppl": 13.3744, "damage": 0.011199999999998766}
+{"unit": "ffn_gate@31+ffn_up@31", "tensors": ["blk.31.ffn_gate.weight", "blk.31.ffn_up.weight"], "ppl": 13.3725, "damage": 0.009299999999999642}
+{"unit": "attn_k@32+attn_q@32+attn_v@32", "tensors": ["blk.32.attn_k.weight", "blk.32.attn_q.weight", "blk.32.attn_v.weight"], "ppl": 13.3671, "damage": 0.0038999999999997925}
+{"unit": "attn_output@32", "tensors": ["blk.32.attn_output.weight"], "ppl": 13.3625, "damage": -0.000700000000000145}
+{"unit": "ffn_down@32", "tensors": ["blk.32.ffn_down.weight"], "ppl": 13.3732, "damage": 0.009999999999999787}
+{"unit": "ffn_gate@32+ffn_up@32", "tensors": ["blk.32.ffn_gate.weight", "blk.32.ffn_up.weight"], "ppl": 13.3729, "damage": 0.00969999999999871}
+{"unit": "attn_k@33+attn_q@33+attn_v@33", "tensors": ["blk.33.attn_k.weight", "blk.33.attn_q.weight", "blk.33.attn_v.weight"], "ppl": 13.3952, "damage": 0.03200000000000003}
+{"unit": "attn_output@33", "tensors": ["blk.33.attn_output.weight"], "ppl": 13.3877, "damage": 0.024499999999999744}
+{"unit": "ffn_down@33", "tensors": ["blk.33.ffn_down.weight"], "ppl": 13.3678, "damage": 0.0045999999999999375}
+{"unit": "ffn_gate@33+ffn_up@33", "tensors": ["blk.33.ffn_gate.weight", "blk.33.ffn_up.weight"], "ppl": 13.3718, "damage": 0.008599999999999497}
+{"unit": "attn_k@34+attn_q@34+attn_v@34", "tensors": ["blk.34.attn_k.weight", "blk.34.attn_q.weight", "blk.34.attn_v.weight"], "ppl": 13.3721, "damage": 0.008899999999998798}
+{"unit": "attn_output@34", "tensors": ["blk.34.attn_output.weight"], "ppl": 13.3642, "damage": 0.0009999999999994458}
+{"unit": "ffn_down@34", "tensors": ["blk.34.ffn_down.weight"], "ppl": 13.37, "damage": 0.006799999999998363}
+{"unit": "ffn_gate@34+ffn_up@34", "tensors": ["blk.34.ffn_gate.weight", "blk.34.ffn_up.weight"], "ppl": 13.3904, "damage": 0.02719999999999878}
+{"unit": "attn_k@35+attn_q@35+attn_v@35", "tensors": ["blk.35.attn_k.weight", "blk.35.attn_q.weight", "blk.35.attn_v.weight"], "ppl": 13.3838, "damage": 0.02059999999999995}
+{"unit": "attn_output@35", "tensors": ["blk.35.attn_output.weight"], "ppl": 13.3619, "damage": -0.001300000000000523}
+{"unit": "ffn_down@35", "tensors": ["blk.35.ffn_down.weight"], "ppl": 13.3736, "damage": 0.010399999999998855}
+{"unit": "ffn_gate@35+ffn_up@35", "tensors": ["blk.35.ffn_gate.weight", "blk.35.ffn_up.weight"], "ppl": 13.369, "damage": 0.005799999999998917}
+{"unit": "attn_k@36+attn_q@36+attn_v@36", "tensors": ["blk.36.attn_k.weight", "blk.36.attn_q.weight", "blk.36.attn_v.weight"], "ppl": 13.3781, "damage": 0.014899999999999025}
+{"unit": "attn_output@36", "tensors": ["blk.36.attn_output.weight"], "ppl": 13.3625, "damage": -0.000700000000000145}
+{"unit": "ffn_down@36", "tensors": ["blk.36.ffn_down.weight"], "ppl": 13.3732, "damage": 0.009999999999999787}
+{"unit": "ffn_gate@36+ffn_up@36", "tensors": ["blk.36.ffn_gate.weight", "blk.36.ffn_up.weight"], "ppl": 13.3759, "damage": 0.012699999999998823}
+{"unit": "attn_k@37+attn_q@37+attn_v@37", "tensors": ["blk.37.attn_k.weight", "blk.37.attn_q.weight", "blk.37.attn_v.weight"], "ppl": 13.3672, "damage": 0.0039999999999995595}
+{"unit": "attn_output@37", "tensors": ["blk.37.attn_output.weight"], "ppl": 13.3715, "damage": 0.00829999999999842}
+{"unit": "ffn_down@37", "tensors": ["blk.37.ffn_down.weight"], "ppl": 13.3673, "damage": 0.004099999999999326}
+{"unit": "ffn_gate@37+ffn_up@37", "tensors": ["blk.37.ffn_gate.weight", "blk.37.ffn_up.weight"], "ppl": 13.3702, "damage": 0.006999999999999673}
+{"unit": "attn_k@38+attn_q@38+attn_v@38", "tensors": ["blk.38.attn_k.weight", "blk.38.attn_q.weight", "blk.38.attn_v.weight"], "ppl": 13.3579, "damage": -0.005300000000000082}
+{"unit": "attn_output@38", "tensors": ["blk.38.attn_output.weight"], "ppl": 13.3492, "damage": -0.014000000000001123}
+{"unit": "ffn_down@38", "tensors": ["blk.38.ffn_down.weight"], "ppl": 13.3605, "damage": -0.002700000000000813}
+{"unit": "ffn_gate@38+ffn_up@38", "tensors": ["blk.38.ffn_gate.weight", "blk.38.ffn_up.weight"], "ppl": 13.3918, "damage": 0.02859999999999907}
+{"unit": "attn_k@39+attn_q@39+attn_v@39", "tensors": ["blk.39.attn_k.weight", "blk.39.attn_q.weight", "blk.39.attn_v.weight"], "ppl": 13.3656, "damage": 0.0023999999999997357}
+{"unit": "attn_output@39", "tensors": ["blk.39.attn_output.weight"], "ppl": 13.3712, "damage": 0.007999999999999119}
+{"unit": "ffn_down@39", "tensors": ["blk.39.ffn_down.weight"], "ppl": 13.3741, "damage": 0.010899999999999466}
+{"unit": "ffn_gate@39+ffn_up@39", "tensors": ["blk.39.ffn_gate.weight", "blk.39.ffn_up.weight"], "ppl": 13.3777, "damage": 0.014499999999999957}
+{"unit": "attn_k@4+attn_q@4+attn_v@4", "tensors": ["blk.4.attn_k.weight", "blk.4.attn_q.weight", "blk.4.attn_v.weight"], "ppl": 13.3967, "damage": 0.03349999999999831}
+{"unit": "attn_output@4", "tensors": ["blk.4.attn_output.weight"], "ppl": 13.3715, "damage": 0.00829999999999842}
+{"unit": "ffn_down@4", "tensors": ["blk.4.ffn_down.weight"], "ppl": 13.3642, "damage": 0.0009999999999994458}
+{"unit": "ffn_gate@4+ffn_up@4", "tensors": ["blk.4.ffn_gate.weight", "blk.4.ffn_up.weight"], "ppl": 13.3628, "damage": -0.0004000000000008441}
+{"unit": "attn_k@40+attn_q@40+attn_v@40", "tensors": ["blk.40.attn_k.weight", "blk.40.attn_q.weight", "blk.40.attn_v.weight"], "ppl": 13.3766, "damage": 0.013399999999998968}
+{"unit": "attn_output@40", "tensors": ["blk.40.attn_output.weight"], "ppl": 13.358, "damage": -0.0052000000000003155}
+{"unit": "ffn_down@40", "tensors": ["blk.40.ffn_down.weight"], "ppl": 13.3804, "damage": 0.017199999999998994}
+{"unit": "ffn_gate@40+ffn_up@40", "tensors": ["blk.40.ffn_gate.weight", "blk.40.ffn_up.weight"], "ppl": 13.3655, "damage": 0.0022999999999999687}
+{"unit": "attn_k@41+attn_q@41+attn_v@41", "tensors": ["blk.41.attn_k.weight", "blk.41.attn_q.weight", "blk.41.attn_v.weight"], "ppl": 13.3882, "damage": 0.02499999999999858}
+{"unit": "attn_output@41", "tensors": ["blk.41.attn_output.weight"], "ppl": 13.3614, "damage": -0.001800000000001134}
+{"unit": "ffn_down@41", "tensors": ["blk.41.ffn_down.weight"], "ppl": 13.4635, "damage": 0.10029999999999895}
+{"unit": "ffn_gate@41+ffn_up@41", "tensors": ["blk.41.ffn_gate.weight", "blk.41.ffn_up.weight"], "ppl": 13.5015, "damage": 0.1382999999999992}
+{"unit": "attn_k@5+attn_q@5+attn_v@5", "tensors": ["blk.5.attn_k.weight", "blk.5.attn_q.weight", "blk.5.attn_v.weight"], "ppl": 13.3709, "damage": 0.007699999999999818}
+{"unit": "attn_output@5", "tensors": ["blk.5.attn_output.weight"], "ppl": 13.3403, "damage": -0.022900000000001697}
+{"unit": "ffn_down@5", "tensors": ["blk.5.ffn_down.weight"], "ppl": 13.3589, "damage": -0.004300000000000637}
+{"unit": "ffn_gate@5+ffn_up@5", "tensors": ["blk.5.ffn_gate.weight", "blk.5.ffn_up.weight"], "ppl": 13.3884, "damage": 0.02519999999999989}
+{"unit": "attn_k@6+attn_q@6+attn_v@6", "tensors": ["blk.6.attn_k.weight", "blk.6.attn_q.weight", "blk.6.attn_v.weight"], "ppl": 13.3618, "damage": -0.00140000000000029}
+{"unit": "attn_output@6", "tensors": ["blk.6.attn_output.weight"], "ppl": 13.3654, "damage": 0.0021999999999984254}
+{"unit": "ffn_down@6", "tensors": ["blk.6.ffn_down.weight"], "ppl": 13.3671, "damage": 0.0038999999999997925}
+{"unit": "ffn_gate@6+ffn_up@6", "tensors": ["blk.6.ffn_gate.weight", "blk.6.ffn_up.weight"], "ppl": 13.3642, "damage": 0.0009999999999994458}
+{"unit": "attn_k@7+attn_q@7+attn_v@7", "tensors": ["blk.7.attn_k.weight", "blk.7.attn_q.weight", "blk.7.attn_v.weight"], "ppl": 13.3756, "damage": 0.012399999999999523}
+{"unit": "attn_output@7", "tensors": ["blk.7.attn_output.weight"], "ppl": 13.3634, "damage": 0.00019999999999953388}
+{"unit": "ffn_down@7", "tensors": ["blk.7.ffn_down.weight"], "ppl": 13.5367, "damage": 0.17349999999999888}
+{"unit": "ffn_gate@7+ffn_up@7", "tensors": ["blk.7.ffn_gate.weight", "blk.7.ffn_up.weight"], "ppl": 13.368, "damage": 0.004799999999999471}
+{"unit": "attn_k@8+attn_q@8+attn_v@8", "tensors": ["blk.8.attn_k.weight", "blk.8.attn_q.weight", "blk.8.attn_v.weight"], "ppl": 13.385, "damage": 0.02179999999999893}
+{"unit": "attn_output@8", "tensors": ["blk.8.attn_output.weight"], "ppl": 13.3479, "damage": -0.015300000000001646}
+{"unit": "ffn_down@8", "tensors": ["blk.8.ffn_down.weight"], "ppl": 13.3578, "damage": -0.005400000000001626}
+{"unit": "ffn_gate@8+ffn_up@8", "tensors": ["blk.8.ffn_gate.weight", "blk.8.ffn_up.weight"], "ppl": 13.408, "damage": 0.04479999999999862}
+{"unit": "attn_k@9+attn_q@9+attn_v@9", "tensors": ["blk.9.attn_k.weight", "blk.9.attn_q.weight", "blk.9.attn_v.weight"], "ppl": 13.3586, "damage": -0.004600000000001714}
+{"unit": "attn_output@9", "tensors": ["blk.9.attn_output.weight"], "ppl": 13.3837, "damage": 0.02049999999999841}
+{"unit": "ffn_down@9", "tensors": ["blk.9.ffn_down.weight"], "ppl": 13.3891, "damage": 0.025899999999998258}
+{"unit": "ffn_gate@9+ffn_up@9", "tensors": ["blk.9.ffn_gate.weight", "blk.9.ffn_up.weight"], "ppl": 13.3737, "damage": 0.010499999999998622}

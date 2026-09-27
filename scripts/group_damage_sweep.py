@@ -35,26 +35,39 @@ WIKI = os.environ.get("WIKITEXT_DATA", "/mnt/Vsio/wikitext-2-raw/wiki.test.raw")
 
 
 def run_ppl(model_path: str, ctx: int = 1024, n: int = 64,
-            wiki: str | None = None, kld_base: str | None = None):
-    """Returns (ppl, kld|None). With kld_base: also scores KLD vs ref logits."""
-    cmd = [PPL, "-m", model_path, "-f", wiki or WIKI, "-ngl", "99",
+            wiki: str | None = None, kld_base: str | None = None,
+            timeout: int = 1200, ngl: int = 99):
+    """Returns (ppl, kld|None).
+
+    NOTE (build >=11051 scar): --kl-divergence REPLACES perplexity instead
+    of augmenting it (no 'Final estimate' line). So with kld_base we run
+    TWICE: plain (PPL Final, protocol-comparable) + KLD flags (Mean KLD).
+    Costs 2x PPL time per unit — honesty over speed.
+    """
+    cmd = [PPL, "-m", model_path, "-f", wiki or WIKI, "-ngl", str(ngl),
            "-c", str(ctx), "-n", str(n), "-b", "512", "--seed", "7"]
-    if kld_base:
-        cmd += ["--kl-divergence", "--kl-divergence-base", kld_base]
-    out = subprocess.run(cmd, capture_output=True, text=True, timeout=1200)
+    out = subprocess.run(cmd, capture_output=True, text=True,
+                           timeout=timeout)
     ppl, kld = None, None
     for line in (out.stderr + out.stdout).splitlines():
         if "Final estimate" in line:
             ppl = float(line.split("PPL =")[1].split("+/-")[0].strip())
-        if "Mean" in line and "KLD" in line:
-            try:
-                kld = float(line.split("KLD:")[1].split("±")[0].strip())
-            except (IndexError, ValueError):
-                pass
     if ppl is None:
-        raise RuntimeError(f"no PPL in output for {model_path}")
-    if kld_base and kld is None:
-        raise RuntimeError(f"no KLD in output for {model_path}")
+        tail = "\n".join((out.stderr + out.stdout).splitlines()[-8:])
+        raise RuntimeError(f"no PPL in output for {model_path}:\n{tail}")
+    if kld_base:
+        kcmd = cmd + ["--kl-divergence", "--kl-divergence-base", kld_base]
+        out2 = subprocess.run(kcmd, capture_output=True, text=True,
+                              timeout=timeout)
+        for line in (out2.stderr + out2.stdout).splitlines():
+            if "Mean" in line and "KLD" in line:
+                try:
+                    kld = float(line.split("KLD:")[1].split("±")[0].strip())
+                except (IndexError, ValueError):
+                    pass
+        if kld is None:
+            tail = "\n".join((out2.stderr + out2.stdout).splitlines()[-8:])
+            raise RuntimeError(f"no KLD in output for {model_path}:\n{tail}")
     return ppl, kld
 
 
@@ -72,6 +85,15 @@ def main():
                     help="v2: units are single tensors (finer Gnom labels), "
                          "not tied groups")
     ap.add_argument("--ppl-ctx", type=int, default=1024)
+    ap.add_argument("--timeout", type=int, default=1200,
+                    help="per-PPL subprocess timeout, seconds "
+                         "(slow backends: 3600+ for Vega)")
+    ap.add_argument("--ngl", type=int, default=99,
+                    help="GPU layers for PPL (big BF16 on small VRAM: "
+                         "lower until context fits, e.g. 24-32 on 8GB)")
+    ap.add_argument("--units", default=None,
+                    help="comma-separated unit tags to measure (subset mode "
+                         "for the active loop); default: all unfinished")
     ap.add_argument("--ppl-n", type=int, default=64,
                     help="v2: short protocol (-n 32) if damage is ctx-invariant")
     ap.add_argument("--kld-base", default=None,
@@ -144,11 +166,20 @@ def main():
     build_file = build_file_inner
 
     tmp = os.path.join(REPO_ROOT, "models", ".sweep_tmp.gguf")
+    # crash orphans: stale .sweep_* buffers from killed runs (else disk death)
+    for fn in os.listdir(os.path.join(REPO_ROOT, "models")):
+        if fn.startswith(".sweep_") and fn.endswith(".gguf"):
+            try:
+                os.remove(os.path.join(REPO_ROOT, "models", fn))
+                print(f"orphan removed: {fn}", flush=True)
+            except OSError:
+                pass
     kb = args.kld_base
     if "BASELINE" not in done:
         build_file(None, tmp)
         base_ppl, base_kld = run_ppl(tmp, args.ppl_ctx, args.ppl_n,
-                                     args.wiki_file, kb)
+                                      args.wiki_file, kb,
+                                      timeout=args.timeout, ngl=args.ngl)
         rec = {"unit": "BASELINE", "ppl": base_ppl}
         if kb:
             rec["kld"] = base_kld
@@ -173,6 +204,10 @@ def main():
     # (loaded system) let a later build overwrite the file PPL still read.
     # ≤3 files alive at once (~3.4GB), deleted right after use.
     todo = [(unit_tag(u), u) for u in units if unit_tag(u) not in done]
+    if args.units:
+        want = {s.strip() for s in args.units.split(",") if s.strip()}
+        todo = [(t, u) for t, u in todo if t in want]
+        print(f"subset mode: {len(todo)} units requested", flush=True)
     safe = lambda tag, i: re.sub(r"[^A-Za-z0-9_@+-]", "_", tag)[:60]
     ex = ThreadPoolExecutor(max_workers=2)
     try:
@@ -194,14 +229,23 @@ def main():
                 except Exception as e:
                     print(f"[{idx + 1}/{len(pending)}] {tag} QUANT failed "
                           f"({type(e).__name__}), skipped", flush=True)
+                    try:
+                        os.remove(buf)
+                    except OSError:
+                        pass
                     continue
                 if not _looks_valid(buf):
                     print(f"[{idx + 1}/{len(pending)}] {tag} CORRUPT file, "
                           f"skipped", flush=True)
+                    try:
+                        os.remove(buf)
+                    except OSError:
+                        pass
                     continue
                 try:
                     p, k = run_ppl(buf, args.ppl_ctx, args.ppl_n,
-                                   args.wiki_file, kb)
+                                    args.wiki_file, kb, timeout=args.timeout,
+                                    ngl=args.ngl)
                 except Exception as e:
                     print(f"[{idx + 1}/{len(pending)}] {tag} PPL failed "
                           f"({type(e).__name__}: {str(e)[:100]}), skipped",

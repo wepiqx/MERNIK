@@ -66,6 +66,12 @@ def generate_flags(
     target_size_mib: float = None,
 ) -> dict:
     is_qat = model.get("features", {}).get("is_qat", False)
+    # 1D tensors are F32 in the file whatever the rules say — emitting a rule
+    # for them is a no-op that only makes the config harder to read (and, for
+    # unanchored global patterns, dangerous: see the *norm* case below).
+    tensors = model.get("tensors", {})
+    from classifier import _f32_map
+    f32 = _f32_map(tensors)
     # Normally Q5_K pins (see EMBD_DEPLOY_TIER); with --free-pins the
     # classifier may assign output/token_embd other tiers — honor them here
     # since the binary applies these two flags unconditionally.
@@ -79,6 +85,8 @@ def generate_flags(
     # Group blk tensors by (ttype, tier)
     type_tier_layers = {}
     for tname, tier in assignments.items():
+        if f32.get(tname, False):
+            continue
         parts = tname.split(".")
         if len(parts) >= 3 and parts[0] in ("blk", "BLK"):
             try:
@@ -119,17 +127,20 @@ def generate_flags(
     # Generate rules for global tensors (non-blk)
     prefix = model.get("features", {}).get("prefix", "blk")
     for tname, tier in assignments.items():
+        if f32.get(tname, False):
+            continue
         parts = tname.split(".")
         if len(parts) >= 2 and parts[0].lower() == prefix.lower():
             continue
         ttype = parts[0] if len(parts) >= 1 else tname
         if ttype in ("token_embd", "output"):
             continue
-        if ttype == tname and "." in tname:
-            # e.g. "nextn.eh_proj" without blk prefix
-            pass
-        # Check that this global tensor wasn't already handled as a blk tensor
-        pattern = f".*{re.escape(ttype)}.*={tier}"
+        # llama.cpp matches with std::regex_search (substring, first hit
+        # wins), so `.*ttype.*` fires on ANY tensor whose name contains
+        # ttype — a global "norm" at Q4_K would have re-tiered every
+        # *norm* tensor in the model. Anchor on a dot boundary and require
+        # the start of a name component.
+        pattern = f"(?:^|\\.){re.escape(ttype)}\\.={tier}"
         prio = get_regex_priority(pattern) + (5 if tier == "Q8_0" else 0)
         # Deduplicate (same pattern may appear from different names)
         if not any(p == pattern for p, _ in rules):

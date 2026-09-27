@@ -7,6 +7,10 @@ Two donors (legacy): even blocks from A, odd blocks from B, globals from A.
 Three donors (monster): per-block donor map + optional soup-averaged backbone.
   fuse_layers.py --a OX.gguf --b ORN.gguf --c NEO.gguf --out M1.gguf \
       --map "15:b,19:b,23:b,27:b,31:c"
+
+Four donors: same, plus --d (e.g. --a M2.gguf --d MIMO.gguf --map "31:d").
+  Building from an existing fusion (e.g. RINIQ-M2-BF16) as --a is smart:
+  donor blocks already baked in, no need for the original BF16s.
   fuse_layers.py --a OX.gguf --c NEO.gguf --out M3.gguf \
       --map "15:b,19:b" --soup "0-8" --soup-from "a,c"
 
@@ -36,6 +40,25 @@ def layer_of(name):
     return None
 
 
+def kind_of(name):
+    """Tissue class of a tensor: ffn / attn / ssm / norm / glob.
+
+    Same split as the weight/imatrix compasses: the soul lives in FFN
+    (weight divergence ~2x attention), compatibility in attention.
+    """
+    p = name.split(".")
+    if len(p) < 3 or p[0] not in ("blk", "BLK"):
+        return "glob"
+    rest = ".".join(p[2:])
+    if "ffn" in rest:
+        return "ffn"
+    if "attn" in rest:
+        return "attn"
+    if "ssm" in rest:
+        return "ssm"
+    return "norm"
+
+
 def parse_blocks(spec):
     """'0-8,11,15' -> sorted set of ints."""
     out = set()
@@ -53,17 +76,31 @@ def parse_blocks(spec):
 
 
 def parse_map(spec):
-    """'15:b,31:c' -> {15: 'b', 31: 'c'}."""
+    """'15:b,31:c' -> {15: ('b', None), 31: ('c', None)} (whole block).
+    Tissue mode: '15:b:ffn' -> {15: ('b', {'ffn'})} — only FFN-kind tensors
+    of block 15 come from B, the rest of the block stays on A.
+    Ranges: '15-17:b:ffn' expands to 15,16,17. Multi-tissue: '15:b:ffn+attn'.
+    Kinds: ffn / attn / ssm / norm (see kind_of) + ln (any *norm* tensor,
+    e.g. attn_norm/post_attention_norm/ssm_norm — the gain staging)."""
     out = {}
     for part in spec.split(","):
         part = part.strip()
         if not part:
             continue
-        blk, _, donor = part.partition(":")
-        blk = int(blk.strip())
-        donor = donor.strip().lower()
-        assert donor in ("a", "b", "c"), "map donor must be a/b/c: %r" % part
-        out[blk] = donor
+        segs = [s.strip() for s in part.split(":")]
+        blk_spec, donor = segs[0], segs[1].lower() if len(segs) > 1 else "a"
+        assert donor in ("a", "b", "c", "d"), "map donor must be a/b/c/d: %r" % part
+        kinds = None
+        if len(segs) > 2 and segs[2]:
+            kinds = frozenset(k.strip().lower() for k in segs[2].split("+"))
+            assert kinds <= {"ffn", "attn", "ssm", "norm", "ln"}, \
+                "map kinds must be ffn/attn/ssm/norm/ln: %r" % part
+        m = re.fullmatch(r"(\d+)-(\d+)", blk_spec)
+        blks = range(min(int(m.group(1)), int(m.group(2))),
+                     max(int(m.group(1)), int(m.group(2))) + 1) if m \
+            else (int(blk_spec),)
+        for blk in blks:
+            out[blk] = (donor, kinds)
     return out
 
 
@@ -92,23 +129,32 @@ def main():
     ap.add_argument("--a", required=True)
     ap.add_argument("--b", required=True)
     ap.add_argument("--c", default=None, help="third donor (monster mode)")
+    ap.add_argument("--d", default=None, help="fourth donor (e.g. MiMo blk31 onto M2 base)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--swap", default=None,
                     help="comma list of block ids to take from B "
                          "(default: odd blocks from B, even from A)")
     ap.add_argument("--map", default=None,
                     help="block->donor map, e.g. '15:b,19:b,31:c' "
-                         "(donors a/b/c; overrides --swap for listed blocks)")
+                          "(donors a/b/c/d; overrides --swap for listed blocks). "
+                          "TISSUE mode: '15:b:ffn' grafts only FFN-kind tensors "
+                          "of block 15 (kinds: ffn/attn/ssm/norm, '+' for several; "
+                          "'15-17:b:ffn' for ranges), rest stays on A")
     ap.add_argument("--soup", default=None,
                     help="blocks to weight-average, e.g. '0-8,11' "
                          "(backbone only — never divergent blocks)")
     ap.add_argument("--soup-from", default=None,
                     help="donors to average, e.g. 'a,c' (default: all given)")
+    ap.add_argument("--dry", action="store_true",
+                    help="print common trunk + donor map and exit "
+                         "(no 18GB write)")
     args = ap.parse_args()
 
     donors = {"a": gguf.GGUFReader(args.a), "b": gguf.GGUFReader(args.b)}
     if args.c:
         donors["c"] = gguf.GGUFReader(args.c)
+    if args.d:
+        donors["d"] = gguf.GGUFReader(args.d)
     T = {k: {t.name: t for t in r.tensors} for k, r in donors.items()}
     ta = T["a"]
     # extras may sit on either side (e.g. MTP head in A, or in B):
@@ -131,7 +177,7 @@ def main():
                 "shape mismatch %s: a vs %s" % (n, k)
 
     mmap = parse_map(args.map) if args.map else {}
-    for blk, d in mmap.items():
+    for blk, (d, _k) in mmap.items():
         assert d in donors, "map donor %r has no file (pass --%s)" % (d, d)
     soupset = parse_blocks(args.soup) if args.soup else set()
     sfrom = [s.strip().lower() for s in args.soup_from.split(",")] if args.soup_from \
@@ -162,9 +208,20 @@ def main():
         elif lyr in soupset:
             donor, soup = None, True
         elif lyr in mmap:
-            donor, soup = mmap[lyr], False
+            md, mk = mmap[lyr]
+            if mk is None or kind_of(name) in mk or \
+                    ("ln" in mk and "norm" in name):
+                donor, soup = md, False
+            else:
+                donor, soup = "a", False  # tissue: rest of block stays home
         elif swapset is not None:
             donor, soup = ("b" if lyr in swapset else "a"), False
+        elif mmap:
+            # explicit --map means base-A-plus-overrides (scar 2026-09-23:
+            # N1/N1m passed --map with 2 donors and silently got the legacy
+            # odd/even interleave instead of a base — half-foreign models
+            # misread as 3-block grafts). Unmapped blocks stay on A.
+            donor, soup = "a", False
         elif len(donors) == 2:
             donor, soup = (("b" if (lyr or 0) % 2 == 1 else "a")), False
         else:
@@ -189,9 +246,15 @@ def main():
         off += (32 - off % 32) % 32
         order.append((name, donor, soup))
 
+    for blk, (md, mk) in mmap.items():
+        if mk is not None and blk in donor_of_block:
+            donor_of_block[blk] = "%s(%s-only)" % (md, "+".join(sorted(mk)))
     print("donor map: " + ", ".join(
         "%d:%s" % (b, donor_of_block[b]) for b in sorted(donor_of_block)), flush=True)
     print("globals: a, trunk tensors: %d" % len(ta), flush=True)
+    if args.dry:
+        print("dry run: no output written", flush=True)
+        return
 
     n_tensors = len(ta)
     hdr = b"GGUF" + struct.pack("<I", 3) + struct.pack("<Q", n_tensors)

@@ -1,0 +1,116 @@
+=== Sun Sep 27 11:20:38 CEST 2026 QUANT Prism-5100-SMSE (own imatrix) ===
+/mnt/Vsio/MERNIK/classifier.py:531: RuntimeWarning: Initial size 3713.4 MiB already exceeds target 3519.7 MiB
+  warnings.warn(f"Initial size {current_size:.1f} MiB already exceeds target {effective_target:.1f} MiB", RuntimeWarning)
+=== MERNIK ===
+Model:   /mnt/Vsio/Downloads/PrismCoder-9B-BF16.gguf
+Imatrix: /mnt/Vsio/Downloads/PrismCoder-9B.imatrix.gguf
+Target:  5100 MiB (4.98 GB)
+
+[1/4] Reading model...
+  Architecture: qwen35
+  Tensors: 442
+  Features: {
+  "has_qkv": true,
+  "has_ssm": true,
+  "has_mtp": true,
+  "has_moe": false,
+  "is_qat": false,
+  "prefix": "blk",
+  "n_layers": 32
+}
+
+[2/4] Reading imatrix...
+  /mnt/Vsio/Downloads/PrismCoder-9B.imatrix.gguf: 248 tensors, datasets=[6]
+  Combined: 248 tensors
+
+[3/4] Detecting tied groups...
+  Found 128 tied groups:
+    TIED (4): blk.0.attn_gate  =  blk.0.attn_qkv
+    TIED (2): blk.0.ffn_gate  =  blk.0.ffn_up
+    TIED (4): blk.1.attn_gate  =  blk.1.attn_qkv
+    TIED (2): blk.1.ffn_gate  =  blk.1.ffn_up
+    TIED (4): blk.10.attn_gate  =  blk.10.attn_qkv
+    TIED (2): blk.10.ffn_gate  =  blk.10.ffn_up
+    TIED (3): blk.11.attn_k  =  blk.11.attn_q
+    TIED (2): blk.11.ffn_gate  =  blk.11.ffn_up
+    TIED (4): blk.12.attn_gate  =  blk.12.attn_qkv
+    TIED (2): blk.12.ffn_gate  =  blk.12.ffn_up
+    TIED (4): blk.13.attn_gate  =  blk.13.attn_qkv
+    TIED (2): blk.13.ffn_gate  =  blk.13.ffn_up
+    TIED (4): blk.14.attn_gate  =  blk.14.attn_qkv
+    TIED (2): blk.14.ffn_gate  =  blk.14.ffn_up
+    TIED (3): blk.15.attn_k  =  blk.15.attn_q
+    TIED (2): blk.15.ffn_gate  =  blk.15.ffn_up
+    TIED (4): blk.16.attn_gate  =  blk.16.attn_qkv
+    TIED (2): blk.16.ffn_gate  =  blk.16.ffn_up
+    TIED (4): blk.17.attn_gate  =  blk.17.attn_qkv
+    TIED (2): blk.17.ffn_gate  =  blk.17.ffn_up
+    TIED (4): blk.18.attn_gate  =  blk.18.attn_qkv
+    TIED (2): blk.18.ffn_gate  =  blk.18.ffn_up
+    TIED (3): blk.19.attn_k  =  blk.19.attn_q
+    TIED (2): blk.19.ffn_gate  =  blk.19.ffn_up
+    TIED (4): blk.2.attn_gate  =  blk.2.attn_qkv
+    TIED (2): blk.2.ffn_gate  =  blk.2.ffn_up
+    TIED (4): blk.20.attn_gate  =  blk.20.attn_qkv
+    TIED (2): blk.20.ffn_gate  =  blk.20.ffn_up
+    TIED (4): blk.21.attn_gate  =  blk.21.attn_qkv
+    TIED (2): blk.21.ffn_gate  =  blk.21.ffn_up
+    TIED (4): blk.22.attn_gate  =  blk.22.attn_qkv
+    TIED (2): blk.22.ffn_gate  =  blk.22.ffn_up
+    TIED (3): blk.23.attn_k  =  blk.23.attn_q
+    TIED (2): blk.23.ffn_gate  =  blk.23.ffn_up
+    TIED (4): blk.24.attn_gate  =  blk.24.attn_qkv
+    TIED (2): blk.24.ffn_gate  =  blk.24.ffn_up
+    TIED (4): blk.25.attn_gate  =  blk.25.attn_qkv
+    TIED (2): blk.25.ffn_gate  =  blk.25.ffn_up
+    TIED (4): blk.26.attn_gate  =  blk.26.attn_qkv
+    TIED (2): blk.26.ffn_gate  =  blk.26.ffn_up
+    TIED (3): blk.27.attn_k  =  blk.27.attn_q
+    TIED (2): blk.27.ffn_gate  =  blk.27.ffn_up
+    TIED (4): blk.28.attn_gate  =  blk.28.attn_qkv
+    TIED (2): blk.28.ffn_gate  =  blk.28.ffn_up
+    TIED (4): blk.29.attn_gate  =  blk.29.attn_qkv
+    TIED (2): blk.29.ffn_gate  =  blk.29.ffn_up
+    TIED (3): blk.3.attn_k  =  blk.3.attn_q
+    TIED (2): blk.3.ffn_gate  =  blk.3.ffn_up
+    TIED (4): blk.30.attn_gate  =  blk.30.attn_qkv
+    TIED (2): blk.30.ffn_gate  =  blk.30.ffn_up
+    TIED (3): blk.31.attn_k  =  blk.31.attn_q
+    TIED (2): blk.31.ffn_gate  =  blk.31.ffn_up
+    TIED (4): blk.4.attn_gate  =  blk.4.attn_qkv
+    TIED (2): blk.4.ffn_gate  =  blk.4.ffn_up
+    TIED (4): blk.5.attn_gate  =  blk.5.attn_qkv
+    TIED (2): blk.5.ffn_gate  =  blk.5.ffn_up
+    TIED (4): blk.6.attn_gate  =  blk.6.attn_qkv
+    TIED (2): blk.6.ffn_gate  =  blk.6.ffn_up
+    TIED (3): blk.7.attn_k  =  blk.7.attn_q
+    TIED (2): blk.7.ffn_gate  =  blk.7.ffn_up
+    TIED (4): blk.8.attn_gate  =  blk.8.attn_qkv
+    TIED (2): blk.8.ffn_gate  =  blk.8.ffn_up
+    TIED (4): blk.9.attn_gate  =  blk.9.attn_qkv
+    TIED (2): blk.9.ffn_gate  =  blk.9.ffn_up
+
+[4/4] Classifying tensors (greedy imatrix-driven)...
+  BATTLEFIELD utility: {'mode': 'smse', 'cv_w': 1.0, 'linf_w': 1.0, 'huber_delta': 0.0003, 'ssim_table': 'models/ssim_table.npz', 'frag_w': 0.5, 'ptable': 'models/ssim_ptable.npz', 'netpred': 'models/netpred.json', 'netdmg_w': 0.5, 'mix_base': 'smape'}
+
+  Tier distribution:
+    F16: 177 tensors (2.0 MiB)
+    Q4_K: 248 tensors (3711.4 MiB)
+    Q5_K: 2 tensors (1333.8 MiB)
+    Q8_0: 15 tensors (246.5 MiB)
+  Total estimated size: 5293.7 MiB
+
+  Top 10 by importance:
+    blk.31.ffn_down                                      imp=    552303 tier=Q4_K
+    blk.3.attn_k                                         imp=    470538 tier=Q4_K
+    blk.3.attn_q                                         imp=    470538 tier=Q4_K
+    blk.3.attn_v                                         imp=    470538 tier=Q4_K
+    blk.29.ffn_gate                                      imp=    464349 tier=Q4_K
+    blk.29.ffn_up                                        imp=    464349 tier=Q4_K
+    blk.30.ffn_gate                                      imp=    455522 tier=Q4_K
+    blk.30.ffn_up                                        imp=    455522 tier=Q4_K
+    blk.28.attn_gate                                     imp=    438509 tier=Q4_K
+    blk.28.attn_qkv                                      imp=    438509 tier=Q4_K
+
+ERROR: base size 5294 MiB already exceeds target 5100 MiB. Raise --size or pass --allow-q3-or-lower.
+ABORT
