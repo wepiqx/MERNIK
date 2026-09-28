@@ -135,7 +135,39 @@ def main():
     # skip retrying it. Separate file, trainer reads both, resume untouched.
     fail_path = os.path.splitext(args.out)[0] + ".failures.jsonl"
 
-    def log_failure(tag, stage, err):
+    def log_failure(tag, stage, err, tensors):
+        # HOLE vs TERMINAL (mailbox 2026-09-28): first failure of a unit is
+        # a hole — logged aside, retried by --resume. A unit that fails
+        # TWICE (this attempt + a prior hole) is TERMINAL: the measurement
+        # is physically untakeable at this tier (censored observation).
+        # TERMINAL goes INTO the labels file as a null record so --resume
+        # never retries it and the trainer can see it (never impute it).
+        prior = 0
+        try:
+            if os.path.exists(fail_path):
+                with open(fail_path) as f:
+                    for line in f:
+                        try:
+                            if json.loads(line).get("unit") == tag:
+                                prior += 1
+                        except (ValueError, AttributeError):
+                            pass
+        except OSError:
+            pass
+        if prior >= 1:
+            rec = {"unit": tag, "tensors": tensors, "tier": args.drop_tier,
+                   "damage": None, "terminated": f"{stage}:{err}"[:200],
+                   "retryable": False}
+            if kb:
+                rec["damage_kld"] = None
+            try:
+                with open(args.out, "a") as f:
+                    f.write(json.dumps(rec) + "\n")
+                print(f"{tag} TERMINAL ({stage}) — censored label, "
+                      f"will not retry", flush=True)
+            except OSError:
+                pass
+            return
         try:
             with open(fail_path, "a") as f:
                 f.write(json.dumps({"unit": tag, "status": "failed",
@@ -243,7 +275,7 @@ def main():
                 except Exception as e:
                     print(f"[{idx + 1}/{len(pending)}] {tag} QUANT failed "
                           f"({type(e).__name__}), skipped", flush=True)
-                    log_failure(tag, "quant", f"{type(e).__name__}")
+                    log_failure(tag, "quant", f"{type(e).__name__}", unit)
                     try:
                         os.remove(buf)
                     except OSError:
@@ -252,7 +284,7 @@ def main():
                 if not _looks_valid(buf):
                     print(f"[{idx + 1}/{len(pending)}] {tag} CORRUPT file, "
                           f"skipped", flush=True)
-                    log_failure(tag, "corrupt", "bad magic/size")
+                    log_failure(tag, "corrupt", "bad magic/size", unit)
                     try:
                         os.remove(buf)
                     except OSError:
@@ -266,7 +298,7 @@ def main():
                     print(f"[{idx + 1}/{len(pending)}] {tag} PPL failed "
                           f"({type(e).__name__}: {str(e)[:100]}), skipped",
                           flush=True)
-                    log_failure(tag, "ppl", f"{type(e).__name__}: {str(e)[:100]}")
+                    log_failure(tag, "ppl", f"{type(e).__name__}: {str(e)[:100]}", unit)
                     continue
                 finally:
                     try:
