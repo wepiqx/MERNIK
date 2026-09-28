@@ -127,8 +127,22 @@ def main():
         units = [[n] for n in sorted(pool)]  # v2: finer labels, no sharing
     else:
         groups = build_groups(tg, pool, ne_map, dict(ne_map))
-        units = [g for _, (g, _, _) in sorted(groups.items())]
+        units = [g for _, (g, _, _, *_) in sorted(groups.items())]
     print(f"units: {len(units)}", flush=True)
+
+    # Failure ledger (mailbox 2026-09-28): a failed unit is a LABEL, not a
+    # hole — but it must never enter the labels file, or --resume would
+    # skip retrying it. Separate file, trainer reads both, resume untouched.
+    fail_path = os.path.splitext(args.out)[0] + ".failures.jsonl"
+
+    def log_failure(tag, stage, err):
+        try:
+            with open(fail_path, "a") as f:
+                f.write(json.dumps({"unit": tag, "status": "failed",
+                                    "stage": stage,
+                                    "error": str(err)[:200]}) + "\n")
+        except OSError:
+            pass
 
     done = set()
     if args.resume and os.path.exists(args.out):
@@ -229,6 +243,7 @@ def main():
                 except Exception as e:
                     print(f"[{idx + 1}/{len(pending)}] {tag} QUANT failed "
                           f"({type(e).__name__}), skipped", flush=True)
+                    log_failure(tag, "quant", f"{type(e).__name__}")
                     try:
                         os.remove(buf)
                     except OSError:
@@ -237,6 +252,7 @@ def main():
                 if not _looks_valid(buf):
                     print(f"[{idx + 1}/{len(pending)}] {tag} CORRUPT file, "
                           f"skipped", flush=True)
+                    log_failure(tag, "corrupt", "bad magic/size")
                     try:
                         os.remove(buf)
                     except OSError:
@@ -250,6 +266,7 @@ def main():
                     print(f"[{idx + 1}/{len(pending)}] {tag} PPL failed "
                           f"({type(e).__name__}: {str(e)[:100]}), skipped",
                           flush=True)
+                    log_failure(tag, "ppl", f"{type(e).__name__}: {str(e)[:100]}")
                     continue
                 finally:
                     try:

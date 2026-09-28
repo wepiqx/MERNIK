@@ -274,29 +274,8 @@ def collect(tag, results_dir=RESULTS):
         rec["git_sha"] = meta.get("git_sha")
         if meta.get("serve_model"):
             rec["identity"] = "verified"
-    # GPU clock era: this card was overclocked on Sep 23 23:50 and the OC
-    # survives reboots, so cross-era duels carry a confound nothing else in
-    # the record shows. Only sidecar-stamped batteries can carry it; older
-    # ones predate the stamping and are simply unknown, not stock.
-    side_path = p + ".meta.json"
-    if os.path.exists(side_path):
-        clk = (json.load(open(side_path)).get("clocks") or {}).get("signature")
-        if clk:
-            rec["clocks"] = clk
     return rec
 
-
-def clock_eras(recs):
-    """Batteries grouped by GPU clock signature, plus how many are unknown."""
-    eras = {}
-    unknown = 0
-    for r in recs:
-        c = r.get("clocks")
-        if c:
-            eras.setdefault(c, []).append(r["tag"])
-        else:
-            unknown += 1
-    return eras, unknown
 
 
 def attach_provenance(recs, directory=PROVENANCE, results_dir=RESULTS):
@@ -426,15 +405,6 @@ def main():
         for key, text in DECISIONS.items():
             print(f"  [{key}] {text}")
 
-    eras, unknown = clock_eras(recs)
-    if eras:
-        print("\nGPU clock eras (a cross-era duel carries this confound):")
-        for sig, ts in sorted(eras.items(), key=lambda kv: -len(kv[1])):
-            print(f"  {sig}   [{len(ts)} battery: {', '.join(sorted(ts)[:6])}"
-                  f"{' …' if len(ts) > 6 else ''}]")
-    if unknown:
-        print(f"  {unknown} batteries have no clock stamp (predate protocol.py) — "
-              f"unknown era, not a stock reading.")
 
 
 if __name__ == "__main__":

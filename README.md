@@ -74,6 +74,17 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--verify gpqa\|he\|all` | Slow-ring verify on fresh build or existing `--output` (busy GPU port aborts LOUDLY, never steals) |
 | `--verify-tag TAG` | Result tag (default: from `--output` basename) |
 | `--show-config` / `--show-floors` | Print tensor config / hard tier floors |
+| `--no-preflight` / `--strict-preflight` | Skip the dry-run audit, or abort if any assigned tier cannot fire (default: audit runs, ~1s) |
+| `--legacy-1d` | LEGACY: price 1D tensors (norms/biases) and ssm_conv1d as quantizable F16 — reproduces pre-2026-09-28 budgets (binary writes them F32 regardless) |
+| `--imatrix-tol F` / `--imatrix-legacy-combine` | Refuse when lens files diverge beyond tolerance (default 1%); legacy flag restores max/mean-combine with a split-brain binary |
+| `--squeeze` | SQUEEZE mode (separate path): only IQ1_S or F16 per tensor, bottom-up only |
+| `--free-pins` | EXPERIMENTAL: output/token_embd/MTP/routers join the budget pool |
+| `--cv-w F` / `--linf-w F` | Hybrid (dead by construction): concentration discount / worst-case boost weights |
+| `--huber-delta D` | huber/logcosh scale splitting small vs large deltas (default 3e-4) |
+| `--ssim-table P` / `--ptable P` / `--frag-w F` | ssim / pw_ssim tables + smape_frag modulation weight (default 0.5) |
+| `--netpred P` / `--netdmg-w F` | Gnom predicted damage per group + modulator weight (default 0.5) |
+| `--aggro F` | [deprecated] Use `--size` instead |
+| `--verbose` | Detailed output |
 
 ### Tier Auditing Tool
 
@@ -90,6 +101,32 @@ python scripts/audit_tiers.py --model M-6500.gguf --layer 31
 ### Queue & Allocation Principles
 
 Every tensor starts at a floor tier based on its functional class. A global max-heap drains the target budget best-first by sum(importance) × Δ / MiB. Tied groups (identical imatrix energy) upgrade as a single unit with summed importance. Structural pins — MTP heads (→ Q8_0), output/token embeddings (→ Q5_K), MoE routers (→ F16) — sit outside the budget queue.
+
+### Certify vs Report (tool boundary)
+
+Three tools, two jobs. `scripts/manifest.py` and `scripts/ledger.py`
+REPORT: build→model identity (three keys: score+time+family) and
+standings generated from artefacts — every number travels with its
+identity status. `scripts/duel.py` ARBITRATES: paired McNemar across
+all three columns, refuses to average across harnesses. Nothing
+certifies except a significant duel; everything else is a report.
+
+### Pre-flight Audit & the 1D Law
+
+Every invocation runs a dry-run audit (~1s) comparing intended vs
+actually-written tiers per tensor — the only thing that can catch a
+`--tensor-type` rule that cannot fire. The 1D law: the binary writes
+1D tensors (norms, biases) and `ssm_conv1d` as F32 whatever the rules
+say, so `--pin-norms` is a proven no-op (warns when it changes 0
+tensors) and the old "norms are load-bearing precision" reading was
+budget-redirect, not precision.
+
+### The Size Ceiling (user trap)
+
+Bottom-up caps every class at CLASS_MAX_TIER, so a model can saturate
+below `--size`: MiniCPM5-2B caps at exactly 2359.4 MiB, and `--size 2600`
+silently produced a 2359 MiB file. It now says so loudly and names the
+blocking classes — check the dry-run before assuming the budget bit.
 
 ### Utility Lenses: MSE vs SMAPE vs RMSE vs MIX vs SMSE vs SRMSE
 
@@ -144,9 +181,18 @@ presence_penalty 0.0, repetition_penalty 1.0, max_tokens 2048
 
 `presence_penalty 1.5` (vendor recipe) breaks thinking templates; `0.0` verified. Preflight `/health` before every battery; mid-run watchdog every 10 tasks (dead server aborts LOUDLY, never scores empties silently). Runner: `scripts/run_humaneval.py` (env `HE_*`, `HUMANEVAL_OUT`, `HUMANEVAL_SERVER`; `HUMANEVAL_SERVE_MODEL` = self-serve with auto-kill). Eval: `human_eval.evaluation.evaluate_functional_correctness`, pass@1, k=[1]. Results: `eval_results/humaneval_<tag>.jsonl`. Strictness upgrade: every battery is rescored with EvalPlus HumanEval+ (80× tests, CPU) — the HE+ column below.
 
+Open question: the SRIQ pair says temp 0.0 is worth +14pp while only decisiveness stays flat. If greedy (temp 0.0) proves reproducible — the sampler skips RNG entirely there, though batch composition can still leak in — the verdict column could stop being sampled at all. That would make verdicts reproducible instead of merely wide. Doctrine change, so stated here as a question, not a patch.
+
 ---
 
 ## 5. Benchmark Results & Standings
+
+The noise budget, as a number: verdict noise is a binomial draw —
+SD 5.9 tasks/run at p=0.70, 8.3 for a difference of two runs. That IS
+the ±3.6pp band and IS the 8-task MTP re-run gap. Below ~8–10 tasks
+nothing is reproducible at n=164 — a property of the instrument, not a
+measurement error. Verdicts travel with MDE; the column certifies
+preservation, not rank (nine-way tie at the top: 151, eight on 150).
 
 ### The Budget Law
 

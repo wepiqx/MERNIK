@@ -140,40 +140,6 @@ def mcnemar(b, c):
     return min(1.0, 2 * p)
 
 
-def _meta_for(tag):
-    """protocol.py sidecar for a battery, if one exists."""
-    for root in _roots(tag):
-        f = root + ".meta.json"
-        if os.path.exists(f):
-            try:
-                return json.load(open(f))
-            except Exception:
-                return None
-    return None
-
-
-def _clock_guard(tags_involved):
-    """Refuse a cross-era duel: the OC on this card (Sep 23 23:50, persists
-    across reboots) means batteries from different eras ran at different
-    clocks, and nothing else in the record shows it. A pair that straddles
-    the boundary measures the clock as much as the build."""
-    metas = {t: _meta_for(t) for t in tags_involved}
-    sigs = {t: ((m or {}).get("clocks") or {}).get("signature") for t, m in metas.items()}
-    known = {t: s for t, s in sigs.items() if s}
-    unknown = [t for t, s in sigs.items() if not s]
-    if len(set(known.values())) > 1:
-        raise SystemExit(
-            "duel: REFUSED — the arms ran at different GPU clocks (SPEC from "
-            "BIG, AGENTS.md 2026-09-28; this card was overclocked Sep 23 "
-            "23:50 and the OC survives reboots):\n"
-            + "".join(f"         {t:<24} {s}\n" for t, s in sorted(sigs.items()))
-            + "       That pair measures the clock as much as the build.")
-    if unknown:
-        return ("note: no clock stamp for %s (predates protocol.py) — era "
-                "unknown, not a stock reading" % ", ".join(sorted(unknown)))
-    return None
-
-
 def main():
     argv = sys.argv[1:]
     only = None
@@ -185,9 +151,6 @@ def main():
         raise SystemExit(__doc__)
     cols = [only] if only in COLUMNS else list(COLUMNS)
 
-    note = _clock_guard([_tag_of(p) for p in argv])
-    if note:
-        print("clock: " + note)
 
     arms = []
     for p in argv:

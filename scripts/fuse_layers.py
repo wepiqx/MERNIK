@@ -148,6 +148,13 @@ def main():
     ap.add_argument("--dry", action="store_true",
                     help="print common trunk + donor map and exit "
                          "(no 18GB write)")
+    ap.add_argument("--expect", default=None,
+                    help="gate the resolved donor map, e.g. "
+                         "'15:b,16:b,17:b,31:c' (normalised like --map: "
+                         "ranges expanded, donors/kinds lowercased, kinds "
+                         "sorted; tissue '15-17:b:ffn' allowed). Exits "
+                         "non-zero with a diff on any mismatch, before a "
+                         "single output byte is written. Silent when unused.")
     args = ap.parse_args()
 
     donors = {"a": gguf.GGUFReader(args.a), "b": gguf.GGUFReader(args.b)}
@@ -251,6 +258,38 @@ def main():
             donor_of_block[blk] = "%s(%s-only)" % (md, "+".join(sorted(mk)))
     print("donor map: " + ", ".join(
         "%d:%s" % (b, donor_of_block[b]) for b in sorted(donor_of_block)), flush=True)
+    if args.expect is not None:
+        # scar 2026-09-23: N1/N1m --map silently fell back to interleave and
+        # nobody diffed the printed map against the recipe. --expect turns
+        # that printed line into a gate: every expected block must be
+        # EXPLICIT in --map and resolve to the expected donor/tissue.
+        exp = parse_map(args.expect)
+        def canon(blk, dk):
+            d, k = dk
+            return "%d:%s%s" % (blk, d, (":" + "+".join(sorted(k))) if k else "")
+        errs = []
+        for b in sorted(exp):
+            if b not in mmap:
+                errs.append("block %d: expected %s but not listed in --map "
+                            "(would be silent fallback)" % (b, canon(b, exp[b])))
+            elif b not in donor_of_block:
+                errs.append("block %d: expected %s but block absent from "
+                            "base model" % (b, canon(b, exp[b])))
+            else:
+                ed, ek = exp[b]
+                want = ed if ek is None else \
+                    "%s(%s-only)" % (ed, "+".join(sorted(ek)))
+                if donor_of_block[b] != want:
+                    errs.append("block %d: expected %s, resolved %s"
+                                % (b, want, donor_of_block[b]))
+        for b in sorted(set(mmap) - set(exp)):
+            errs.append("extra --map block not in --expect: %s" % canon(b, mmap[b]))
+        if errs:
+            print("EXPECT MISMATCH (%d):" % len(errs), flush=True)
+            for e in errs:
+                print("  " + e, flush=True)
+            sys.exit(2)
+        print("expect: map matches (%d blocks)" % len(exp), flush=True)
     print("globals: a, trunk tensors: %d" % len(ta), flush=True)
     if args.dry:
         print("dry run: no output written", flush=True)
@@ -262,6 +301,28 @@ def main():
     hdr += kv_raw + ti_raw
     hdr += b"\x00" * ((32 - len(hdr) % 32) % 32)
     print("header %d bytes" % len(hdr), flush=True)
+
+    # SOUP SHAPE GUARD (the trunk gate at line ~176 covers every tensor
+    # present in ALL donors by exact shape — including the cross-arch case,
+    # which fails loudly there, never a silent corrupt file. The one hole:
+    # a soup tensor missing from some donor is NOT in the common trunk, so
+    # its holders were never shape-checked and soup_average would broadcast
+    # garbage. Fail here, before a single output byte is written.)
+    def _ne(t):
+        n = 1
+        for d in t.shape:
+            n *= int(d)
+        return n
+    for name, _donor, _soup in order:
+        if not _soup:
+            continue
+        want = _ne(ta[name])
+        holders = [d for d in sfrom if name in T[d]] or ["a"]
+        for d in holders:
+            have = _ne(T[d][name])
+            assert have == want, \
+                "shape mismatch: soup %s from %s has %d elements, " \
+                "base has %d" % (name, d, have, want)
 
     with open(args.out, "wb") as fout:
         fout.write(hdr)
