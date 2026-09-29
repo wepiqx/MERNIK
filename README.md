@@ -80,6 +80,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 |:-----|:------------|
 | `--model M.gguf` | Source weights (BF16/F16) — required |
 | `--imatrix I.gguf` | Imatrix file; repeatable (`--imatrix A --imatrix B --imatrix-method max\|mean`) |
+| `--imatrix-method max\|mean` | How repeat imatrix lenses combine (default: max) |
 | `--size MIB` | Target file size in MiB (the primary budget knob) |
 | `--output O.gguf` | Output path (default: `<model>-MERNIK.gguf`) |
 | `--run` | Execute `llama-quantize` (without it: dry-run estimate only) |
@@ -90,6 +91,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--pin-norms` | Top-down native norms shield (norms stay F16, outside budget) |
 | `--allow-q3-or-lower` | CAN_Q3 types (`ffn_gate/up/down`, `attn_output`, `ssm_out`) may drop to IQ2_XXS |
 | `--relief labels.jsonl --relief-thr -0.5` | Groups below threshold get ceiling Q4; budget flows elsewhere |
+| `--relief-thr F` | Relief cutoff (default: −0.5) |
 | `--verify gpqa\|he\|all` | Slow-ring verify on fresh build or existing `--output` (busy GPU port aborts LOUDLY, never steals) |
 | `--verify-tag TAG` | Result tag (default: from `--output` basename) |
 | `--show-config` / `--show-floors` | Print tensor config / hard tier floors |
@@ -126,6 +128,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 python scripts/audit_tiers.py --model M-6500.gguf
 python scripts/audit_tiers.py --model M-6500.gguf --big 10
 python scripts/audit_tiers.py --model M-6500.gguf --layer 31
+python scripts/audit_tiers.py --model M-6500.gguf --per-layer  # every layer
 ```
 
 ---
