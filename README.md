@@ -1,5 +1,24 @@
 ---
 license: apache-2.0
+base_model: wepiqx/ASHQ1
+language:
+- en
+tags:
+- quantization
+- gguf
+- llama-cpp
+- imatrix
+- mernik
+- humaneval
+- evalplus
+- benchmarking
+- code-generation
+- model-merging
+- layer-fusion
+- calibration
+- kld
+- perplexity
+- consumer-gpu
 ---
 
 # MERNIK — Measure-First Quantization Protocol
