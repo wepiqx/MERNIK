@@ -86,6 +86,21 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--aggro F` | [deprecated] Use `--size` instead |
 | `--verbose` | Detailed output |
 
+### Recently added (2026-09-28, all CPU-cheap, all verified)
+
+- `scripts/fuse_layers.py --expect "15:b,..."` — gates the resolved
+  donor map (ranges expanded, tissue suffixes checked); exits 2 with a
+  diff before one output byte. Catches the silent-fallback class that
+  bit N1/N1m. Plus a soup shape-guard: mismatched donor shapes fail
+  LOUD, never a corrupt file.
+- `scripts/group_damage_sweep.py --units TAGS --timeout S --ngl N` —
+  subset sweeps (tags, not indices) with per-PPL timeout; failures go
+  to `*.failures.jsonl`, second failure of a unit becomes a TERMINAL
+  censored label (`damage: null`, never retried, never imputed).
+- `--pin-norms` warns when it changes 0 tensors (proven no-op: the
+  binary writes 1D F32 regardless). The size ceiling says so loudly
+  instead of silently capping.
+
 ### Tier Auditing Tool
 
 ```bash
@@ -132,12 +147,12 @@ blocking classes — check the dry-run before assuming the budget bit.
 
 * **MSE (default / spread):** Relative-blind absolute gain. Tiers spread evenly (Q5/Q6-heavy middle). Best PPL/KLD on dense 9B.
 * **SMAPE (barbell):** Junk to the Q4 floor, kings to Q8 penthouses. Owns small budgets, loses big ones (budget law).
-* **RMSE:** Perfectionist rescale of MSE. Zoo: beats MSE on PPL twice. First verdict (RINIQ-M2-6500-RMSE-Q38): PPL 7.5411, GPQA 50.00%, **HE 88.41%** — takes recognition, loses verdict by 3pp to MSE. Budget law extended.
+* **RMSE:** Perfectionist rescale of MSE. Zoo: beats MSE on PPL twice. First verdict (RINIQ-M2-6500-RMSE-Q38): PPL 7.5411, GPQA 50.00%, **HE 88.41%** — takes recognition, trails MSE by 3pp on verdict (sub-floor: direction, not rank).
 * **MIX (per-group):** Kings by MSE, rest by `--mix-base`. Formulas live on different scales (mse Δ ~1e-3 vs smape ~1.2), so `_scale()` normalizes every formula to O(1) first — without it smape junk outbids mse kings 800:1 and the mix collapses. Dry-run geometry is new (wide Q5 spread, no Q8); verdict queued.
-* **SMSE (blend 👑, ex-BALANCE):** Geometric mean of the SMAPE-relative and MSE-absolute halves (both O(1)-normalized, MIX lesson). SMAPE's `(ec+en)` denominator silently cancels the sub-4 toxicity penalty; the blend carries real toxicity through its absolute half. First verdict (MiMo-4500, allow-q3): PPL 9.4092 vs SMAPE 10.5343 (−1.12), **HE 54.88% vs 29.88% (+25pp)** — rescue from the lava. Second verdict (MiMo-5100): PPL 8.7389 vs 8.7435 (tie), HE 71.34% vs 70.12% (+1.2pp), 3 empties — DUEL 0/3 (HE p=0.88, HE+ p=0.76 pointing the other way, empties p=0.13): NOISE, crown demoted 2026-09-28. Numbers stay, verdict withdrawn. Third verdict (MiMo-6500): PPL 8.7275 vs 8.7655 (tie), HE 72.56% vs 75.00% (−2.4pp) — LOSES big: at 6500 the middle decides (MSE Q6 67 vs SMSE 41), not penthouses (SMSE had more Q8, 125 vs 108). Verdict: SMSE owns small+medium budgets, MSE owns big. The bet behind it: any tier below Q4 hurts, and fewer is better.
-* **SRMSE (SMAPE×RMSE, queued):** Relative lens × COMPRESSED absolute (sqrt squeezes toxicity ×1.41 instead of ×2.0). Prediction: "SMAPE with manners" — PPL at/above SMAPE everywhere, HE between SMAPE and SMSE. Duel MiMo-5100-SRMSE running.
+* **SMSE (blend, ex-BALANCE):** Geometric mean of the SMAPE-relative and MSE-absolute halves (both O(1)-normalized, MIX lesson). SMAPE's `(ec+en)` denominator silently cancels the sub-4 toxicity penalty; the blend carries real toxicity through its absolute half. First verdict (MiMo-4500, allow-q3): PPL 9.4092 vs SMAPE 10.5343 (−1.12), **HE 54.88% vs 29.88% (+25pp)** — rescue from the lava. Second verdict (MiMo-5100): PPL 8.7389 vs 8.7435 (tie), HE 71.34% vs 70.12% (+1.2pp), 3 empties — DUEL 0/3 (HE p=0.88, HE+ p=0.76 pointing the other way, empties p=0.13): NOISE, crown demoted 2026-09-28. Numbers stay, verdict withdrawn. Third verdict (MiMo-6500): PPL 8.7275 vs 8.7655 (tie), HE 72.56% vs 75.00% (−2.4pp) — LOSES big: at 6500 the middle decides (MSE Q6 67 vs SMSE 41), not penthouses (SMSE had more Q8, 125 vs 108). Verdict: SMSE owns small+medium budgets, MSE owns big. The bet behind it: any tier below Q4 hurts, and fewer is better.
+* **SRMSE (SMAPE×RMSE, demoted 2026-09-28):** Relative lens × COMPRESSED absolute (sqrt squeezes toxicity ×1.41 instead of ×2.0). Duel MiMo-5100-SRMSE came back 0/3 (109-115, sampling spread on a bit-identical file) — manners without verdict. Filed, not crowned.
 
-### Distribution Comparison @ 6500 MiB (427 tensors, incl. 177 F16 norms/1D)
+### Distribution Comparison @ 6500 MiB (427 tensors, incl. 177 F32 forced by the binary)
 
 ```
 Tier      BU-MSE (spread)    BU-SMAPE (barbell)   TD-MSE       TD-SMAPE (F16 core)
@@ -181,7 +196,12 @@ presence_penalty 0.0, repetition_penalty 1.0, max_tokens 2048
 
 `presence_penalty 1.5` (vendor recipe) breaks thinking templates; `0.0` verified. Preflight `/health` before every battery; mid-run watchdog every 10 tasks (dead server aborts LOUDLY, never scores empties silently). Runner: `scripts/run_humaneval.py` (env `HE_*`, `HUMANEVAL_OUT`, `HUMANEVAL_SERVER`; `HUMANEVAL_SERVE_MODEL` = self-serve with auto-kill). Eval: `human_eval.evaluation.evaluate_functional_correctness`, pass@1, k=[1]. Results: `eval_results/humaneval_<tag>.jsonl`. Strictness upgrade: every battery is rescored with EvalPlus HumanEval+ (80× tests, CPU) — the HE+ column below.
 
-Open question: the SRIQ pair says temp 0.0 is worth +14pp while only decisiveness stays flat. If greedy (temp 0.0) proves reproducible — the sampler skips RNG entirely there, though batch composition can still leak in — the verdict column could stop being sampled at all. That would make verdicts reproducible instead of merely wide. Doctrine change, so stated here as a question, not a patch.
+Answered 2026-09-29: the same file twice at temp 0.0 scored 98/164 twice,
+per-task verdicts 164/164 identical, completions 163/164 byte-identical.
+Greedy does not narrow the verdict column — it REPRODUCES it. The column
+can stop being sampled: temp-0 batteries are certificates, temp-1.0
+batteries are draws. (Caveat kept: the sampler skips RNG at temp ≤ 0, but
+logits still depend on batch composition — so far, no spread observed.)
 
 ---
 
@@ -199,79 +219,33 @@ preservation, not rank (nine-way tie at the top: 151, eight on 150).
 SMAPE owns small budgets; MSE owns big budgets — as LEDGER
 measurements (identity of pre-sidecar artefacts: permanent-unverifiable,
 see manifest; the lava leg survives on 3/3 columns + effect size).
-
-| Target Budget | MSE Utility | SMAPE Utility | Winning Lens |
-|:--------------|:------------|:--------------|:-------------|
-| 6500 MiB | PPL 7.7695 / HE 85.98% | PPL 7.8252 / HE 82.32% | MSE spread (+3.7pp) |
-| 5100 MiB | PPL 7.7962 / HE 79.88% | PPL 7.8012 / HE 82.93% | SMAPE barbell (+3.0pp) |
+Direction only, not rank: the legs differ by 5–6 tasks, below the
+13-task resolution floor (6500: 141 vs 135; 5100: 136 vs 131).
 
 ### The Sub-4 Law (confirmed 2026-09-23)
 
 Any tier below Q4 hurts, and fewer is better. `--allow-q3-or-lower` at ~4 GB is lava in every family: MiMo-4500-SMAPE (PPL 10.53 / HE 29.88%) lands exactly where NeoHorse-3650-Q2 did (10.36 / 23.78%) — same physics, different bones. SMSE-4500 (9.41 / **54.88%**, +25pp) proves limiting sub-4 exposure rescues the build. TOX (×2.0 effective-MSE penalty, still in `constants.py`) called it; SMSE proves it on the verdict column.
 
-### Reference Results I: NeoHorse-1-9B (official BF16 98.17% @ undisclosed ctx)
+### Reference Results I: NeoHorse-1-9B — full table lives on the family card
 
-| Build | File Size | PPL (ctx1024) | KLD vs Q8-proxy | HE pass@1 | Key Finding |
-|:------|----------:|:-------------:|:---------------:|:---------:|:------------|
-| MERNIK-6500-MSE | 6.83 GB | 7.7695 | 0.0453 | 85.98% (141/164) | Outperforms stock Q6_K |
-| MERNIK-6500-SMAPE | 6.83 GB | 7.8252 | 0.0476 | 82.32% (135/164) | Ties stock Q6_K |
-| MERNIK-6500-TD-MSE | 6.83 GB | 7.7701 | 0.0452 | 82.32% | −3.7pp code loss vs MSE |
-| MERNIK-6500-TDN-MSE | 6.83 GB | 7.7701 | — | 83.54% | +1.2pp measured, mechanism = budget redirect (see §3) |
-| MERNIK-6500-TDN-SMAPE | 6.83 GB | — | — | 79.27% | Post-hoc shield disrupts greedy path |
-| MERNIK-6500-TD-SMAPE | 6.83 GB | 7.8184 | 0.0505 | 82.32% | Holds Q6 level with 236 tensors at Q4 |
-| Q6_K (stock) | 7.36 GB | 7.9419 | 0.0118 | 82.32% (135/164) | Stock baseline |
-| MERNIK-5100-SMAPE | 5.36 GB | 7.8012 | 0.0586 | 82.93% (136/164) | Q6-class code at −2.2 GB 👑 |
-| MERNIK-5100-MSE | 5.36 GB | 7.7962 | 0.0588 | 79.88% (131/164) | Budget law holds by 3pp |
-| Q4_K_M (stock) | 5.62 GB | 7.7824 | 0.0875 | 76.83% (126/164) | Beaten by MERNIK-5100 |
-| Q2_K (stock) | 3.83 GB | 90.0284 💀 | 2.6354 💀 | 0.00% | Full collapse |
-| MERNIK-3650-Q2 | 3.65 GB | 10.3586 | 0.4706 | 23.78% (39/164) | Recovers sub-4-bit collapse |
+[wepiqx/NeoHorse-1-9B-MERNIK-GGUF](https://huggingface.co/wepiqx/NeoHorse-1-9B-MERNIK-GGUF).
+Load-bearing lines: 6500-MSE 141/164 (85.98%), 5100-SMAPE 136/164
+(82.93%) ties stock Q6_K 135/164 at −2.2 GB. Gaps between neighbours are
+1–6 tasks — direction, not rank.
 
-### Reference Results II: OxCoder-9B (finetune duel, same Qwen3.5 bones)
+### Reference Results II: OxCoder-9B — full table lives on the family card
 
-| Build | File Size | PPL (ctx1024) | HE pass@1 | Note |
-|:------|----------:|:-------------:|:---------:|:-----|
-| Ox-MSE-6500 | 6.83 GB | 7.5125 | 90.24% (148/164) | Distillate leads benchmark |
-| Ox-SMAPE-5100 | 5.36 GB | 7.5670 | 88.41% (145/164) | Compact build beats big NeoHorse |
-| Ox-Q6_K (stock) | 7.36 GB | 7.6758 | 84.15% (138/164) | Allocation wins over stock flat |
+[wepiqx/OxCoder-9B-MERNIK-GGUF](https://huggingface.co/wepiqx/OxCoder-9B-MERNIK-GGUF).
+Load-bearing lines: SMSE-6500 150/164 (91.46%), Q8 148/164, SMAPE-5100
+145/164 — one cluster, no crown inside it.
 
-Full card: [wepiqx/OxCoder-9B-MERNIK-GGUF](https://huggingface.co/wepiqx/OxCoder-9B-MERNIK-GGUF).
+### Monster Standings: The RINIQ Series — full table lives on the family card
 
-### Monster Standings: The RINIQ Series
-
-Layer-fused models (OxCoder base + donor blocks; auto-maps via `scripts/auto_fuse.py`). Files: [wepiqx/RINIQ-MERNIK-GGUF](https://huggingface.co/wepiqx/RINIQ-MERNIK-GGUF).
-
-```bash
-python scripts/fuse_layers.py --a OX --b ORN --c NEO --map "15:b,..."
-python scripts/auto_fuse.py --a OX --b ORN --ia OX.imatrix --ib ORN.imatrix --rule rank-vote --out M7.gguf
-```
-
-| Build | Size | PPL | GPQA-rec | HE pass@1 | HE+ (EvalPlus 80×) | Empties |
-|:------|-----:|:---:|:--------:|:---------:|:-----------------:|:-------:|
-| RINIQ-M2-MERNIK-5100-Q38 👑 | 5.0 GB | 7.6130 | 47.47% | **92.07% (151/164)** | **87.8** (−3.7) | 8 |
-| RINIQ-M2-MERNIK-5100 | 5.0 GB | 7.5819 | 50.00% | **91.46% (150/164)** | 87.2 (−3.0) | 6 |
-| RINIQ-M4a-MERNIK-5100 | 5.0 GB | 7.5898 | **51.01%** | **91.46% (150/164)** | 87.2 (−4.3) | **4** |
-| RINIQ-M1-MERNIK-5100 | 5.0 GB | 7.6242 | **51.01%** | 90.85% (149/164) | 85.4 (−4.8) | 7 |
-| RINIQ-M4c-MERNIK-5100 | 5.0 GB | 7.5863 | 47.98% | 90.85% (149/164) | 85.4 (−4.8) | 6 |
-| RINIQ-M4b-MERNIK-5100 | 5.0 GB | **7.5743** | 48.48% | 89.63% (147/164) | 84.1 (−4.9) | 4 |
-| RINIQ-M3-MERNIK-5100 | 5.0 GB | 7.7111 | 50.00% | 86.59% (142/164) | 83.5 (−3.1) | 13 |
-| RINIQ-M2-SMAPE-6500 | 6.8 GB | 7.5730 | 48.48% | 89.63% (147/164) | 83.5 (−5.5) | 5 |
-| RINIQ-M2-MSE-6500 | 6.8 GB | 7.5263 | 48.48% | **91.46% (150/164)** | 85.4 (−4.8) | 8 |
-| RINIQ-M5-MERNIK-5100 | 5.0 GB | 7.6587 | **52.02%** | **91.46% (150/164)** | 84.8 (−6.1) | 7 |
-| RINIQ-M6-MERNIK-5100 | 5.6 GB | 8.5137 | 46.97% | 83.54% (137/164) | 79.9 (−3.6) | 23 |
-| RINIQ-M7-MERNIK-5100 | 5.0 GB | 7.6033 | 49.49% | 88.41% (145/164) | 86.0 (−2.4) | 11 — first auto-fused: mid-pack, method validated |
-| RINIQ-M2-MERNIK-5100-MIX | 5.0 GB | 7.6001 | 48.99% | 89.63% (147/164) | 85.4 (−3.6) | 6 — novel geometry, mid-pack |
-| RINIQ-M2-RMSE-Q38-6500 | 6.8 GB | 7.5411 | **50.00%** | 88.41% (145/164) | 82.9 (−4.9) | 6 — RMSE's first verdict: takes GPQA, loses HE by 3pp |
-
-Sub-block donor mapping: M1 = Ox + Orn 15,19,23,27 + Neo 31. M2 = Ox + Orn 24,25,26 + Neo 31. M3 = M1 + blks 0–8 soup. M4a = M2 + 16←Orn. M4b = M2 with 25←Ox. M4c = M2 + 30←Orn. M5 = M1∪M2 (Orn 15,19,23,24,25,26,27). M6 = Orn base + Ox 16,24,25,26,31 (mirror, BASE RULES). M7 = auto rank-vote Orn{10,14,15,16,18}.
-
-### External Reference: JackOD-9B-Coder (different harness!)
-
-Corporate 4-way omnimerge_v2 over the same Qwen3.5-9B ancestor. Quoted from their README — greedy temp 0.0, mixed banks (their own † admits it). Same-harness duel (LiveCodeBench v6 55 hard) queued.
-
-| Build | HE | HE+ | LCB v6 55 hard |
-|:------|---:|:---:|:--------------:|
-| RINIQ-M2-MERNIK-5100-Q38 (ours) | **92.07** | **87.8** | ⏳ |
-| JackOD-9B-Coder (Q6_K, theirs) | 88.41 | 82.32 | **78.18** |
+Layer-fused models (OxCoder base + donor blocks; auto-maps via
+`scripts/auto_fuse.py`). Files and verdicts:
+[wepiqx/RINIQ-GGUF](https://huggingface.co/wepiqx/RINIQ-GGUF), recipes in
+`RINIQ-NEXT.md`. Load-bearing line: nine-way statistical tie (151, then
+eight builds on 150) — no crown, the top is shared.
 
 ### Fast-Ring Diagnostic: GPQA-Recognition
 
@@ -314,7 +288,7 @@ KLD-vs-ref is the rank column (Soulfate24 battery). Measured relief ceilings (`-
 | `gemma4` | layer-scale norms | QAT support, Q4_K attention floor |
 | llama (generic) | tensor names | Dense GQA (MiniCPM5, NeoHorse, etc.) |
 
-Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86) → Ornith-9B-MTP @6500 (PPL 8.6541) → NeoHorse-9B @6500 (HE 85.98% > Q6_K 82.32%).
+Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86) → Ornith-9B-MTP @6500 (PPL 8.6541) → NeoHorse-9B @6500 (HE 141 vs Q6_K 135 — 6 tasks, direction only).
 
 ---
 
@@ -322,7 +296,9 @@ Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86)
 
 - 📦 [NeoHorse-1-9B-MERNIK-GGUF](https://huggingface.co/wepiqx/NeoHorse-1-9B-MERNIK-GGUF)
 - 📦 [OxCoder-9B-MERNIK-GGUF](https://huggingface.co/wepiqx/OxCoder-9B-MERNIK-GGUF)
-- 📦 [RINIQ-MERNIK-GGUF](https://huggingface.co/wepiqx/RINIQ-MERNIK-GGUF)
+- 📦 [MiMo-V2.6-Distill-Qwen-9B-GGUF-MERNIK](https://huggingface.co/wepiqx/MiMo-V2.6-Distill-Qwen-9B-GGUF-MERNIK)
+- 📦 [RINIQ-GGUF](https://huggingface.co/wepiqx/RINIQ-GGUF)
+- 📦 [RINIQ-NEXT-GGUF](https://huggingface.co/wepiqx/RINIQ-NEXT-GGUF)
 - 📦 [Ornith-1.5-9B-MTP-ASHQ1-GGUF](https://huggingface.co/wepiqx/Ornith-1.5-9B-MTP-ASHQ1-GGUF)
 - 📦 [Spark-X2.5-1.7B-ASHQ1-GGUF](https://huggingface.co/wepiqx/Spark-X2.5-1.7B-ASHQ1-GGUF)
 
