@@ -218,6 +218,19 @@ presence_penalty 0.0, repetition_penalty 1.0, max_tokens 2048
 
 `presence_penalty 1.5` (vendor recipe) breaks thinking templates; `0.0` verified. Preflight `/health` before every battery; mid-run watchdog every 10 tasks (dead server aborts LOUDLY, never scores empties silently). Runner: `scripts/run_humaneval.py` (env `HE_*`, `HUMANEVAL_OUT`, `HUMANEVAL_SERVER`; `HUMANEVAL_SERVE_MODEL` = self-serve with auto-kill). Eval: `human_eval.evaluation.evaluate_functional_correctness`, pass@1, k=[1]. Results: `eval_results/humaneval_<tag>.jsonl`. Strictness upgrade: every battery is rescored with EvalPlus HumanEval+ (80× tests, CPU) — the HE+ column below.
 
+Reproduce any number below (runner + rescorer ship in this repo):
+
+```bash
+export HUMANEVAL_SERVE_MODEL=/path/to/MODEL.gguf HUMANEVAL_OUT=eval_results/humaneval_mytag.jsonl
+export HE_TEMP=1.0 HE_TOP_P=0.95 HE_TOP_K=20 HE_MIN_P=0.0 HE_PRESENCE=0.0 HE_MAX_TOKENS=2048
+python scripts/run_humaneval.py          # serves, runs 164 tasks, kills server, writes .meta.json sidecar
+evalplus.evaluate humaneval --samples eval_results/humaneval_mytag.jsonl   # HE+ column
+```
+
+The `.meta.json` sidecar (model path, git sha, full sampling, timestamps)
+is written at battery time — it is what makes a new battery verifiable
+instead of permanent-unverifiable.
+
 Answered 2026-09-29: the same file twice at temp 0.0 scored 98/164 twice,
 per-task verdicts 164/164 identical, completions 163/164 byte-identical.
 Greedy does not narrow the verdict column — it REPRODUCES it. The column
