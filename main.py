@@ -61,6 +61,12 @@ def main():
     parser.add_argument("--free-pins", action="store_true",
                          help="EXPERIMENTAL: let output/token_embd/MTP/routers fight "
                               "for budget instead of fixed pins")
+    parser.add_argument("--max-tier", default=None,
+                         help="EXPERIMENTAL: override CLASS_MAX_TIER for every "
+                              "class at runtime (e.g. F16 to let kings rise "
+                              "above Q8_0). Bottom-up only; top-down starts "
+                              "at F16 by construction. Never touches "
+                              "constants.py.")
     parser.add_argument("--squeeze", action="store_true",
                          help="SQUEEZE mode (separate path): only IQ1_S or F16, "
                               "nothing between. Dungeon or palace per tensor; "
@@ -260,6 +266,7 @@ def main():
         free_pins=args.free_pins,
         uopt=uopt,
         legacy_1d=args.legacy_1d,
+        **({"ceiling": args.max_tier} if (args.max_tier and not args.top_down) else {}),
         **({"pin_norms": args.pin_norms} if args.top_down else {
             "relief": relief,
             "relief_thr": args.relief_thr,

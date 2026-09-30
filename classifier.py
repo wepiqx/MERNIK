@@ -583,10 +583,14 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
                      relief: Dict[str, float] | None = None,
                      relief_thr: float = -0.5,
                      allowed_tiers: list | None = None,
-                     legacy_1d: bool = False) -> Tuple[dict, dict]:
+                     legacy_1d: bool = False,
+                     ceiling: str | None = None) -> Tuple[dict, dict]:
     """relief: {sweep_unit_tag: Q5->Q4 damage}. Groups with damage below
     relief_thr get ceiling Q4 (their measured sweet spot): the queue never
     upgrades them above Q4, and the saved budget flows to other groups.
+    ceiling: global per-group ceiling override (e.g. F16) used when no
+    relief/squeeze ceiling applies — runtime override for CLASS_MAX_TIER,
+    constants.py untouched.
     allowed_tiers: restrict the ladder (SQUEEZE mode, e.g. ["IQ1_S", "F16"]
     = dungeon or palace, nothing between). Floor/ceiling follow the list;
     relief ceilings are ignored in squeeze mode."""
@@ -687,7 +691,7 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
 
     upgrade_queue = []
     for g_id in group_registry:
-        _push_upgrade(g_id, group_registry, assignments, tensor_importance, upgrade_queue, importance_table, ceiling=(order[-1] if squeeze else relief_ceiling.get(g_id)), uopt=uopt, order=order)
+        _push_upgrade(g_id, group_registry, assignments, tensor_importance, upgrade_queue, importance_table, ceiling=(order[-1] if squeeze else (relief_ceiling.get(g_id) or ceiling)), uopt=uopt, order=order)
 
     while upgrade_queue:
         item = heapq.heappop(upgrade_queue)
@@ -700,7 +704,7 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
             assignments[n] = next_tier
         current_size += cost_delta
 
-        _push_upgrade(item.group_id, group_registry, assignments, tensor_importance, upgrade_queue, importance_table, ceiling=(order[-1] if squeeze else relief_ceiling.get(item.group_id)), uopt=uopt, order=order)
+        _push_upgrade(item.group_id, group_registry, assignments, tensor_importance, upgrade_queue, importance_table, ceiling=(order[-1] if squeeze else (relief_ceiling.get(item.group_id) or ceiling)), uopt=uopt, order=order)
 
     # Tail of the budget: the drain only offers cur->cur+1, so whatever is
     # left when the cheapest single rungs stop fitting stays unspent.
@@ -708,7 +712,7 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
         current_size, polished = _polish_slack(
             assignments, group_registry, current_size, effective_target,
             tensor_importance, importance_table, uopt=uopt, order=order,
-            ceiling_of=lambda g_id: relief_ceiling.get(g_id))
+            ceiling_of=lambda g_id: (relief_ceiling.get(g_id) or ceiling))
 
     return assignments, padded_ne_map
 

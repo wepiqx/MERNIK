@@ -100,6 +100,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--imatrix-tol F` / `--imatrix-legacy-combine` | Refuse when lens files diverge beyond tolerance (default 1%); legacy flag restores max/mean-combine with a split-brain binary |
 | `--squeeze` | SQUEEZE mode (separate path): only IQ1_S or F16 per tensor, bottom-up only |
 | `--free-pins` | EXPERIMENTAL: output/token_embd/MTP/routers join the budget pool |
+| `--max-tier T` | EXPERIMENTAL: runtime override of CLASS_MAX_TIER for every class (e.g. F16 lets kings rise above Q8_0); bottom-up only, constants.py untouched |
 | `--cv-w F` / `--linf-w F` | Hybrid (dead by construction): concentration discount / worst-case boost weights |
 | `--huber-delta D` | huber/logcosh scale splitting small vs large deltas (default 3e-4) |
 | `--ssim-table P` / `--ptable P` / `--frag-w F` | ssim / pw_ssim tables + smape_frag modulation weight (default 0.5) |
@@ -121,6 +122,9 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 - `--pin-norms` warns when it changes 0 tensors (proven no-op: the
   binary writes 1D F32 regardless). The size ceiling says so loudly
   instead of silently capping.
+- `--max-tier F16` lets kings rise above Q8_0 without touching
+  `constants.py` (verified: reproduces the raised-ceiling geometry
+  byte-exact in dry-run; 13/13 golden geometries still green).
 
 ### Tier Auditing Tool
 
