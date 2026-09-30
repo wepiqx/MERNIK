@@ -67,6 +67,12 @@ def main():
                               "above Q8_0). Bottom-up only; top-down starts "
                               "at F16 by construction. Never touches "
                               "constants.py.")
+    parser.add_argument("--invert", action="store_true",
+                         help="ADVERSARIAL CONTROL: negate the importance "
+                              "table — kings stay down, junk rises to the "
+                              "skyscraper. If this still scores, importance "
+                              "is bunk; if it collapses, importance is "
+                              "causal. Operator's idea, bottom-up only.")
     parser.add_argument("--squeeze", action="store_true",
                          help="SQUEEZE mode (separate path): only IQ1_S or F16, "
                               "nothing between. Dungeon or palace per tensor; "
@@ -224,6 +230,14 @@ def main():
                   f"{g[1].replace('.weight', '')}")
 
     imp_table = build_importance_table(imatrix, model)
+    if args.invert:
+        # Adversarial control (operator's idea): the whole ranking runs
+        # upside down — junk outbids kings for every rung. Tied groups,
+        # pins and floors stay structural; only priority inverts.
+        for _n, _d in imp_table.items():
+            if "importance_mean" in _d:
+                _d["importance_mean"] = -_d["importance_mean"]
+        print("  INVERTED: kings beg, junk builds skyscrapers")
 
     print("\n[4/4] Classifying tensors (%s)..." %
           ("top-down from F16" if args.top_down else "greedy imatrix-driven"))
