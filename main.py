@@ -73,6 +73,10 @@ def main():
                               "skyscraper. If this still scores, importance "
                               "is bunk; if it collapses, importance is "
                               "causal. Operator's idea, bottom-up only.")
+    parser.add_argument("--invert-keep", type=int, default=0,
+                         help="Soft invert: exempt the top-K importance "
+                              "groups from negation (default 0 = full "
+                              "invert). Only meaningful with --invert.")
     parser.add_argument("--squeeze", action="store_true",
                          help="SQUEEZE mode (separate path): only IQ1_S or F16, "
                               "nothing between. Dungeon or palace per tensor; "
@@ -231,13 +235,33 @@ def main():
 
     imp_table = build_importance_table(imatrix, model)
     if args.invert:
-        # Adversarial control (operator's idea): the whole ranking runs
-        # upside down — junk outbids kings for every rung. Tied groups,
-        # pins and floors stay structural; only priority inverts.
+        # Adversarial control (operator's idea): the ranking runs upside
+        # down — junk outbids kings for every rung. Tied groups, pins and
+        # floors stay structural; only priority inverts. --invert-keep K
+        # exempts the top-K groups (soft invert). Dedupe by id: the table
+        # holds alias keys sharing one dict, double negation would cancel.
+        keep = set()
+        kept_groups = 0
+        if args.invert_keep > 0:
+            scored = []
+            for _g in tied_groups:
+                _vals = [imp_table[_n]["importance_mean"] for _n in _g
+                         if _n in imp_table
+                         and "importance_mean" in imp_table[_n]]
+                if _vals:
+                    scored.append((max(_vals), _g))
+            scored.sort(reverse=True)
+            for _, _g in scored[:args.invert_keep]:
+                keep.update(_g)
+            kept_groups = min(args.invert_keep, len(scored))
+        _seen = set()
         for _n, _d in imp_table.items():
-            if "importance_mean" in _d:
+            if "importance_mean" in _d and _n not in keep \
+                    and id(_d) not in _seen:
                 _d["importance_mean"] = -_d["importance_mean"]
-        print("  INVERTED: kings beg, junk builds skyscrapers")
+                _seen.add(id(_d))
+        print(f"  INVERTED (top-{kept_groups} groups exempt): "
+              "kings beg, junk builds skyscrapers")
 
     print("\n[4/4] Classifying tensors (%s)..." %
           ("top-down from F16" if args.top_down else "greedy imatrix-driven"))
