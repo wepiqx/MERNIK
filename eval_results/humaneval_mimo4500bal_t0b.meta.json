@@ -1,0 +1,45 @@
+{
+  "battery_min": 54.1,
+  "dirty": false,
+  "empties": 26,
+  "env_overrides": {
+    "HE_MAX_TOKENS": "2048",
+    "HE_MIN_P": "0.0",
+    "HE_PRESENCE": "0.0",
+    "HE_REPEAT": "1.0",
+    "HE_TEMP": "0.0",
+    "HE_THINKING": "1",
+    "HE_TOP_K": "20",
+    "HE_TOP_P": "0.95"
+  },
+  "finished": "2026-09-29T15:00:35",
+  "git_sha": "0054d37",
+  "n_tasks": 164,
+  "out": "humaneval_mimo4500bal_t0b.jsonl",
+  "platform": "Linux-7.2.6-artix2-1-x86_64-with-glibc2.44",
+  "python": "3.14.7",
+  "s_per_task": 19.8,
+  "sample": {
+    "max_tokens": 2048,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0,
+    "temperature": 0.0,
+    "top_k": 20,
+    "top_p": 0.95
+  },
+  "serve_model": "/mnt/Vsio/Downloads/MiMo-V2.6-Distill-Qwen-9B-MERNIK-4500-BALANCE.gguf",
+  "server_args": [
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--log-disable",
+    "--cache-reuse",
+    "256"
+  ],
+  "server_bin": "/home/wepiqx/llama.cpp/build/bin/llama-server",
+  "server_url": "http://127.0.0.1:28082",
+  "started": "2026-09-29T14:06:31"
+}
