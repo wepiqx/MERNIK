@@ -101,6 +101,8 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--squeeze` | SQUEEZE mode (separate path): only IQ1_S or F16 per tensor, bottom-up only |
 | `--free-pins` | EXPERIMENTAL: output/token_embd/MTP/routers join the budget pool |
 | `--max-tier T` | EXPERIMENTAL: runtime override of CLASS_MAX_TIER for every class (e.g. F16 lets kings rise above Q8_0); bottom-up only, constants.py untouched |
+| `--invert` | ADVERSARIAL CONTROL (operator's idea): negate importance — kings down, junk up. If it still scores, importance is bunk; if it collapses, importance is causal |
+| `--invert-keep K` | Soft invert: top-K importance groups exempt (small-budget dial; inert at big budgets where the ceiling binds, not priority) |
 | `--cv-w F` / `--linf-w F` | Hybrid (dead by construction): concentration discount / worst-case boost weights |
 | `--huber-delta D` | huber/logcosh scale splitting small vs large deltas (default 3e-4) |
 | `--ssim-table P` / `--ptable P` / `--frag-w F` | ssim / pw_ssim tables + smape_frag modulation weight (default 0.5) |
@@ -312,6 +314,21 @@ Damage-sweep labels (`scripts/group_damage_sweep.py`) train the Gini allocator. 
 ### KLD Battery & Relief
 
 KLD-vs-ref is the rank column (Soulfate24 battery). Measured relief ceilings (`--relief`) pin sweet-spot groups at Q4.
+
+### Ceiling & Inversion Probes (2026-09-30/10-01, operator's ideas)
+
+- **Ceiling map:** `RINIQ-M2-MAXF16` (9.01 GB, F16 core 123) measured
+  PPL 7.7357 (worse than 6500-MSE's 7.5263), HE 137/164, HE+ 129 — +4 GB
+  over the 5 GB cluster buys −13 tasks. Kings saturate (Q8→F16 gains
+  nothing) while the Q4 tail drags: at big budgets the MIDDLE decides.
+- **Inversion (adversarial control, `--invert` / `--invert-keep K`):**
+  full priority flip at 8350 (PPL 7.6960, HE 145/164, HE+ 137) and at
+  5100 (PPL 7.5845, HE 145/164, HE+ 137) — duels vs honest arms 0/3 and
+  0/3. Flipped noise ties, so the lens carries nothing resolvable.
+- **Doctrine consequence:** the FLOOR is the whole game, priority among
+  Q4+ is noise. Every verdict-scale effect lives below Q4 (lava +41/+30,
+  Q2 collapse); everything above moves inside the 13-task floor.
+  Utility-lens debates demoted to second order; floor/TOX mechanics first.
 
 ---
 
