@@ -37,18 +37,24 @@ WIKI = os.environ.get("WIKITEXT_DATA", "/mnt/Vsio/wikitext-2-raw/wiki.test.raw")
 def run_ppl(model_path: str, ctx: int = 1024, n: int = 64,
             wiki: str | None = None, kld_base: str | None = None,
             timeout: int = 1200, ngl: int = 99):
-    """Returns (ppl, kld|None).
+    """Returns (ppl, kld|None, extra dict).
 
     NOTE (build >=11051 scar): --kl-divergence REPLACES perplexity instead
     of augmenting it (no 'Final estimate' line). So with kld_base we run
     TWICE: plain (PPL Final, protocol-comparable) + KLD flags (Mean KLD).
     Costs 2x PPL time per unit — honesty over speed.
+
+    The KLD pass prints a whole statistics section; we used to read ONE
+    line (Mean KLD). Now also parsed, same run, zero extra compute:
+    Maximum KLD (tail/detonation), Median KLD (skew vs mean), RMS dp
+    (behavioral shift), Same-top-p (top-1 agreement = decisiveness).
     """
     cmd = [PPL, "-m", model_path, "-f", wiki or WIKI, "-ngl", str(ngl),
            "-c", str(ctx), "-n", str(n), "-b", "512", "--seed", "7"]
     out = subprocess.run(cmd, capture_output=True, text=True,
                            timeout=timeout)
     ppl, kld = None, None
+    extra = {}
     for line in (out.stderr + out.stdout).splitlines():
         if "Final estimate" in line:
             ppl = float(line.split("PPL =")[1].split("+/-")[0].strip())
@@ -60,15 +66,36 @@ def run_ppl(model_path: str, ctx: int = 1024, n: int = 64,
         out2 = subprocess.run(kcmd, capture_output=True, text=True,
                               timeout=timeout)
         for line in (out2.stderr + out2.stdout).splitlines():
-            if "Mean" in line and "KLD" in line:
+            s = line.strip()
+            if "Mean" in s and "KLD" in s and "Δp" not in s:
                 try:
-                    kld = float(line.split("KLD:")[1].split("±")[0].strip())
+                    kld = float(s.split("KLD:")[1].split("±")[0].strip())
+                except (IndexError, ValueError):
+                    pass
+            elif s.startswith("Maximum KLD:"):
+                try:
+                    extra["kld_max"] = float(s.split(":")[1].strip())
+                except (IndexError, ValueError):
+                    pass
+            elif s.startswith("Median") and "KLD" in s:
+                try:
+                    extra["kld_median"] = float(s.split(":")[1].strip())
+                except (IndexError, ValueError):
+                    pass
+            elif s.startswith("RMS"):
+                try:
+                    extra["dp_rms"] = float(s.split(":")[1].split("±")[0].strip()) / 100.0
+                except (IndexError, ValueError):
+                    pass
+            elif s.startswith("Same top p:"):
+                try:
+                    extra["same_top"] = float(s.split(":")[1].split("±")[0].strip()) / 100.0
                 except (IndexError, ValueError):
                     pass
         if kld is None:
             tail = "\n".join((out2.stderr + out2.stdout).splitlines()[-8:])
             raise RuntimeError(f"no KLD in output for {model_path}:\n{tail}")
-    return ppl, kld
+    return ppl, kld, extra
 
 
 def main():
@@ -206,7 +233,15 @@ def main():
             return False
 
     def _wait_then_build(prev_fut, unit, path):
-        prev_fut.result()
+        # Serialization only (one quantize at a time: RAM). A dead
+        # predecessor must NEVER poison this unit: 2026-10-03 scar —
+        # one OOM-killed build cascaded RuntimeError through 148
+        # downstream units that never even ran. Catch, then build anyway;
+        # own failures surface via own future below.
+        try:
+            prev_fut.result()
+        except Exception:
+            pass
         build_file_inner(unit, path)
 
     build_file = build_file_inner
@@ -223,12 +258,13 @@ def main():
     kb = args.kld_base
     if "BASELINE" not in done:
         build_file(None, tmp)
-        base_ppl, base_kld = run_ppl(tmp, args.ppl_ctx, args.ppl_n,
+        base_ppl, base_kld, base_extra = run_ppl(tmp, args.ppl_ctx, args.ppl_n,
                                       args.wiki_file, kb,
                                       timeout=args.timeout, ngl=args.ngl)
         rec = {"unit": "BASELINE", "ppl": base_ppl}
         if kb:
             rec["kld"] = base_kld
+            rec.update(base_extra)
         with open(args.out, "a") as f:
             f.write(json.dumps(rec) + "\n")
         print(f"BASELINE ppl={base_ppl:.4f}" +
@@ -239,6 +275,8 @@ def main():
                     if json.loads(l)["unit"] == "BASELINE"]
             base_ppl = rows[0]["ppl"]
             base_kld = rows[0].get("kld")
+            base_extra = {k: rows[0].get(k) for k in
+                          ("kld_max", "kld_median", "dp_rms", "same_top")}
 
     def unit_tag(unit):
         return "+".join(n.replace(".weight", "").split(".")[-1] + "@" +
@@ -248,7 +286,12 @@ def main():
     # Pipelined: quant(unit i+1) on CPU overlaps PPL(unit i) on GPU.
     # UNIQUE tmp file per unit: rotating buffers raced when a slow PPL
     # (loaded system) let a later build overwrite the file PPL still read.
-    # ≤3 files alive at once (~3.4GB), deleted right after use.
+    # BOUNDED window (2026-10-03 scar): the old code submitted ALL builds
+    # upfront — builders outran PPL, buffers + page cache grew all run,
+    # and the tail died (OOM/pressure). At most MAX_INFLIGHT builds may
+    # be ahead of consumption; the rest wait unsubmitted. ≤3 files alive
+    # (~3.4GB per 1.7B unit), deleted right after use.
+    MAX_INFLIGHT = 3
     todo = [(unit_tag(u), u) for u in units if unit_tag(u) not in done]
     if args.units:
         want = {s.strip() for s in args.units.split(",") if s.strip()}
@@ -256,49 +299,64 @@ def main():
         print(f"subset mode: {len(todo)} units requested", flush=True)
     safe = lambda tag, i: re.sub(r"[^A-Za-z0-9_@+-]", "_", tag)[:60]
     ex = ThreadPoolExecutor(max_workers=2)
+    submitted = {}  # todo_idx -> (tag, unit, buf, future)
+
+    def ensure_submitted(idx):
+        if idx < 0 or idx >= len(todo) or idx in submitted:
+            return
+        tag, unit = todo[idx]
+        buf = os.path.join(REPO_ROOT, "models",
+                            f".sweep_{idx}_{safe(tag, idx)}.gguf")
+        prev = submitted[idx - 1][3] if idx - 1 in submitted else None
+        if prev is None:
+            fut = ex.submit(build_file, unit, buf)
+        else:
+            fut = ex.submit(_wait_then_build, prev, unit, buf)
+        submitted[idx] = (tag, unit, buf, fut)
+
     try:
         if todo:
-            tag0, unit0 = todo[0]
-            buf0 = os.path.join(REPO_ROOT, "models",
-                                f".sweep_0_{safe(tag0, 0)}.gguf")
-            fut_q = ex.submit(build_file, unit0, buf0)
-            pending = [(tag0, unit0, buf0, fut_q)]
-            for i, (tag, unit) in enumerate(todo[1:], start=1):
-                buf = os.path.join(REPO_ROOT, "models",
-                                   f".sweep_{i}_{safe(tag, i)}.gguf")
-                pending.append((tag, unit, buf,
-                                ex.submit(_wait_then_build, pending[-1][3],
-                                          unit, buf)))
-            for idx, (tag, unit, buf, fq) in enumerate(pending):
+            for i in range(min(MAX_INFLIGHT, len(todo))):
+                ensure_submitted(i)
+            n_total = len(todo)
+            for idx in range(n_total):
+                ensure_submitted(idx)
+                tag, unit, buf, fq = submitted[idx]
                 try:
                     fq.result()  # quant done (previous PPL overlapped it)
                 except Exception as e:
-                    print(f"[{idx + 1}/{len(pending)}] {tag} QUANT failed "
+                    print(f"[{idx + 1}/{n_total}] {tag} QUANT failed "
                           f"({type(e).__name__}), skipped", flush=True)
                     log_failure(tag, "quant", f"{type(e).__name__}", unit)
                     try:
                         os.remove(buf)
                     except OSError:
                         pass
+                    ensure_submitted(idx + MAX_INFLIGHT)
+                    del submitted[idx]
                     continue
                 if not _looks_valid(buf):
-                    print(f"[{idx + 1}/{len(pending)}] {tag} CORRUPT file, "
+                    print(f"[{idx + 1}/{n_total}] {tag} CORRUPT file, "
                           f"skipped", flush=True)
                     log_failure(tag, "corrupt", "bad magic/size", unit)
                     try:
                         os.remove(buf)
                     except OSError:
                         pass
+                    ensure_submitted(idx + MAX_INFLIGHT)
+                    del submitted[idx]
                     continue
                 try:
-                    p, k = run_ppl(buf, args.ppl_ctx, args.ppl_n,
+                    p, k, extra = run_ppl(buf, args.ppl_ctx, args.ppl_n,
                                     args.wiki_file, kb, timeout=args.timeout,
                                     ngl=args.ngl)
                 except Exception as e:
-                    print(f"[{idx + 1}/{len(pending)}] {tag} PPL failed "
+                    print(f"[{idx + 1}/{n_total}] {tag} PPL failed "
                           f"({type(e).__name__}: {str(e)[:100]}), skipped",
                           flush=True)
                     log_failure(tag, "ppl", f"{type(e).__name__}: {str(e)[:100]}", unit)
+                    ensure_submitted(idx + MAX_INFLIGHT)
+                    del submitted[idx]
                     continue
                 finally:
                     try:
@@ -310,11 +368,19 @@ def main():
                 if kb:
                     rec["kld"] = k
                     rec["damage_kld"] = k - base_kld
+                    for ek in ("kld_max", "kld_median", "dp_rms", "same_top"):
+                        if ek in extra and extra[ek] is not None:
+                            rec[ek] = extra[ek]
+                            b = (base_extra or {}).get(ek)
+                            if b is not None:
+                                rec["damage_" + ek] = extra[ek] - b
                 with open(args.out, "a") as f:
                     f.write(json.dumps(rec) + "\n")
-                print(f"[{idx + 1}/{len(pending)}] {tag} "
+                print(f"[{idx + 1}/{n_total}] {tag} "
                       f"damage={p - base_ppl:+.4f}" +
                       (f" kld={k - base_kld:+.4f}" if kb else ""), flush=True)
+                ensure_submitted(idx + MAX_INFLIGHT)
+                del submitted[idx]
     finally:
         ex.shutdown(wait=False)
 
