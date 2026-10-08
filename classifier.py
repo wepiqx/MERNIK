@@ -79,7 +79,11 @@ def _size_mib(tier: str, n_elements: int, force_f32: bool = False) -> float:
         return 0.0
     if force_f32:
         return n_elements * (F32_BPW / BITS_IN_MIB) * GGUF_OVERHEAD_FACTOR
-    return n_elements * TIER_SIZE_MULTIPLIER.get(tier, 0.0)
+    if tier not in TIER_SIZE_MULTIPLIER:
+        # Silent zeros in budget arithmetic caused silent regressions
+        # (review 2026-10-08): a typo'd tier must fail loud, never vanish.
+        raise ValueError(f"Unknown tier in budget accounting: {tier!r}")
+    return n_elements * TIER_SIZE_MULTIPLIER[tier]
 
 def _f32_map(model_tensors: Dict[str, Any]) -> Dict[str, bool]:
     """Tensors the binary will write as F32 whatever tier we assign.
@@ -126,7 +130,6 @@ def _mse_delta(cur_tier: str, next_tier: str) -> float:
 def _gain(cur_tier: str, next_tier: str, g_names: List[str],
           tensor_importance: Dict[str, float], uopt: Dict[str, Any]) -> float:
     """Quality gain of cur->next step under the selected utility metric."""
-    import math
     mode = (uopt or {}).get("mode", "mse")
     if mode == "mix":
         # Per-group utility: kings (top importance rank) evaluated by MSE
@@ -156,11 +159,16 @@ def _scale(mode: str, cur_tier: str, next_tier: str, uopt: Dict[str, Any]) -> fl
     bounded formulas (smape ≤ 2) outbid absolute ones (mse Δ ~1e-3) ~800:1
     and any mix collapses to the bounded side. cur/next args kept for
     future per-step references; currently unused.
+    Cache key includes uopt-dependent knobs (review 2026-10-08: keying by
+    mode alone silently served stale norms e.g. to logcosh with a custom
+    huber_delta via mix_base).
     """
-    if mode not in _scale_cache:
+    uopt = uopt or {}
+    key = (mode, float(uopt.get("huber_delta", 3e-4)))
+    if key not in _scale_cache:
         ref = abs(_gain_mode(mode, "Q4_K", "Q5_K", [], {}, uopt))
-        _scale_cache[mode] = 1.0 / ref if ref > 0 else 1.0
-    return _scale_cache[mode]
+        _scale_cache[key] = 1.0 / ref if ref > 0 else 1.0
+    return _scale_cache[key]
 
 
 def _gain_mode(mode: str, cur_tier: str, next_tier: str,
@@ -168,7 +176,8 @@ def _gain_mode(mode: str, cur_tier: str, next_tier: str,
                uopt: Dict[str, Any]) -> float:
     """Single-formula gain (mode already resolved, never 'mix')."""
     import math
-    assert mode != "mix", "mix must be resolved before _gain_mode"
+    if mode == "mix":
+        raise ValueError("mix must be resolved before _gain_mode")
     from experimental import experimental_gain, experimental_gain_modes
     if mode == "rmse":
         return math.sqrt(_mse_eff(cur_tier)) - math.sqrt(_mse_eff(next_tier))
@@ -343,7 +352,9 @@ def _ssim_table(path: str | None) -> Dict[str, Dict[str, float]]:
         return _SSIM_CACHE.get(path, {})
     try:
         z = np.load(path, allow_pickle=False)
-    except Exception:
+    except Exception as e:
+        warnings.warn(f"ssim table {path} unreadable ({e}); MSE fallback, duels compare blind",
+                      RuntimeWarning)
         _SSIM_CACHE[path] = {}
         return {}
     tiers = ["Q4_K", "Q5_K", "Q6_K", "Q8_0"]
@@ -484,12 +495,9 @@ def _push_upgrade(group_id: int,
         return
 
     next_tier = _tier_at(cur_idx + 1, order)
-    
-    # Выбираем размер в зависимости от того, относится ли тир к K-quants
-    cur_size_g = g_elements_padded if cur_tier in K_QUANTS else g_elements
-    next_size_g = g_elements_padded if next_tier in K_QUANTS else g_elements
-    
-    cost_delta = _size_mib(next_tier, next_size_g) - _size_mib(cur_tier, cur_size_g)
+
+    # Single source of truth for step cost (K_QUANTS → padded inside).
+    cost_delta = _step_cost(cur_tier, next_tier, g_elements, g_elements_padded)
 
     quality_delta = _gain(cur_tier, next_tier, g_names, tensor_importance, uopt or {})
     if quality_delta < 0:
@@ -792,8 +800,6 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
     if target_size_mib <= 0:
         raise ValueError("target_size_mib must be positive")
     uopt = uopt or {"mode": "mse"}
-    if target_size_mib <= 0:
-        raise ValueError("target_size_mib must be positive")
 
     features = model.get("features", {})
     has_mtp = features.get("has_mtp", False) and not free_pins
