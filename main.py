@@ -81,7 +81,7 @@ def main():
                          help="SQUEEZE mode (separate path): only IQ1_S or F16, "
                               "nothing between. Dungeon or palace per tensor; "
                               "the queue rescues kings to F16. Bottom-up only.")
-    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "mix", "smse", "srmse", "balance"],
+    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "mix", "smse", "srmse", "balance", "logratio", "powalpha", "recovery"],
                         default="mse",
                         help="BATTLEFIELD: utility metric for the queue "
                              "(default: mse)")
@@ -91,6 +91,10 @@ def main():
                         help="BATTLEFIELD hybrid: worst-case-error boost weight")
     parser.add_argument("--huber-delta", type=float, default=3e-4,
                         help="BATTLEFIELD huber/logcosh: scale splitting small vs large deltas")
+    parser.add_argument("--pow-alpha", type=float, default=0.5,
+                        help="BATTLEFIELD powalpha: exponent α in ec^α−en^α (1=MSE, 0.5=RMSE, →0 log-ratio)")
+    parser.add_argument("--hinge-w", type=float, default=0.0,
+                        help="BATTLEFIELD hinge: smooth sub-4 boost multiplier weight (0=off)")
     parser.add_argument("--ssim-table", default="models/ssim_table.npz",
                         help="BATTLEFIELD ssim: path to ssim_probe.py table")
     parser.add_argument("--frag-w", type=float, default=0.5,
@@ -272,7 +276,8 @@ def main():
             "huber_delta": args.huber_delta, "ssim_table": args.ssim_table,
             "frag_w": args.frag_w, "ptable": args.ptable,
             "netpred": args.netpred, "netdmg_w": args.netdmg_w,
-            "mix_base": args.mix_base}
+            "mix_base": args.mix_base, "pow_alpha": args.pow_alpha,
+            "hinge_w": args.hinge_w}
     if args.utility == "mix":
         # kings = top-frac groups by max member importance; rep = g[0]
         # (same rep _gain sees). Ranked once here, not per call.

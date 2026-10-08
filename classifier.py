@@ -145,8 +145,23 @@ def _gain(cur_tier: str, next_tier: str, g_names: List[str],
         return _scale(mode, cur_tier, next_tier, uopt or {}) * _gain_mode(
             mode, cur_tier, next_tier, g_names, tensor_importance, uopt or {})
     # non-mix: raw formula, behavior unchanged (zoo baselines intact)
-    return _gain_mode(mode, cur_tier, next_tier, g_names,
-                      tensor_importance, uopt or {})
+    g = _gain_mode(mode, cur_tier, next_tier, g_names,
+                   tensor_importance, uopt or {})
+    hw = float((uopt or {}).get("hinge_w", 0.0) or 0.0)
+    if hw > 0:
+        # Friend's smooth hinge (operator-approved experiment): sub-4
+        # transitions get boosted, safe ones unchanged. Unlike
+        # TOXICITY_SUB4 (dead inside SMAPE's denominator), this is a bias
+        # on the DECISION, not a distortion of the loss model.
+        import math as _m
+        tau = 0.8
+        try:
+            from constants import TIER_BPW as _BPW
+            bw = float(_BPW.get(next_tier, 8.0))
+        except Exception:
+            bw = 8.0
+        g = g * (1.0 + hw / (1.0 + _m.exp((bw - 4.0) / tau)))
+    return g
 
 
 _scale_cache: Dict[str, float] = {}
@@ -178,6 +193,27 @@ def _gain_mode(mode: str, cur_tier: str, next_tier: str,
     import math
     if mode == "mix":
         raise ValueError("mix must be resolved before _gain_mode")
+    if mode == "logratio":
+        # Friend's α-family, left edge (α→0): log(ec/en). Small steps ≈
+        # SMAPE asymptotically; huge steps (IQ1→IQ2) unbounded — sub-4
+        # toxicity survives structurally (SMAPE caps at 2, this doesn't).
+        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
+        if en <= 0 or ec <= 0:
+            return 0.0
+        return math.log(ec / en)
+    if mode == "powalpha":
+        # g = ec^α − en^α (friend's axis: α=1 MSE, 0.5 RMSE, →0 log-ratio).
+        # α from uopt (sweep {0.1,0.25,0.5,0.75,1.0} to map the optimum).
+        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
+        a = float((uopt or {}).get("pow_alpha", 0.5))
+        return (ec ** a - en ** a) if ec > 0 and en > 0 else 0.0
+    if mode == "recovery":
+        # Asymmetric relative: fraction of CURRENT damage recovered.
+        # (ec−en)/ec ∈ [0,1) — "percent healed", not symmetric split.
+        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
+        if ec <= 0 or en > ec:
+            return 0.0
+        return (ec - en) / ec
     from experimental import experimental_gain, experimental_gain_modes
     if mode == "rmse":
         return math.sqrt(_mse_eff(cur_tier)) - math.sqrt(_mse_eff(next_tier))
