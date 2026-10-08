@@ -60,6 +60,23 @@ def sample_params(environ=None):
     return p
 
 
+def _file_sha256(path, _bytes=1 << 26):
+    """Hex sha256 of a model file (chunked; ~30-60 s for 5-10 GB).
+    The identity anchor: twins are byte-identical files, not same names."""
+    import hashlib
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            while True:
+                b = f.read(_bytes)
+                if not b:
+                    break
+                h.update(b)
+        return h.hexdigest()
+    except Exception:
+        return None
+
+
 def _git_sha(repo_root):
     try:
         out = subprocess.run(["git", "-C", repo_root, "rev-parse", "--short", "HEAD"],
@@ -82,6 +99,7 @@ def battery_meta(server_url, serve_model, environ=None, extra=None):
         "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "server_url": server_url,
         "serve_model": serve_model,
+        "serve_sha256": _file_sha256(serve_model),
         "sample": sample_params(env),
         "server_bin": SERVER_BIN,
         "server_args": SERVER_ARGS + (extra or []),
