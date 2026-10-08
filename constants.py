@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 
 # Ordered from worst to best quality
 TIER_ORDER = [
@@ -234,6 +235,15 @@ ARCH_FEATURES = {
         "prefix": "blk",
         "n_layers": 40,
     },
+    "k2_horizon": {
+        "has_qkv": False,  # separate attn_q/k/v projections, like granite — NOT qat
+        "has_ssm": False,
+        "has_mtp": False,
+        "has_moe": False,
+        "is_qat": False,
+        "prefix": "blk",
+        "n_layers": 36,
+    },
     "spark2_5": {
         "has_qkv": True,  # fused q_k_v_proj (tied groups like qwen35)
         "has_ssm": False,
@@ -258,6 +268,7 @@ ARCH_FEATURES = {
 # general.architecture aliases that differ from preset keys.
 METADATA_ARCH_MAP = {
     "mellum": "mellum2",
+    "k2-horizon": "k2_horizon",  # GGUF arch string uses a dash
 }
 
 # MoE routers — always F16, outside the budget. Corrupting the router
@@ -270,6 +281,11 @@ def strip_weight(name: str) -> str:
 
 
 def get_tensor_type(name: str) -> str:
+    return _get_tensor_type_cached(name)
+
+
+@lru_cache(maxsize=4096)
+def _get_tensor_type_cached(name: str) -> str:
     parts = strip_weight(name).split(".")
     if len(parts) >= 2 and parts[0] in ("blk", "BLK"):
         return parts[2] if len(parts) >= 3 else "unknown"
