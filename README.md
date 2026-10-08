@@ -101,6 +101,10 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--squeeze` | SQUEEZE mode (separate path): only IQ1_S or F16 per tensor, bottom-up only |
 | `--free-pins` | EXPERIMENTAL: output/token_embd/MTP/routers join the budget pool |
 | `--max-tier T` | EXPERIMENTAL: runtime override of CLASS_MAX_TIER for every class (e.g. F16 lets kings rise above Q8_0); bottom-up only, constants.py untouched |
+| `--utility logratio` | Friend's α-axis, left edge: log(ec/en) — extreme barbell, sub-4 toxicity survives structurally |
+| `--utility powalpha` + `--pow-alpha A` | The axis itself: g = ec^A−en^A (1=MSE, 0.5=RMSE, →0 log-ratio). Sweep A to map the optimum |
+| `--utility recovery` | Asymmetric relative: (ec−en)/ec, fraction of current damage recovered |
+| `--hinge-w W` | Smooth sub-4 boost multiplier on any mode (bias on the decision, not the loss); 0 = off |
 | `--invert` | ADVERSARIAL CONTROL (operator's idea): negate importance — kings down, junk up. If it still scores, importance is bunk; if it collapses, importance is causal |
 | `--invert-keep K` | Soft invert: top-K importance groups exempt (small-budget dial; inert at big budgets where the ceiling binds, not priority) |
 | `--cv-w F` / `--linf-w F` | Hybrid (dead by construction): concentration discount / worst-case boost weights |
@@ -135,6 +139,19 @@ python scripts/audit_tiers.py --model M-6500.gguf
 python scripts/audit_tiers.py --model M-6500.gguf --big 10
 python scripts/audit_tiers.py --model M-6500.gguf --layer 31
 python scripts/audit_tiers.py --model M-6500.gguf --per-layer  # every layer
+```
+
+### Example: mapping the α-axis (dry-runs, CPU seconds)
+
+```bash
+for A in 0.1 0.25 0.5 0.75 0.9; do
+  python main.py --model M.gguf --imatrix M.imatrix.gguf --size 3500 \
+    --utility powalpha --pow-alpha $A   # concentration↔distribution knob
+done
+python main.py --model M.gguf --imatrix M.imatrix.gguf --size 3500 \
+  --utility logratio                     # left edge: extreme barbell
+python main.py --model M.gguf --imatrix M.imatrix.gguf --size 3500 \
+  --utility smse --hinge-w 0.5           # sub-4 boost on any mode
 ```
 
 ---
