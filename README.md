@@ -341,6 +341,7 @@ KLD-vs-ref is the rank column (Soulfate24 battery). Measured relief ceilings (`-
 | `bailingmoe3` | KDA+MLA + MoE | Ling-3.0 family: routed + shared experts |
 | `granite` | `general.architecture` | Dense GQA, 40 layers, split Q/K/V |
 | `spark2_5` | `general.architecture` | Dense + hybrid sliding-window attention (1 full + 3 SWA) |
+| `k2_horizon` | `general.architecture` (`k2-horizon` alias) | Dense GQA, 36 layers, split attn_q/k/v (NOT qat — without the row it misdetects as gemma4) |
 | `gemma4` | layer-scale norms | QAT support, Q4_K attention floor |
 | llama (generic) | tensor names | Dense GQA (MiniCPM5, NeoHorse, etc.) |
 

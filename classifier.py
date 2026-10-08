@@ -204,6 +204,13 @@ def _gain_mode(mode: str, cur_tier: str, next_tier: str,
     if mode == "powalpha":
         # g = ec^α − en^α (friend's axis: α=1 MSE, 0.5 RMSE, →0 log-ratio).
         # α from uopt (sweep {0.1,0.25,0.5,0.75,1.0} to map the optimum).
+        # AXIS, not a mode: α is a continuous concentration↔distribution
+        # knob (verified monotonic on FrogNano-3500: Q8 183→167 as α
+        # 0.1→0.9). SMSE sits near α≈0.5 on WARM budgets (identical
+        # histograms) but DIVERGES on small budgets (FrogNano-2500
+        # allow-q3: Q6 100 vs 82, Q8 39 vs 51) — SMSE is an edge-case
+        # discriminator that switches on where ec/en spreads wide, not
+        # a redundant blend. Policy future: α = f(budget, model_class).
         ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
         a = float((uopt or {}).get("pow_alpha", 0.5))
         return (ec ** a - en ** a) if ec > 0 and en > 0 else 0.0
