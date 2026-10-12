@@ -388,7 +388,7 @@ KLD-vs-ref is the rank column (Soulfate24 battery). Measured relief ceilings (`-
 | Arch | Detection | Key Features |
 |:-----|:----------|:-------------|
 | `qwen35` | SSM + QKV | Hybrid attention, SSM layers, GQA, MTP head pinning |
-| `mellum2` | MoE (`exps` tensors) | Mixture of Experts, GQA, routers pinned F16 |
+| `mellum2` | MoE (`exps` tensors) | Mixture of Experts, GQA, routers out-of-budget (F32 in file, 28/28 incl. stock) |
 | `bailingmoe3` | KDA+MLA + MoE | Ling-3.0 family: routed + shared experts |
 | `granite` | `general.architecture` | Dense GQA, 40 layers, split Q/K/V |
 | `spark2_5` | `general.architecture` | Dense + hybrid sliding-window attention (1 full + 3 SWA) |
