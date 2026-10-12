@@ -53,7 +53,7 @@ Every performance claim must present all three columns or stay unverified:
 ### Decision Rules & Signal Interpretation
 
 * **Divergence:** If metrics diverge, KLD wins allocator arguments; if they agree, trust the pair.
-* **Silence is Signal:** Empty completions scale with weakness across clean runs (Ox: 4–5 → Neo: 20–27 → Q2_K: 63 → S2: 115). Weak models go silent rather than babble. Decisiveness is governed by the **finetune**, not model size (e.g., on Qwen3.5 bones, Neo hesitates while OxCoder commits).
+* **Silence is Signal:** Empty completions scale with weakness across clean runs (Ox: 4–5 → Neo: 20–27 → Q2_K: 63 → S2: 115; Mellum-10000: 24 → 7500: 35 → Q6: 39). Weak models go silent rather than babble. Decisiveness is governed by the **finetune**, not model size (e.g., on Qwen3.5 bones, Neo hesitates while OxCoder commits).
 * **Saturation Rule:** Base models at ~98% cannot resolve fine differences (97% vs 96%). Capability duels require bases at 60–85%, or they only answer the collapse threshold.
 
 ---
@@ -392,11 +392,11 @@ KLD-vs-ref is the rank column (Soulfate24 battery). Measured relief ceilings (`-
 | `bailingmoe3` | KDA+MLA + MoE | Ling-3.0 family: routed + shared experts |
 | `granite` | `general.architecture` | Dense GQA, 40 layers, split Q/K/V |
 | `spark2_5` | `general.architecture` | Dense + hybrid sliding-window attention (1 full + 3 SWA) |
-| `k2_horizon` | `general.architecture` (`k2-horizon` alias) | Dense GQA, 36 layers, split attn_q/k/v (NOT qat — without the row it misdetects as gemma4) |
+| `k2_horizon` | `general.architecture` (`k2-horizon` alias) | Dense GQA thinking family, 36 layers, split attn_q/k/v; vendor sampling (temp 1.0 + top_p 0.95 only), ctx 16384, `--reasoning-effort high` (NOT qat — without the row it misdetects as gemma4) |
 | `gemma4` | layer-scale norms | QAT support, Q4_K attention floor |
 | llama (generic) | tensor names | Dense GQA (MiniCPM5, NeoHorse, etc.) |
 
-Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86) → Ornith-9B-MTP @6500 (PPL 8.6541) → NeoHorse-9B @6500 (HE 141 vs Q6_K 135 — 6 tasks, direction only).
+Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86) → Ornith-9B-MTP @6500 (PPL 8.6541) → NeoHorse-9B @6500 (HE 141 vs Q6_K 135 — 6 tasks, direction only) → Mellum2.1-MoE @10000 (HE 134 vs stock Q6 119, 3/3 SIGNIFICANT — first real quant-vs-stock win) → FrogNano-4B @3500 (RL-sharpened, stock wins temp-0 3/3) → K2-Horizon-7B @5500 (thinking family, first battery queued).
 
 ---
 
