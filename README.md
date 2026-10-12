@@ -133,7 +133,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
   `constants.py` (verified: reproduces the raised-ceiling geometry
   byte-exact in dry-run; 13/13 golden geometries still green).
 
-### Recently added (2026-10-08…12, all CPU-cheap, all verified)
+### Recently added (October 2026, all CPU-cheap, all verified)
 
 - MoE golden geometries: `Mellum2.1 @7500 smse` (Q4 171 / F16-routers 28)
   and `huber` (Q4 163 / Q5 34, the fat middle locked) — first regression
