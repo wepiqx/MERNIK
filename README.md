@@ -104,6 +104,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--utility logratio` | Friend's α-axis, left edge: log(ec/en) — extreme barbell, sub-4 toxicity survives structurally |
 | `--utility powalpha` + `--pow-alpha A` | The axis itself: g = ec^A−en^A (1=MSE, 0.5=RMSE, →0 log-ratio). Sweep A to map the optimum |
 | `--utility huber` | Fat-middle lens (Huber loss on deltas, `--huber-delta` splits small/large): Q4/Q6 migrate to Q5_K. Best of six at FrogNano-3500 (122/164), tie at Mellum-7500 (123 vs 125, 0/3) |
+| `--pin-small MIB` | Pin every tensor under MIB MiB (F16 weight) at F16, outside the budget (bottom-up only). Measured: Mellum k/v heads (2.3 MB F16) cost 126 MiB for 56 tensors — protection priced loudly, 0 = off |
 | `--utility recovery` | Asymmetric relative: (ec−en)/ec, fraction of current damage recovered |
 | `--hinge-w W` | Smooth sub-4 boost multiplier on any mode (bias on the decision, not the loss); 0 = off |
 | `--invert` | ADVERSARIAL CONTROL (operator's idea): negate importance — kings down, junk up. If it still scores, importance is bunk; if it collapses, importance is causal |

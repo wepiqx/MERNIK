@@ -61,6 +61,11 @@ def main():
     parser.add_argument("--free-pins", action="store_true",
                          help="EXPERIMENTAL: let output/token_embd/MTP/routers fight "
                               "for budget instead of fixed pins")
+    parser.add_argument("--pin-small", type=float, default=0.0, metavar="MIB",
+                        help="Pin every tensor under MIB MiB (F16 weight) at F16, "
+                             "outside the budget (bottom-up only). Sub-MiB tensors "
+                             "cost nothing to protect and carry control-plane roles. "
+                             "0 = off")
     parser.add_argument("--max-tier", default=None,
                          help="EXPERIMENTAL: override CLASS_MAX_TIER for every "
                               "class at runtime (e.g. F16 to let kings rise "
@@ -314,6 +319,7 @@ def main():
             "relief": relief,
             "relief_thr": args.relief_thr,
             "allowed_tiers": (["IQ1_S", "F16"] if args.squeeze else None),
+            "pin_small": args.pin_small,
         }),
     )
     if args.squeeze:

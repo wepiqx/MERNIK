@@ -635,7 +635,8 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
                      relief_thr: float = -0.5,
                      allowed_tiers: list | None = None,
                      legacy_1d: bool = False,
-                     ceiling: str | None = None) -> Tuple[dict, dict]:
+                     ceiling: str | None = None,
+                     pin_small: float = 0.0) -> Tuple[dict, dict]:
     """relief: {sweep_unit_tag: Q5->Q4 damage}. Groups with damage below
     relief_thr get ceiling Q4 (their measured sweet spot): the queue never
     upgrades them above Q4, and the saved budget flows to other groups.
@@ -698,6 +699,18 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
     } if not free_pins else set()
     non_mtp_names -= router_names
 
+    # --pin-small: tensors under pin_small MiB (F16 weight) join the F16 pin,
+    # outside the budget. Rationale: sub-MiB tensors cost nothing to protect
+    # and carry control-plane roles (k/v heads, gates). 1D tensors land F32
+    # by the binary's law regardless; the preflight says so loudly.
+    small_names = set()
+    if pin_small > 0 and not free_pins:
+        small_names = {
+            n for n in non_mtp_names
+            if ne_map.get(n, 0) * 2.0 / (1024 * 1024) < pin_small
+        }
+        non_mtp_names -= small_names
+
     tensor_importance = {}
     for name in non_mtp_names:
         raw_imp = importance_table.get(name, {}).get("importance_mean", 0.0)
@@ -709,6 +722,8 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
     for n in embd_names:
         assignments[n] = EMBD_DEPLOY_TIER
     for n in router_names:
+        assignments[n] = "F16"
+    for n in small_names:
         assignments[n] = "F16"
     group_registry = build_groups(tied_groups, non_mtp_names, ne_map, padded_ne_map,
                                   f32_map=f32_map)
@@ -728,7 +743,8 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
     mtp_cost = sum(_size_mib(MTP_DEPLOY_TIER, ne_map.get(n, 0), f32_map.get(n, False)) for n in mtp_names)
     embd_cost = sum(_size_mib(EMBD_DEPLOY_TIER, ne_map.get(n, 0), f32_map.get(n, False)) for n in embd_names)
     router_cost = sum(_size_mib("F16", ne_map.get(n, 0), f32_map.get(n, False)) for n in router_names)
-    effective_target = target_size_mib - mtp_cost - embd_cost - router_cost
+    small_cost = sum(_size_mib("F16", ne_map.get(n, 0), f32_map.get(n, False)) for n in small_names)
+    effective_target = target_size_mib - mtp_cost - embd_cost - router_cost - small_cost
 
     current_size = sum(
         _size_mib(assignments[n],
