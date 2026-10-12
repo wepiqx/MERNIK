@@ -1,0 +1,50 @@
+{
+  "battery_min": 101.1,
+  "dirty": false,
+  "empties": 24,
+  "env_overrides": {
+    "HE_MAX_TOKENS": "2048",
+    "HE_MIN_P": "0.0",
+    "HE_PRESENCE": "0.0",
+    "HE_REPEAT": "1.0",
+    "HE_TEMP": "1.0",
+    "HE_THINKING": "1",
+    "HE_TOP_K": "20",
+    "HE_TOP_P": "0.95"
+  },
+  "finished": "2026-10-11T02:11:45",
+  "git_sha": "12c4e3f",
+  "n_tasks": 164,
+  "out": "humaneval_ornithquality36.jsonl",
+  "platform": "Linux-7.2.8-artix1-2-x86_64-with-glibc2.44",
+  "python": "3.14.7",
+  "s_per_task": 37.0,
+  "sample": {
+    "max_tokens": 2048,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 20,
+    "top_p": 0.95
+  },
+  "serve_model": "/mnt/Vsio/Downloads/model-Paretrix-Quality-36pc.gguf",
+  "serve_sha256": "6b557e69675012765136f03b393ace8784a17d58caeece9aead09c9d736783fa",
+  "server_args": [
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--log-disable",
+    "--cache-reuse",
+    "64",
+    "-ngl",
+    "99",
+    "--parallel",
+    "1"
+  ],
+  "server_bin": "/home/wepiqx/llama.cpp/build/bin/llama-server",
+  "server_url": "http://127.0.0.1:28082",
+  "started": "2026-10-11T00:30:37"
+}

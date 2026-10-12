@@ -84,7 +84,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--size MIB` | Target file size in MiB (the primary budget knob) |
 | `--output O.gguf` | Output path (default: `<model>-MERNIK.gguf`) |
 | `--run` | Execute `llama-quantize` (without it: dry-run estimate only) |
-| `--utility NAME` | Queue gain metric: `mse` (default) / `rmse` / `smape` / `logcosh` / `ssim` / `smape_ssim` / `smape_frag` / `mix` / `smse` (`balance` = deprecated alias) / `srmse` |
+| `--utility NAME` | Queue gain metric: `mse` (default) / `rmse` / `smape` / `logcosh` / `huber` / `ssim` / `smape_ssim` / `smape_frag` / `mix` / `smse` (`balance` = deprecated alias) / `srmse` / `logratio` / `powalpha` / `recovery` (see rows below) |
 | `--mix-base NAME` | MIX utility: gain for non-king groups (`mse`/`rmse`/`smape`/`logcosh`) |
 | `--mix-top-frac F` | MIX utility: fraction of top-importance king groups (default: 0.2) |
 | `--top-down` | Reverse allocation: everything from F16, downgrade cheapest-loss-first |
@@ -103,6 +103,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--max-tier T` | EXPERIMENTAL: runtime override of CLASS_MAX_TIER for every class (e.g. F16 lets kings rise above Q8_0); bottom-up only, constants.py untouched |
 | `--utility logratio` | Friend's α-axis, left edge: log(ec/en) — extreme barbell, sub-4 toxicity survives structurally |
 | `--utility powalpha` + `--pow-alpha A` | The axis itself: g = ec^A−en^A (1=MSE, 0.5=RMSE, →0 log-ratio). Sweep A to map the optimum |
+| `--utility huber` | Fat-middle lens (Huber loss on deltas, `--huber-delta` splits small/large): Q4/Q6 migrate to Q5_K. Best of six at FrogNano-3500 (122/164), tie at Mellum-7500 (123 vs 125, 0/3) |
 | `--utility recovery` | Asymmetric relative: (ec−en)/ec, fraction of current damage recovered |
 | `--hinge-w W` | Smooth sub-4 boost multiplier on any mode (bias on the decision, not the loss); 0 = off |
 | `--invert` | ADVERSARIAL CONTROL (operator's idea): negate importance — kings down, junk up. If it still scores, importance is bunk; if it collapses, importance is causal |
@@ -131,6 +132,22 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 - `--max-tier F16` lets kings rise above Q8_0 without touching
   `constants.py` (verified: reproduces the raised-ceiling geometry
   byte-exact in dry-run; 13/13 golden geometries still green).
+
+### Recently added (2026-10-08…12, all CPU-cheap, all verified)
+
+- MoE golden geometries: `Mellum2.1 @7500 smse` (Q4 171 / F16-routers 28)
+  and `huber` (Q4 163 / Q5 34, the fat middle locked) — first regression
+  net over a Mixture-of-Experts allocation (14/14 green + 8/8 provenance).
+- `scripts/run_humaneval.py`: `HE_CHUNK="start,count"` slices the sorted
+  task list (chunk files concatenate in order); `HE_CTX=N` replaces the
+  protocol default `-c` (no duplicate flags, whose winner is
+  parser-dependent). `serve_sha256` sidecar key + `scripts/twin.py`
+  pre-battery twin gate (same sha → reuse, else measure).
+- `--cache-ram 0` on HE chains: 164 distinct prompts share nothing, so the
+  prompt cache only eats RAM (unbounded on hybrid archs — measured
+  2026-09-24 upstream-side, `--cache-ram -1` grows forever on qwen35).
+- `LLAMA_PPL_BATCH` env overrides the sweep's hardcoded `-b 512`
+  (forge iGPU OOMs a 9B at 512; 128 holds).
 
 ### Tier Auditing Tool
 
@@ -196,6 +213,9 @@ blocking classes — check the dry-run before assuming the budget bit.
 * **MIX (per-group):** Kings by MSE, rest by `--mix-base`. Formulas live on different scales (mse Δ ~1e-3 vs smape ~1.2), so `_scale()` normalizes every formula to O(1) first — without it smape junk outbids mse kings 800:1 and the mix collapses. Dry-run geometry is new (wide Q5 spread, no Q8); verdict queued.
 * **SMSE (blend, ex-BALANCE):** Geometric mean of the SMAPE-relative and MSE-absolute halves (both O(1)-normalized, MIX lesson). SMAPE's `(ec+en)` denominator silently cancels the sub-4 toxicity penalty; the blend carries real toxicity through its absolute half. First verdict (MiMo-4500, allow-q3): PPL 9.4092 vs SMAPE 10.5343 (−1.12), **HE 54.88% vs 29.88% (+25pp)** — rescue from the lava. Second verdict (MiMo-5100): PPL 8.7389 vs 8.7435 (tie), HE 71.34% vs 70.12% (+1.2pp), 3 empties — DUEL 0/3 (HE p=0.88, HE+ p=0.76 pointing the other way, empties p=0.13): NOISE, crown demoted 2026-09-28. Numbers stay, verdict withdrawn. Third verdict (MiMo-6500): PPL 8.7275 vs 8.7655 (tie), HE 72.56% vs 75.00% (−2.4pp) — LOSES big: at 6500 the middle decides (MSE Q6 67 vs SMSE 41), not penthouses (SMSE had more Q8, 125 vs 108). Verdict: SMSE owns small+medium budgets, MSE owns big. The bet behind it: any tier below Q4 hurts, and fewer is better.
 * **SRMSE (SMAPE×RMSE, demoted 2026-09-28):** Relative lens × COMPRESSED absolute (sqrt squeezes toxicity ×1.41 instead of ×2.0). Duel MiMo-5100-SRMSE came back 0/3 (109-115, sampling spread on a bit-identical file) — manners without verdict. Filed, not crowned.
+* **Huber (fat middle):** Huber loss on deltas pushes Q4/Q6 stragglers into Q5_K. FrogNano-3500: 122/164, best of six utilities at equal weight (SMSE 118, MSE 109, logratio 110, α0.25 117, α0.75 120). Mellum-7500: 123 vs SMSE 125, duel 0/3 — the middle does not decide there. Lesson: huber wins where the middle is contested, ties where the floor/penthouse geometry dominates.
+* **α-axis verdicts (FrogNano-3500):** logratio 110 → α0.25 117 → α0.75 120 → huber 122, but MSE (α=1.0) collapses to 109 — peak near 0.6–0.75, then falls. The axis is not monotonic; the endpoint (pure absolute) is the worst seat. `--hinge-w` (sub-4 boost multiplier): 105/164 on FrogNano, −13 vs plain SMSE — the "free boost" backfired, filed as dead.
+* **Floor-first, Mellum confirmation (2026-10-10):** MoE floor at 7428 MiB (no build below without sub-Q4 tiers; 5500 arithmetically impossible, floor 5688 even Q3-allowed). 6500-SMSE (126) vs 6500-recovery (123) vs stock Q4 (125): the whole shelf is one tie-zone, weights differ (−1 GB ours). Above Q4, utilities debate inside the floor; below Q4, physics decides.
 
 ### Distribution Comparison @ 6500 MiB (427 tensors, incl. 177 F32 forced by the binary)
 
@@ -239,7 +259,7 @@ temperature 1.0, top_p 0.95, top_k 20, min_p 0.0,
 presence_penalty 0.0, repetition_penalty 1.0, max_tokens 2048
 ```
 
-`presence_penalty 1.5` (vendor recipe) breaks thinking templates; `0.0` verified. Preflight `/health` before every battery; mid-run watchdog every 10 tasks (dead server aborts LOUDLY, never scores empties silently). Runner: `scripts/run_humaneval.py` (env `HE_*`, `HUMANEVAL_OUT`, `HUMANEVAL_SERVER`; `HUMANEVAL_SERVE_MODEL` = self-serve with auto-kill). Eval: `human_eval.evaluation.evaluate_functional_correctness`, pass@1, k=[1]. Results: `eval_results/humaneval_<tag>.jsonl`. Strictness upgrade: every battery is rescored with EvalPlus HumanEval+ (80× tests, CPU) — the HE+ column below.
+`presence_penalty 1.5` (vendor recipe) breaks thinking templates; `0.0` verified. Preflight `/health` before every battery; mid-run watchdog every 10 tasks (dead server aborts LOUDLY, never scores empties silently). Long-ctx servers accumulate commit (KV + prompt cache never shrink) — chunked batteries (`HE_CHUNK`, fresh server per ~30 tasks, stitch in order) plus `--cache-ram 0` (164 distinct prompts share nothing). Family sampling: thinking families run their vendor recipe (K2: temp 1.0 + top_p 0.95 only, top_k 40 / min_p 0.05 = llama defaults, ctx 16384, `--reasoning-effort high`) — cross-family verdicts stay void, different rulers. Runner: `scripts/run_humaneval.py` (env `HE_*`, `HE_CHUNK`, `HE_CTX`, `HUMANEVAL_OUT`, `HUMANEVAL_SERVER`; `HUMANEVAL_SERVE_MODEL` = self-serve with auto-kill). Eval: `human_eval.evaluation.evaluate_functional_correctness`, pass@1, k=[1]. Results: `eval_results/humaneval_<tag>.jsonl`. Strictness upgrade: every battery is rescored with EvalPlus HumanEval+ (80× tests, CPU) — the HE+ column below.
 
 Reproduce any number below (runner + rescorer ship in this repo):
 
@@ -304,6 +324,20 @@ Layer-fused models (OxCoder base + donor blocks; auto-maps via
 [wepiqx/RINIQ-GGUF](https://huggingface.co/wepiqx/RINIQ-GGUF), recipes in
 `RINIQ-NEXT.md`. Load-bearing line: nine-way statistical tie (151, then
 eight builds on 150) — no crown, the top is shared.
+
+### Reference Results III: Mellum2.1-12B-A2.5B-Thinking — full table on the family card
+
+[wepiqx/Mellum2.1-12B-A2.5B-Thinking-MERNIK-GGUF](https://huggingface.co/wepiqx/Mellum2.1-12B-A2.5B-Thinking-MERNIK-GGUF).
+Load-bearing lines: 10000-SMSE 134/164 beats stock Q6 119/164 by +15 at
+−0.7 GB (**duel 3/3 SIGNIFICANT**); 7500-SMSE ties stock Q4_K_M 125/125
+(triple p=1.0); 6500 shelf (SMSE 126 / recovery 123 / Q4 125) is one tie-zone.
+
+### Reference Results IV: FrogNano-4B — the α-axis laboratory
+
+RL-sharpened qwen35 dense where the allocation win did not appear: stock Q6
+wins the temp-0 duel 3/3 significant (−16 tasks real). Best of ours:
+HUBER-3500 122/164. Full table in the lab notes; the α-axis map
+(110→117→120→122→109) lives in §3 above.
 
 ### Fast-Ring Diagnostic: GPQA-Recognition
 
@@ -375,5 +409,8 @@ Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86)
 - 📦 [RINIQ-NEXT-GGUF](https://huggingface.co/wepiqx/RINIQ-NEXT-GGUF)
 - 📦 [Ornith-1.5-9B-MTP-ASHQ1-GGUF](https://huggingface.co/wepiqx/Ornith-1.5-9B-MTP-ASHQ1-GGUF)
 - 📦 [Spark-X2.5-1.7B-ASHQ1-GGUF](https://huggingface.co/wepiqx/Spark-X2.5-1.7B-ASHQ1-GGUF)
+- 📦 [Mellum2.1-12B-A2.5B-Thinking-MERNIK-GGUF](https://huggingface.co/wepiqx/Mellum2.1-12B-A2.5B-Thinking-MERNIK-GGUF)
+- 📊 [MERNIK-gnom-labels](https://huggingface.co/datasets/wepiqx/MERNIK-gnom-labels) (damage labels + pools)
+- 📊 [MERNIK-rlmini-kld](https://huggingface.co/datasets/wepiqx/MERNIK-rlmini-kld) (reasoning-task KLD labels, the crown jewels)
 
 Lineage: Apache-2.0. Built with [Soulfate24](https://huggingface.co/Soulfate24), whose KLD battery ended our PPL theater. Field journals with every scar: `FUSION.md` (monsters), `README-ZOO.md` (utility duels), `SAGA.md` (MTP graft).

@@ -91,9 +91,17 @@ def _serve_own_model():
             f"other battery running, retry when free.")
     log = open("/tmp/he_serve_%d.log" % port, "w")
     extra = os.environ.get("HUMANEVAL_SERVER_ARGS", "").split()
+    base = list(protocol.SERVER_ARGS)
+    # HE_CTX replaces the protocol default -c (avoids duplicate -c flags,
+    # whose winner is parser-dependent). Unset = protocol default 8192.
+    if os.environ.get("HE_CTX"):
+        drop = base.index("-c") if "-c" in base else -1
+        if drop >= 0:
+            del base[drop:drop + 2]
+        extra = ["-c", os.environ["HE_CTX"]] + extra
     p = subprocess.Popen(
         [SERVER_BIN, "-m", SERVE_MODEL, "--port", str(port)]
-        + protocol.SERVER_ARGS + extra,
+        + base + extra,
         stdout=log, stderr=subprocess.STDOUT)
     for _ in range(120):
         try:
@@ -141,9 +149,17 @@ def _battery():
         raise SystemExit(f"server not healthy at {SERVER_URL}: {e}")
     problems = read_problems()
     results = []
-    total = len(problems)
+    items = sorted(problems.items())
+    # chunked batteries (long-ctx servers accumulate commit; restart between
+    # chunks): HE_CHUNK="start,count" slices the sorted task list. Order of
+    # the output file is preserved, so chunk files concatenate cleanly.
+    chunk = os.environ.get("HE_CHUNK", "")
+    if chunk:
+        s, n = (int(x) for x in chunk.split(","))
+        items = items[s:s + n]
+    total = len(items)
 
-    for i, (task_id, problem) in enumerate(sorted(problems.items())):
+    for i, (task_id, problem) in enumerate(items):
         # mid-run watchdog: a dead server must abort LOUDLY, never silently
         # score 100+ empties (that failure mode already cost us two batteries:
         # TD-SMAPE-1st and MSE-5100 were scored dead and had to be rerun).

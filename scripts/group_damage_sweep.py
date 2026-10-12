@@ -50,7 +50,8 @@ def run_ppl(model_path: str, ctx: int = 1024, n: int = 64,
     (behavioral shift), Same-top-p (top-1 agreement = decisiveness).
     """
     cmd = [PPL, "-m", model_path, "-f", wiki or WIKI, "-ngl", str(ngl),
-           "-c", str(ctx), "-n", str(n), "-b", "512", "--seed", "7"]
+           "-c", str(ctx), "-n", str(n), "-b",
+           os.environ.get("LLAMA_PPL_BATCH", "512"), "--seed", "7"]
     out = subprocess.run(cmd, capture_output=True, text=True,
                            timeout=timeout)
     ppl, kld = None, None

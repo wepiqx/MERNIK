@@ -1,0 +1,50 @@
+{
+  "battery_min": 58.2,
+  "dirty": false,
+  "empties": 33,
+  "env_overrides": {
+    "HE_MAX_TOKENS": "2048",
+    "HE_MIN_P": "0.0",
+    "HE_PRESENCE": "0.0",
+    "HE_REPEAT": "1.0",
+    "HE_TEMP": "1.0",
+    "HE_THINKING": "1",
+    "HE_TOP_K": "20",
+    "HE_TOP_P": "0.95"
+  },
+  "finished": "2026-10-11T13:38:42",
+  "git_sha": "12c4e3f",
+  "n_tasks": 164,
+  "out": "humaneval_mellum21q4m.jsonl",
+  "platform": "Linux-7.2.8-artix1-2-x86_64-with-glibc2.44",
+  "python": "3.14.7",
+  "s_per_task": 21.3,
+  "sample": {
+    "max_tokens": 2048,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 20,
+    "top_p": 0.95
+  },
+  "serve_model": "/mnt/Vsio/Downloads/Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf",
+  "serve_sha256": "ecc4d5b8107fc219e23c494b2d107552137637b6c6002ee713e0ba8af7fa2755",
+  "server_args": [
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--log-disable",
+    "--cache-reuse",
+    "64",
+    "-ngl",
+    "28",
+    "--parallel",
+    "1"
+  ],
+  "server_bin": "/home/wepiqx/llama.cpp/build/bin/llama-server",
+  "server_url": "http://127.0.0.1:28082",
+  "started": "2026-10-11T12:40:32"
+}

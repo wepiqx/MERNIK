@@ -1,4 +1,25 @@
 {
+  "Mellum2.1 @7500 huber    (MoE fat middle vs smse pyramid)": {
+    "tiers": {
+      "F16": 28,
+      "F32": 113,
+      "Q4_K": 163,
+      "Q5_K": 34,
+      "Q8_0": 1
+    },
+    "total_mib": 6659.1
+  },
+  "Mellum2.1 @7500 smse     (mellum2 MoE, routers F16)": {
+    "tiers": {
+      "F16": 28,
+      "F32": 113,
+      "Q4_K": 171,
+      "Q5_K": 18,
+      "Q6_K": 8,
+      "Q8_0": 1
+    },
+    "total_mib": 6659.4
+  },
   "MiniCPM5-2B @1200 smse allow-q3": {
     "tiers": {
       "F32": 85,

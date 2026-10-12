@@ -92,6 +92,16 @@ CASES = [
      f"{DL}/RINIQ-M2-BF16.gguf", f"{DL}/RINIQ-M2-qwen38.imatrix.gguf",
      5100, "mse", False, False, False,
      {"F32": 177, "Q4_K": 216, "Q5_K": 34}),
+
+    ("Mellum2.1 @7500 smse     (mellum2 MoE, routers F16)",
+     f"{DL}/Mellum2.1-12B-A2.5B-Thinking-BF16.gguf",
+     f"{DL}/Mellum2.1-12B-A2.5B-Thinking-imatrix.gguf",
+     7500, "smse", False, False, False, None),
+
+    ("Mellum2.1 @7500 huber    (MoE fat middle vs smse pyramid)",
+     f"{DL}/Mellum2.1-12B-A2.5B-Thinking-BF16.gguf",
+     f"{DL}/Mellum2.1-12B-A2.5B-Thinking-imatrix.gguf",
+     7500, "huber", False, False, False, None),
 ]
 
 GOLDEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),

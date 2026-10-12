@@ -1,0 +1,50 @@
+{
+  "battery_min": 78.0,
+  "dirty": false,
+  "empties": 14,
+  "env_overrides": {
+    "HE_MAX_TOKENS": "2048",
+    "HE_MIN_P": "0.0",
+    "HE_PRESENCE": "0.0",
+    "HE_REPEAT": "1.0",
+    "HE_TEMP": "1.0",
+    "HE_THINKING": "1",
+    "HE_TOP_K": "20",
+    "HE_TOP_P": "0.95"
+  },
+  "finished": "2026-10-11T00:18:48",
+  "git_sha": "12c4e3f",
+  "n_tasks": 164,
+  "out": "humaneval_ornith6100smse.jsonl",
+  "platform": "Linux-7.2.8-artix1-2-x86_64-with-glibc2.44",
+  "python": "3.14.7",
+  "s_per_task": 28.5,
+  "sample": {
+    "max_tokens": 2048,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 20,
+    "top_p": 0.95
+  },
+  "serve_model": "/mnt/Vsio/Downloads/Ornith-1.5-9B-MERNIK-6100-SMSE.gguf",
+  "serve_sha256": "12b231d711bd9f0f5d6da1e252536561a4c5bb3e9516f2fe7a03485d4cf3d078",
+  "server_args": [
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--log-disable",
+    "--cache-reuse",
+    "64",
+    "-ngl",
+    "99",
+    "--parallel",
+    "1"
+  ],
+  "server_bin": "/home/wepiqx/llama.cpp/build/bin/llama-server",
+  "server_url": "http://127.0.0.1:28082",
+  "started": "2026-10-10T23:00:49"
+}
