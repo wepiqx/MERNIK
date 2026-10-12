@@ -135,7 +135,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 
 ### Recently added (October 2026, all CPU-cheap, all verified)
 
-- MoE golden geometries: `Mellum2.1 @7500 smse` (Q4 171 / F16-routers 28)
+- MoE golden geometries: `Mellum2.1 @7500 smse` (Q4 171 / routers assigned F16 ×28, F32 in file)
   and `huber` (Q4 163 / Q5 34, the fat middle locked) — first regression
   net over a Mixture-of-Experts allocation (14/14 green + 8/8 provenance).
 - `scripts/run_humaneval.py`: `HE_CHUNK="start,count"` slices the sorted
@@ -177,7 +177,7 @@ python main.py --model M.gguf --imatrix M.imatrix.gguf --size 3500 \
 
 ### Queue & Allocation Principles
 
-Every tensor starts at a floor tier based on its functional class. A global max-heap drains the target budget best-first by sum(importance) × Δ / MiB. Tied groups (identical imatrix energy) upgrade as a single unit with summed importance. Structural pins — MTP heads (→ Q8_0), output/token embeddings (→ Q5_K), MoE routers (→ F16) — sit outside the budget queue.
+Every tensor starts at a floor tier based on its functional class. A global max-heap drains the target budget best-first by sum(importance) × Δ / MiB. Tied groups (identical imatrix energy) upgrade as a single unit with summed importance. Structural pins — MTP heads (→ Q8_0), output/token embeddings (→ Q5_K), MoE routers (assigned F16, F32 in file) — sit outside the budget queue.
 
 ### Certify vs Report (tool boundary)
 
