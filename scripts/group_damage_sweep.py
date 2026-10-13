@@ -369,7 +369,12 @@ def main():
                        "ppl": p, "damage": p - base_ppl}
                 if kb:
                     rec["kld"] = k
-                    rec["damage_kld"] = k - base_kld
+                    # null-safe: a unit (or a resumed BASELINE) without KLD is
+                    # a censored observation, never a crash (2026-10-13 scar:
+                    # resumed PPL-only BASELINE fed None into this subtraction).
+                    rec["damage_kld"] = (k - base_kld
+                                         if k is not None and base_kld is not None
+                                         else None)
                     for ek in ("kld_max", "kld_median", "dp_rms", "same_top"):
                         if ek in extra and extra[ek] is not None:
                             rec[ek] = extra[ek]
