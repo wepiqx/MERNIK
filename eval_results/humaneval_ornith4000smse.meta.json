@@ -1,0 +1,35 @@
+{
+  "battery_min": 117.3,
+  "dirty": true,
+  "empties": 70,
+  "env_overrides": {},
+  "finished": "2026-10-16T23:59:48",
+  "git_sha": "2383704",
+  "n_tasks": 164,
+  "out": "humaneval_ornith4000smse.jsonl",
+  "platform": "Linux-7.2.9-artix1-1-x86_64-with-glibc2.44",
+  "python": "3.14.8",
+  "s_per_task": 42.9,
+  "sample": {
+    "max_tokens": 2048,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 20,
+    "top_p": 0.95
+  },
+  "serve_model": "/mnt/Vsio/Downloads/Ornith-1.5-MERNIK-4000-SMSE.gguf",
+  "serve_sha256": "d148ede4fc1d0f5c0148e02117758453aedf74ef3a69937f2122dfc5272055d0",
+  "server_args": [
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--log-disable"
+  ],
+  "server_bin": "/home/wepiqx/llama.cpp/build/bin/llama-server",
+  "server_url": "http://127.0.0.1:28082",
+  "started": "2026-10-16T22:02:32"
+}

@@ -4,13 +4,14 @@ import argparse
 import json
 import os
 import sys
+from collections import Counter, defaultdict
 
 from model_reader import read_model
 from imatrix_reader import read_imatrix, detect_tied_groups, build_importance_table
 from classifier import optimal_classify, optimal_classify_topdown, compute_stats
 from config_generator import generate_flags, format_flags
 from quantizer import run_dry_run_ex, run_quantization
-from constants import CLASS_HARD_FLOORS
+from constants import CLASS_HARD_FLOORS, get_tensor_class, get_tensor_type
 import preflight
 
 
@@ -86,7 +87,7 @@ def main():
                          help="SQUEEZE mode (separate path): only IQ1_S or F16, "
                               "nothing between. Dungeon or palace per tensor; "
                               "the queue rescues kings to F16. Bottom-up only.")
-    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "mix", "smse", "srmse", "balance", "logratio", "powalpha", "recovery"],
+    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "netpure", "mix", "smse", "srmse", "balance", "logratio", "powalpha", "recovery"],
                         default="mse",
                         help="BATTLEFIELD: utility metric for the queue "
                              "(default: mse)")
@@ -477,6 +478,14 @@ def _show_tier_summary(assignments, imp_table, ne_map, padded_ne_map=None, f32_m
         mib = stats["by_tier_mib"].get(tier, 0.0)
         print(f"    {tier}: {count} tensors ({mib:.1f} MiB)")
     print(f"  Total estimated size: {stats['total_mib']:.1f} MiB")
+
+    by_class = defaultdict(Counter)
+    for name, tier in assignments.items():
+        by_class[get_tensor_class(get_tensor_type(name))][tier] += 1
+    print("\n  Class x tier:")
+    for cls in sorted(by_class):
+        parts = " ".join(f"{t}x{c}" for t, c in sorted(by_class[cls].items()))
+        print(f"    {cls:<14} {parts}")
 
     ranked = sorted(
         [(n, v) for n, v in imp_table.items()],

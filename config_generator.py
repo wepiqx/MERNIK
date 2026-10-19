@@ -1,30 +1,36 @@
+"""Assignment map -> llama-quantize --tensor-type flags ("на века" edition).
+
+Contract with the binary, verified against llama-quant.cpp (build 11571):
+- each --tensor-type "PATTERN=TIER" splits at the FIRST '='; the pattern is
+  LOWERCASED by the binary, then compiled as std::regex (ECMAScript);
+- per tensor, patterns are tried IN CLI ORDER via regex_search (substring);
+  the FIRST hit wins and skips the standard mixture logic; NO hit falls back
+  to the mixture logic — never to our assignment;
+- tensor names carry their suffix (".weight"/".bias"); patterns match it by
+  substring, so rules name the full suffix explicitly.
+
+Generation (exact by construction):
+- one rule per (suffix, tier) group over blk layers, with exact layer
+  enumerations ([a-b] within one digit, (?:a|b|...) otherwise, \\d+ only
+  for a full 0..max span); suffix = everything after "blk.LAYER.",
+  so 5-part names (nextn.hnorm.weight) get firing rules, not leftovers;
+- anchored global rules for non-blk tensors (output/token_embd travel via
+  --output-tensor-type/--token-embedding-type flags, not rules);
+- order = fewest matched tensors first (provably most-specific-first),
+  tie-break by pattern string (deterministic). This is what makes
+  tissue-prefix shadowing (attn_q rule eating attn_qkv/attn_q_norm tensors)
+  impossible: the narrower rule always precedes;
+- simulate-and-assert: every rule-carried tensor is matched in-process
+  (Python re.search, same substring semantics) and MUST first-hit its
+  intended tier. Any shadowing class — present or future — fails LOUD
+  here, before a single binary byte. Allowed regex constructs are exactly
+  (?:...) [...] \\. \\d | ^ (?=...) — shared by ECMAScript and Python re.
+"""
 import re
-from constants import QUANT_RANK
 
-
-def get_regex_priority(regex: str) -> int:
-    """Higher = more specific = should come first (first-match-wins)."""
-    score = 0
-
-    if "nextn" in regex:
-        score += 200
-    if re.search(r"(blk|BLK)\\.3[0-2]\\.", regex):
-        score += 100
-    if re.search(r"(blk|BLK)\\.0\\.", regex):
-        score += 90
-    if re.search(r"(blk|BLK)\\.31\\.", regex):
-        score += 80
-    # Layer-range group: (blk|BLK)\.( — more specific than \d+
-    if r"(blk|BLK)\.(" in regex:
-        score += 50
-    elif r"(blk|BLK)\.\d" in regex:
-        score += 30
-    if regex.startswith(".*"):
-        score -= 50
-    if regex.endswith(r"\.weight"):
-        score += 10
-
-    return score
+# 1D tensors are F32 in the file whatever the rules say — emitting a rule
+# for them is a no-op (kept out of rules AND out of the simulation).
+_FLAG_CARRIED = ("output.weight", "token_embd.weight")
 
 
 def _is_contiguous(lst, low, high):
@@ -59,16 +65,55 @@ def _range_to_regex(start: int, end: int) -> str:
     return f"(?:{alt})"
 
 
+def _suffix(tname: str):
+    """Grouping key tissue: everything after 'blk.LAYER.' (or global)."""
+    parts = tname.split(".")
+    if (len(parts) >= 4 and parts[0] == "blk" and parts[1].isdigit()):
+        return ("blk", int(parts[1]), ".".join(parts[2:]))
+    return ("global", tname)
+
+
+def _max_layer(assignments, model):
+    layers = [k[1] for k in (_suffix(n) for n in assignments)
+              if k[0] == "blk"]
+    if layers:
+        return max(layers)
+    return model.get("features", {}).get("n_layers", 31)
+
+
+def verify_rules(assignments: dict, model: dict, rules,
+                 flag_carried=_FLAG_CARRIED):
+    """Simulate first-hit-wins over every rule-carried tensor.
+
+    Returns the simulated map. Raises RuntimeError listing mismatches —
+    a mismatch means the binary would write a tier nobody assigned.
+    """
+    from classifier import _f32_map
+    f32 = _f32_map(model.get("tensors", {}))
+    compiled = [(re.compile(p), t) for p, t in rules]
+    bad, sim = [], {}
+    for tname, tier in assignments.items():
+        if f32.get(tname, False) or tname in flag_carried:
+            continue
+        hit = next((t for rx, t in compiled if rx.search(tname)), None)
+        sim[tname] = hit
+        if hit != tier:
+            bad.append((tname, tier, hit))
+    if bad:
+        show = "\n".join(f"  {n}: intended {w}, rules give {g}"
+                         for n, w, g in bad[:8])
+        raise RuntimeError(
+            f"rule simulation mismatch on {len(bad)} tensors "
+            f"(first-hit-wins != assignment):\n{show}")
+    return sim
+
+
 def generate_flags(
     assignments: dict,
     model: dict,
     base_type: str,
     target_size_mib: float = None,
 ) -> dict:
-    is_qat = model.get("features", {}).get("is_qat", False)
-    # 1D tensors are F32 in the file whatever the rules say — emitting a rule
-    # for them is a no-op that only makes the config harder to read (and, for
-    # unanchored global patterns, dangerous: see the *norm* case below).
     tensors = model.get("tensors", {})
     from classifier import _f32_map
     f32 = _f32_map(tensors)
@@ -78,85 +123,70 @@ def generate_flags(
     output_type = assignments.get("output.weight", "Q5_K")
     token_embd_type = assignments.get("token_embd.weight", "Q5_K")
 
-    max_layer = model.get("features", {}).get("n_layers", 31)
+    max_layer = _max_layer(assignments, model)
+    names = [n for n in assignments
+             if not f32.get(n, False) and n not in _FLAG_CARRIED]
 
-    rules = []
-
-    # Group blk tensors by (ttype, tier)
+    # Group blk tensors by (suffix, tier)
     type_tier_layers = {}
-    for tname, tier in assignments.items():
-        if f32.get(tname, False):
+    for tname in names:
+        key = _suffix(tname)
+        if key[0] != "blk":
             continue
-        parts = tname.split(".")
-        if len(parts) >= 3 and parts[0] in ("blk", "BLK"):
-            try:
-                layer = int(parts[1])
-            except ValueError:
-                continue
-            ttype = parts[2]
-            key = (ttype, tier)
-            if key not in type_tier_layers:
-                type_tier_layers[key] = []
-            type_tier_layers[key].append(layer)
+        _, layer, suffix = key
+        kk = (suffix, assignments[tname])
+        type_tier_layers.setdefault(kk, []).append(layer)
 
-    # Generate rules for blk tensor groups
-    for (ttype, tier), layers in sorted(
-        type_tier_layers.items(),
-        key=lambda x: -QUANT_RANK.get(x[0][1], 0),
-    ):
+    rules = []  # (pattern, tier, match_count)
+    for (suffix, tier), layers in type_tier_layers.items():
         layers = sorted(set(layers))
-
         if len(layers) >= 8 and _is_contiguous(layers, 0, max_layer):
-            pattern = f"(blk|BLK)\\.\\d+\\.{ttype}={tier}"
+            lay = r"\d+"
         else:
             parts = []
             for start, end in _group_ranges(layers):
-                if start == end:
-                    parts.append(str(start))
-                else:
-                    parts.append(_range_to_regex(start, end))
-            desc = "|".join(parts)
-            pattern = f"(blk|BLK)\\.({desc})\\.{ttype}={tier}"
+                parts.append(_range_to_regex(start, end)
+                             if start != end else str(start))
+            lay = parts[0] if len(parts) == 1 else f"(?:{'|'.join(parts)})"
+        pattern = f"blk\\.({lay})\\.{re.escape(suffix)}"
+        rules.append((pattern, tier))
 
-        prio = get_regex_priority(pattern) + (
-            10 if tier == "Q8_0" else 5 if tier == "Q6_K" else 0
-        ) + (5 if len(layers) == 1 else 0) + (3 if "ffn_down" in ttype else 0)
-
-        rules.append((pattern, prio))
-
-    # Generate rules for global tensors (non-blk)
-    prefix = model.get("features", {}).get("prefix", "blk")
-    for tname, tier in assignments.items():
-        if f32.get(tname, False):
+    # Global anchored rules for non-blk tensors (not flag-carried)
+    seen = set()
+    for tname in names:
+        key = _suffix(tname)
+        if key[0] != "global":
             continue
-        parts = tname.split(".")
-        if len(parts) >= 2 and parts[0].lower() == prefix.lower():
-            continue
-        ttype = parts[0] if len(parts) >= 1 else tname
-        if ttype in ("token_embd", "output"):
-            continue
-        # llama.cpp matches with std::regex_search (substring, first hit
-        # wins), so `.*ttype.*` fires on ANY tensor whose name contains
-        # ttype — a global "norm" at Q4_K would have re-tiered every
-        # *norm* tensor in the model. Anchor on a dot boundary and require
-        # the start of a name component.
-        pattern = f"(?:^|\\.){re.escape(ttype)}\\.={tier}"
-        prio = get_regex_priority(pattern) + (5 if tier == "Q8_0" else 0)
-        # Deduplicate (same pattern may appear from different names)
-        if not any(p == pattern for p, _ in rules):
-            rules.append((pattern, prio))
+        # anchor on a dot boundary with a lookahead: the documented
+        # *norm* scar (an unanchored "norm" rule re-tiered every *norm*
+        # tensor in the model).
+        pattern = f"(?:^|\\.){re.escape(tname)}(?=\\.|$)"
+        if pattern not in seen:
+            seen.add(pattern)
+            rules.append((pattern, assignments[tname]))
 
-    rules.sort(key=lambda x: -x[1])
+    # Provable most-specific-first: fewest matched tensors first.
+    # re.search here mirrors the binary's regex_search (substring).
+    scored = []
+    for pattern, tier in rules:
+        rx = re.compile(pattern)
+        n = sum(1 for n in names if rx.search(n))
+        scored.append((n, pattern, tier))
+    scored.sort(key=lambda x: (x[0], x[1]))
+    ordered = [(p, t) for _, p, t in scored]
+
+    # The gate: intended map must survive its own rules, every tensor.
+    verify_rules(assignments, model, ordered)
 
     flags = {
         "imatrix": None,
         "output_tensor_type": output_type,
         "token_embedding_type": token_embd_type,
-        "tensor_type_rules": [f'--tensor-type "{r[0]}"' for r in rules],
+        "tensor_type_rules": [f'--tensor-type "{p}={t}"'
+                              for p, t in ordered],
         "base_type": base_type,
         "target_size_mib": target_size_mib,
     }
-
     return flags
 
 

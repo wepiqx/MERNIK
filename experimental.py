@@ -18,7 +18,7 @@ LINF_ERR = {
 _NETPRED_CACHE: Dict[str, Dict[str, float]] = {}
 _PDMG_CACHE: Dict[str, Dict[str, Dict[str, float]]] = {}
 
-EXPERIMENTAL_MODES = ("huber", "hybrid", "pw_ssim", "netdmg")
+EXPERIMENTAL_MODES = ("huber", "hybrid", "pw_ssim", "netdmg", "netpure")
 
 
 def experimental_gain_modes():
@@ -127,6 +127,11 @@ def experimental_gain(cur_tier: str, next_tier: str, g_names: List[str],
         base = 0.0 if ec + en <= 0 else 2.0 * (ec - en) / (ec + en)
         z = _group_netdmg_z(g_names, (uopt or {}).get("netpred"))
         return base * (1.0 + (uopt or {}).get("netdmg_w", 0.5) * z)
+    if mode == "netpure":
+        # pure-gnom priority: no MSE-base multiplier at all (the base
+        # coincides with smape; this mode removes that shared component).
+        # Rung-independent: the allocator still ranks by gain/cost.
+        return _group_netdmg_z(g_names, (uopt or {}).get("netpred"))
     if mode == "pw_ssim":
         return _pdamage_gain(cur_tier, next_tier, g_names,
                              tensor_importance, (uopt or {}).get("ptable"))

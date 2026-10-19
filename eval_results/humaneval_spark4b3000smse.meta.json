@@ -1,0 +1,35 @@
+{
+  "battery_min": 80.5,
+  "dirty": true,
+  "empties": 54,
+  "env_overrides": {},
+  "finished": "2026-10-16T18:33:28",
+  "git_sha": "2383704",
+  "n_tasks": 164,
+  "out": "humaneval_spark4b3000smse.jsonl",
+  "platform": "Linux-7.2.9-artix1-1-x86_64-with-glibc2.44",
+  "python": "3.14.8",
+  "s_per_task": 29.4,
+  "sample": {
+    "max_tokens": 2048,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 20,
+    "top_p": 0.95
+  },
+  "serve_model": "/mnt/Vsio/Downloads/Spark-X2.5-4B-MERNIK-3000-SMSE.gguf",
+  "serve_sha256": "2592901c3c482660ec561744b0675b457dcdc5ad8ce01d1905ca4541d3fe6689",
+  "server_args": [
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--log-disable"
+  ],
+  "server_bin": "/home/wepiqx/llama.cpp/build/bin/llama-server",
+  "server_url": "http://127.0.0.1:28082",
+  "started": "2026-10-16T17:12:59"
+}

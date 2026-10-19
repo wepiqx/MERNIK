@@ -180,6 +180,11 @@ TENSOR_CLASS = {
     "ffn_gate_shexp": "ffn_gate_up",  # Ling shared experts (always active — never CAN_Q3)
     "ffn_up_shexp": "ffn_gate_up",
     "ffn_down_shexp": "ffn_down",
+    # LFM2.5 double-gated short conv (in_proj fans out, out_proj back to
+    # residual — big linear projections of the recurrent path, structurally
+    # closest to FFN gate_up: bottom-up starts them at Q4_K like everything,
+    # ceiling Q8_0, importance decides within the class)
+    "shortconv": "ffn_gate_up",
     "ffn_gate_inp": "norms",
     # Ling MLA low-rank factors → attention projections
     "attn_q_a": "attn_proj",
@@ -262,6 +267,17 @@ ARCH_FEATURES = {
         "prefix": "blk",
         "n_layers": 24,
         "moe_intermediate_size": 512,  # 512 % 256 == 0 → no K-quant padding needed
+    },
+    "lfm2moe": {
+        "has_qkv": False,  # separate attn_q/k/v in the 10 GQA attention blocks
+        "has_ssm": False,  # no ssm_* names — recurrence is shortconv (own class)
+        "has_mtp": False,
+        "has_moe": True,   # 38 expert layers (top-4 of 64) + 2 dense; also forced True live
+        "is_qat": False,
+        "prefix": "blk",
+        "n_layers": 40,  # 30 shortconv + 10 attention; overwritten live from the file
+        # moe_intermediate_size: left out until the BF16 header lands —
+        # classifier only applies the padding correction when % 256 != 0.
     },
 }
 

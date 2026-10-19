@@ -13,3 +13,4 @@ gnom/
 provenance/
 tinynet.py
 train_net.py
+all.log

@@ -367,6 +367,21 @@ Damage-sweep labels (`scripts/group_damage_sweep.py`) train the Gini allocator. 
 
 KLD-vs-ref is the rank column (Soulfate24 battery). Measured relief ceilings (`--relief`) pin sweet-spot groups at Q4.
 
+### KLD-only Label Era — the 5-column teacher (2026-10)
+
+The PPL teacher above is **retired**. The new teacher (`group_damage_sweep.py --kld-only`)
+skips the plain-PPL pass (it lies — see §3) and scores **five** KLD columns per unit against
+the unquantized reference on `rl_reasoning_mini`: `damage_kld` (mean), `damage_kld_max`
+(tail detonations), `damage_kld_median` (core), `damage_dp_rms` (decisiveness),
+`damage_same_top` (rank). `ppl`/`damage` are `null` — not measured.
+
+- **Machine split:** 9B (Ornith) sweeps on the **16 GB Vega-11 forge** (memory-bandwidth-bound;
+  a 9B is unreasonable to torture through a 1070); 1.7B and 4B sweep on the **GTX 1070**.
+- **Cost:** 9B ≈ 90 min/unit × 210 = **~13 days** continuous (the crown-jewel file); 1.7B ≈ 7.5 h;
+  4B ≈ 5 h. Deterministic — no sampling noise.
+- **Result:** the [`MERNIK-Fracture`](https://huggingface.co/datasets/wepiqx/MERNIK-Fracture)
+  dataset (complete, clean, uniform schema) — the origin of the project's current paradigm.
+
 ### Ceiling & Inversion Probes (2026-09-30/10-01, operator's ideas)
 
 - **Ceiling map:** `RINIQ-M2-MAXF16` (9.01 GB, F16 core 123) measured
@@ -395,6 +410,7 @@ KLD-vs-ref is the rank column (Soulfate24 battery). Measured relief ceilings (`-
 | `spark2_5` | `general.architecture` | Dense + hybrid sliding-window attention (1 full + 3 SWA) |
 | `k2_horizon` | `general.architecture` (`k2-horizon` alias) | Dense GQA thinking family, 36 layers, split attn_q/k/v; vendor sampling (temp 1.0 + top_p 0.95 only), ctx 16384, `--reasoning-effort high` (NOT qat — without the row it misdetects as gemma4) |
 | `gemma4` | layer-scale norms | QAT support, Q4_K attention floor |
+| `lfm2moe` | `general.architecture` | Liquid LFM2.5 hybrid: 30 short-conv + 10 GQA blocks, MoE (top-4/64), 131K ctx; `shortconv` weight-stats class |
 | llama (generic) | tensor names | Dense GQA (MiniCPM5, NeoHorse, etc.) |
 
 Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86) → Ornith-9B-MTP @6500 (PPL 8.6541) → NeoHorse-9B @6500 (HE 141 vs Q6_K 135 — 6 tasks, direction only) → Mellum2.1-MoE @10000 (HE 134 vs stock Q6 119, 3/3 SIGNIFICANT — first real quant-vs-stock win) → FrogNano-4B @3500 (RL-sharpened, stock wins temp-0 3/3) → K2-Horizon-7B @5500 (thinking family, first battery queued).
@@ -411,7 +427,8 @@ Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86)
 - 📦 [Ornith-1.5-9B-MTP-ASHQ1-GGUF](https://huggingface.co/wepiqx/Ornith-1.5-9B-MTP-ASHQ1-GGUF)
 - 📦 [Spark-X2.5-1.7B-ASHQ1-GGUF](https://huggingface.co/wepiqx/Spark-X2.5-1.7B-ASHQ1-GGUF)
 - 📦 [Mellum2.1-12B-A2.5B-Thinking-MERNIK-GGUF](https://huggingface.co/wepiqx/Mellum2.1-12B-A2.5B-Thinking-MERNIK-GGUF)
-- 📊 [MERNIK-gnom-labels](https://huggingface.co/datasets/wepiqx/MERNIK-gnom-labels) (damage labels + pools)
-- 📊 [MERNIK-rlmini-kld](https://huggingface.co/datasets/wepiqx/MERNIK-rlmini-kld) (reasoning-task KLD labels, the crown jewels)
+- 📊 [MERNIK-gnom-labels](https://huggingface.co/datasets/wepiqx/MERNIK-gnom-labels) (legacy PPL-era damage labels + pools — retired prototype)
+- 📊 [MERNIK-rlmini-kld](https://huggingface.co/datasets/wepiqx/MERNIK-rlmini-kld) (early KLD labels)
+- 📊 [MERNIK-Fracture](https://huggingface.co/datasets/wepiqx/MERNIK-Fracture) (current: KLD-only, 5-column, reasoning-corpus labels — the origin of the project)
 
 Lineage: Apache-2.0. Built with [Soulfate24](https://huggingface.co/Soulfate24), whose KLD battery ended our PPL theater. Field journals with every scar: `FUSION.md` (monsters), `README-ZOO.md` (utility duels), `SAGA.md` (MTP graft).

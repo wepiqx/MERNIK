@@ -36,7 +36,8 @@ WIKI = os.environ.get("WIKITEXT_DATA", "/mnt/Vsio/wikitext-2-raw/wiki.test.raw")
 
 def run_ppl(model_path: str, ctx: int = 1024, n: int = 64,
             wiki: str | None = None, kld_base: str | None = None,
-            timeout: int = 1200, ngl: int = 99):
+            timeout: int = 1200, ngl: int = 99,
+            do_plain: bool = True):
     """Returns (ppl, kld|None, extra dict).
 
     NOTE (build >=11051 scar): --kl-divergence REPLACES perplexity instead
@@ -48,21 +49,29 @@ def run_ppl(model_path: str, ctx: int = 1024, n: int = 64,
     line (Mean KLD). Now also parsed, same run, zero extra compute:
     Maximum KLD (tail/detonation), Median KLD (skew vs mean), RMS dp
     (behavioral shift), Same-top-p (top-1 agreement = decisiveness).
+
+    do_plain=False (--kld-only): skip the PPL pass entirely — it lies
+    (Perplexity Illusion), and on the forge it doubles wall time.
+    ppl comes back None; callers must treat it as "not measured".
     """
     cmd = [PPL, "-m", model_path, "-f", wiki or WIKI, "-ngl", str(ngl),
            "--load-mode", "mmap",
            "-c", str(ctx), "-n", str(n), "-b",
            os.environ.get("LLAMA_PPL_BATCH", "512"), "--seed", "7"]
-    out = subprocess.run(cmd, capture_output=True, text=True,
-                           timeout=timeout)
+    thr = os.environ.get("LLAMA_THREADS")  # forge has 8 logical CPUs, the
+    if thr:                                # default is half — KLD softmax
+        cmd += ["-t", str(thr)]            # and ubatch prep are CPU-side
     ppl, kld = None, None
     extra = {}
-    for line in (out.stderr + out.stdout).splitlines():
-        if "Final estimate" in line:
-            ppl = float(line.split("PPL =")[1].split("+/-")[0].strip())
-    if ppl is None:
-        tail = "\n".join((out.stderr + out.stdout).splitlines()[-8:])
-        raise RuntimeError(f"no PPL in output for {model_path}:\n{tail}")
+    if do_plain:
+        out = subprocess.run(cmd, capture_output=True, text=True,
+                             timeout=timeout)
+        for line in (out.stderr + out.stdout).splitlines():
+            if "Final estimate" in line:
+                ppl = float(line.split("PPL =")[1].split("+/-")[0].strip())
+        if ppl is None:
+            tail = "\n".join((out.stderr + out.stdout).splitlines()[-8:])
+            raise RuntimeError(f"no PPL in output for {model_path}:\n{tail}")
     if kld_base:
         kcmd = cmd + ["--kl-divergence", "--kl-divergence-base", kld_base]
         out2 = subprocess.run(kcmd, capture_output=True, text=True,
@@ -130,7 +139,13 @@ def main():
                          "--save-all-logits on unquantized model). When set, "
                          "each unit also scores KLD vs ref; damage_kld is "
                          "stored alongside PPL damage.")
+    ap.add_argument("--kld-only", action="store_true",
+                    help="skip the plain-PPL pass (PPL lies, and it doubles "
+                         "wall time on slow backends). Requires --kld-base. "
+                         "damage/ppl are written as null = not measured.")
     args = ap.parse_args()
+    if args.kld_only and not args.kld_base:
+        ap.error("--kld-only requires --kld-base (no ref = nothing to score)")
 
     model = read_model(args.model)
     im = read_imatrix(args.imatrix)
@@ -258,24 +273,30 @@ def main():
             except OSError:
                 pass
     kb = args.kld_base
+    kld_only = args.kld_only
     if "BASELINE" not in done:
         build_file(None, tmp)
         base_ppl, base_kld, base_extra = run_ppl(tmp, args.ppl_ctx, args.ppl_n,
                                       args.wiki_file, kb,
-                                      timeout=args.timeout, ngl=args.ngl)
-        rec = {"unit": "BASELINE", "ppl": base_ppl}
+                                      timeout=args.timeout, ngl=args.ngl,
+                                      do_plain=not kld_only)
+        rec = {"unit": "BASELINE",
+               "ppl": None if kld_only else base_ppl}
         if kb:
             rec["kld"] = base_kld
             rec.update(base_extra)
         with open(args.out, "a") as f:
             f.write(json.dumps(rec) + "\n")
-        print(f"BASELINE ppl={base_ppl:.4f}" +
-              (f" kld={base_kld:.4f}" if kb else ""), flush=True)
+        print("BASELINE " +
+              (f"ppl={base_ppl:.4f}" if base_ppl is not None
+               else "ppl=null (kld-only, not measured)") +
+              (f" kld={base_kld:.4f}" if base_kld is not None else ""),
+              flush=True)
     else:
         with open(args.out) as f:
             rows = [json.loads(l) for l in f
                     if json.loads(l)["unit"] == "BASELINE"]
-            base_ppl = rows[0]["ppl"]
+            base_ppl = rows[0].get("ppl")
             base_kld = rows[0].get("kld")
             base_extra = {k: rows[0].get(k) for k in
                           ("kld_max", "kld_median", "dp_rms", "same_top")}
@@ -351,7 +372,7 @@ def main():
                 try:
                     p, k, extra = run_ppl(buf, args.ppl_ctx, args.ppl_n,
                                     args.wiki_file, kb, timeout=args.timeout,
-                                    ngl=args.ngl)
+                                    ngl=args.ngl, do_plain=not kld_only)
                 except Exception as e:
                     print(f"[{idx + 1}/{n_total}] {tag} PPL failed "
                           f"({type(e).__name__}: {str(e)[:100]}), skipped",
@@ -365,8 +386,12 @@ def main():
                         os.remove(buf)
                     except OSError:
                         pass
+                # null-safe: kld-only leaves ppl None, a censored baseline
+                # leaves base_ppl None — "not measured", never a crash.
+                dmg = (p - base_ppl
+                       if p is not None and base_ppl is not None else None)
                 rec = {"unit": tag, "tensors": unit,
-                       "ppl": p, "damage": p - base_ppl}
+                       "ppl": p, "damage": dmg}
                 if kb:
                     rec["kld"] = k
                     # null-safe: a unit (or a resumed BASELINE) without KLD is
@@ -384,8 +409,11 @@ def main():
                 with open(args.out, "a") as f:
                     f.write(json.dumps(rec) + "\n")
                 print(f"[{idx + 1}/{n_total}] {tag} "
-                      f"damage={p - base_ppl:+.4f}" +
-                      (f" kld={k - base_kld:+.4f}" if kb else ""), flush=True)
+                      + (f"damage={dmg:+.4f}" if dmg is not None
+                         else "damage=null") +
+                      (f" kld={k - base_kld:+.4f}"
+                       if kb and k is not None and base_kld is not None
+                       else ""), flush=True)
                 ensure_submitted(idx + MAX_INFLIGHT)
                 del submitted[idx]
     finally:
