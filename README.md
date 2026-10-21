@@ -211,13 +211,38 @@ below it without sub-Q4 tiers (5500 arithmetically impossible; 5688 even with Q3
 At 6500: SMSE 126 vs recovery 123 vs stock Q4 125 — the whole shelf is one tie-zone, and
 the weights differ (ours 1 GB lighter).
 
-### L2 — The depth law (2026-10-21): early layers carry the damage
+### L2 — The depth law: the first blocks carry the damage (2026-10-21)
 
-Damage concentrates in the **early blocks**; deep ones are safe. Measured on the rlmini KLD
-labels: 43.2% / 36.4% of all damage sits in layers 0–5 of the 1.7B / 4B, and only
-3.2% / 7.4% in layers ≥24. A ranker trained on those two models predicted the same
-profile for a third it had never seen (Ornith-1.5-9B, hybrid SSM, 33 layers: 48.3% vs
-6.4%) — **zero-shot transfer across architecture**.
+**Where this came from (first person).** I checked my own first hand-made quant —
+`gemma-4-12B-it-SHQ6`, June 2026, a manual allocation I wrote before any of this was
+measurable. Its card already said it: *layers 0-1 are 3228× more important than middle
+layers (23, 35); attention projections on the first layer (`attn_q`, score 5.11e8) dominate
+the importance distribution.* The community noticed the effect without knowing the cause
+("truly black magic", and it beat unsloth's Q4_K_XL while being smaller and faster).
+
+Six months later the same thing showed up again — **on families that differ enormously
+architecturally**:
+
+| model | family | damage in layers 0–5 | in layers ≥24 | how measured |
+|:---|:---|---:|---:|:---|
+| gemma-4-12B-it | dense, 48 layers | — | — | manual imatrix, June 2026 (SHQ6) |
+| Spark-X2.5-1.7B | hybrid SWA, 36 layers | **43.2%** | 3.2% | KLD labels (teacher) |
+| Spark-X2.5-4B | hybrid SWA, 36 layers | **36.4%** | 7.4% | KLD labels (teacher) |
+| Ornith-1.5-9B | hybrid + SSM, 33 layers | **57.2%** | 8.9% | KLD labels (teacher, blind to the ranker) |
+
+A ranker trained on the 1.7B/4B legs predicted the Ornith profile **before it was
+measured** (48.3% vs 6.4% predicted; 57.2% vs 8.9% measured) — **zero-shot transfer across
+architecture**, direction and magnitude both right.
+
+On the 9B the hot band is 7.4× the middle of the stack: mean damage in blocks 0–2 is
++0.00217 against +0.00029 for blocks 10–30. The fingerprint is stable too: the hottest
+blocks on the 9B are **0, 1, 2, 3 and 11** — and the Gnom arm on the 4B independently
+picked **`blk.0` and `blk.11`**. Different families, different sizes, different instruments
+(the imatrix by hand in June, the teacher in October, the ranker as a prediction) — the same
+fingerprint.
+
+So the law is not "a property of that model": **the first blocks are where quantization
+damage lives, and the error there has not yet been smoothed by the layers above it.**
 
 The mechanism: activation magnitude grows with depth, so the imatrix keeps handing bits to
 the *late* layers while measured reasoning damage lives *early*. The two allocations
@@ -237,15 +262,19 @@ the early peaks"* — and its leg is **leaner** (4 Q5 vs 88), which is L0 ("fewe
 applied to the upper tiers. At 4000 both arms fall into sub-4 (lava), so the meaningful
 duel is at the Q4 floor.
 
-### L3 — The layer-0 spike: a learned ranker beats a monotone prior
+### L3 — Which block exactly is architecture-specific — and that is why a learned ranker wins
 
-Layer 0 is not merely "early", it is an **outlier**: mean damage in layer 0 vs the average
-of layers 1–3 is **2.3× (1.7B Q4), 1.6× (1.7B Q3), 4.6× (4B Q4), 3.3× (4B Q3)**. A
-monotone prior ("damage decays with depth") cannot express that — it puts the first block
-at rank 1 or 2. The learned ranker can, because it learns the *profile*, not the trend: it
-upgrades `blk.0.attn_gate/qkv` where the hand-picked law build takes `blk.7`. That single
-decision is worth **−0.24 PPL** (18.3646 vs 18.6080) — the gap between the learned
-allocator and the best monotone reading of its own law.
+The zone is always the first blocks; *which* one spikes is a property of the architecture:
+layer 0 vs the average of layers 1–3 is **4.6× (4B Q4), 3.3× (4B Q3), 2.3× (1.7B Q4)**,
+but only **1.1× on the 9B**, where the hot band is 0–2 with `blk.1` on top.
+
+A **monotone prior** ("damage decays with depth") cannot express a band or a spike — it puts
+the first block at rank 1 or 2 and stops thinking. The learned ranker can, because it learns
+the *profile*, not the trend: on the 4B it upgrades `blk.0.attn_gate/qkv` where the
+hand-picked law build takes `blk.7`. That single decision is worth **−0.24 PPL**
+(18.3646 vs 18.6080) — the gap between the learned allocator and the best monotone
+reading of its own law. Read L2 and L3 together: the law says *early*, the ranker says
+*which* early.
 
 ### L4 — The 1D/F32 law
 
