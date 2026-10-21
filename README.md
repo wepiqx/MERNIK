@@ -276,6 +276,37 @@ hand-picked law build takes `blk.7`. That single decision is worth **−0.24 PPL
 reading of its own law. Read L2 and L3 together: the law says *early*, the ranker says
 *which* early.
 
+### External confirmation (the literature caught up)
+
+The law above was found by hand (June 2026) and measured (October 2026). Four independent
+papers published in the same window describe the same physics:
+
+- **[arXiv:2608.08188](https://arxiv.org/abs/2608.08188)** — *Quantization Degradation in LLMs:
+  A Signal-Noise Perspective* (CASIA, 8 Aug 2026). Degrades to two linked processes: how
+  errors arise inside a module, and **how they accumulate across layers** (R(l+1) ≈ G(l)·R(l) +
+  Q(l)). The *propagated* error dominates at every depth, the per-layer source error becomes
+  secondary as errors build up — and their closing sentence is our thesis in their words:
+  *"the goal is to control the errors that drive downstream degradation, rather than to
+  minimize all errors uniformly."*
+- **[arXiv:2504.09629](https://arxiv.org/abs/2504.09629)** — *Quantization Error Propagation:
+  Revisiting Layer-Wise PTQ* (Apr 2025): the activation difference **grows exponentially with
+  depth** — the mathematical form of the snowball.
+- **[arXiv:2505.15909](https://arxiv.org/abs/2505.15909)** — *Is (Selective) Round-To-Nearest
+  Quantization All You Need?* (Kogan, MIT, 21 May 2025). Selective precision by layer: for
+  smaller Llama models perplexity improves fastest when the **first** layers stay in 8-bit; and
+  crucially **which** layers pay is architecture-specific — *middle* for Llama-3.1-405B, *last*
+  for Phi-3-mini and Dolly-v2. That is exactly our L3: the zone is early, the exact block is
+  the model's business — which is why a **learned** ranker beats a hand-picked rule.
+- **[arXiv:2411.07191](https://arxiv.org/abs/2411.07191)** — *The Super Weight in Large Language
+  Models* (Jul 2025): the few weights whose damage destroys the model sit in `mlp.down_proj`
+  of the **early layers**, consistently across Llama, Mistral and OLMo.
+
+Read together: the mechanism (errors born early are amplified through the depth), the practical
+consequence (keep the early blocks precise), and the caveat (which block is architecture-
+specific) are all established independently. MERNIK's contribution is the *measurement
+instrument* — per-tensor damage labels on a reasoning corpus, and a ranker that transfers the
+rule to models it has never seen.
+
 ### L4 — The 1D/F32 law
 
 The binary writes 1D tensors (norms, biases) and `ssm_conv1d` as **F32 whatever the rules
