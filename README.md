@@ -84,7 +84,7 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--size MIB` | Target file size in MiB (the primary budget knob) |
 | `--output O.gguf` | Output path (default: `<model>-MERNIK.gguf`) |
 | `--run` | Execute `llama-quantize` (without it: dry-run estimate only) |
-| `--utility NAME` | Queue gain metric: `mse` (default) / `rmse` / `smape` / `logcosh` / `huber` / `ssim` / `smape_ssim` / `smape_frag` / `mix` / `smse` (`balance` = deprecated alias) / `srmse` / `logratio` / `powalpha` / `recovery` (see rows below) |
+| `--utility NAME` | Queue gain metric: `mse` (default) / `rmse` / `smape` / `logcosh` / `huber` / `ssim` / `smape_ssim` / `smape_frag` / `pw_ssim` / `mix` / `smse` (`balance` = deprecated alias) / `srmse` / `logratio` / `powalpha` / `recovery` / `netdmg` / **`netpure`** / **`netfd`** (see rows below) |
 | `--mix-base NAME` | MIX utility: gain for non-king groups (`mse`/`rmse`/`smape`/`logcosh`) |
 | `--mix-top-frac F` | MIX utility: fraction of top-importance king groups (default: 0.2) |
 | `--top-down` | Reverse allocation: everything from F16, downgrade cheapest-loss-first |
@@ -113,6 +113,8 @@ Requires stock llama.cpp binaries (`llama-quantize`, `llama-perplexity`, `llama-
 | `--huber-delta D` | huber/logcosh scale splitting small vs large deltas (default 3e-4) |
 | `--ssim-table P` / `--ptable P` / `--frag-w F` | ssim / pw_ssim tables + smape_frag modulation weight (default 0.5) |
 | `--netpred P` / `--netdmg-w F` | Gnom predicted damage per group + modulator weight (default 0.5) |
+| `--utility netpure` + `--netpred P` | **Gnom-driven allocation.** The queue's gain is the *predicted damage* (not the imatrix magnitude), and the group weight in the downgrade formula is 1.0 — so demotion order is **damage per byte saved** and the static lens is not re-inserted. Same budget, different opinion about *where* the bits go (early blocks carry the damage, deep ones don't). Verified on Spark-X2.6-4B: 2250 MiB, PPL **18.3646** vs 19.2660 for the imatrix-driven SMSE, and max KLD vs BF16 **14.17 vs 17.77** (−20%) |
+| `--utility netfd` + `--netpred P` | **F16-blend mode** (bigger budgets): the fragile blocks are *kept in full precision* instead of being upgraded one tier. Needs the top-down path (bottom-up cannot hold F16) and the same damage-per-byte demotion. Spark-X2.6-4B @4050: 46 tensors in F16 (1510 MiB), rest by budget — PPL **18.6228**, i.e. it beats a solid stock Q8_0 (4172 MiB, 19.0307) **while being smaller**. The law works in F16 mode: what must not be touched is not touched |
 | `--aggro F` | [deprecated] Use `--size` instead |
 | `--verbose` | Detailed output |
 
