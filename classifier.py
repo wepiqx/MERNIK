@@ -830,6 +830,11 @@ def _push_downgrade(group_id: int,
         return
 
     total_g_imp = sum(tensor_importance.get(n, 0) for n in g_names)
+    if (uopt or {}).get("mode") == "netfd":
+        # Gnom's prediction IS the loss here (raw damage >= 0); multiplying
+        # by the imatrix importance would re-import the lens we are
+        # replacing. Weight 1.0 -> utility = damage per byte saved.
+        total_g_imp = 1.0
     if saved == 0:
         # Transit step (e.g. Q4_K→IQ4_NL: same bpw, must pass through to reach
         # deeper tiers). No saving, so defer to the end with inf utility —

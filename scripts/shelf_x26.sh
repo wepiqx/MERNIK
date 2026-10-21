@@ -56,12 +56,18 @@ run() {
     sleep 5
 
     # --- 1) KLD vs BF16 base (wiki) ---
-    echo "=== 1) REF from BF16 base $(date '+%T') ===" >> "$LOG"
-    $B -m /mnt/Vsio/Downloads/Spark-X2.6-4B.gguf -f $WIKI --save-all-logits "$R/ref_spark26_wiki.dat" \
-       -c 1024 -b 128 -ngl $NGL --load-mode mmap --seed 7 >> "$LOG" 2>&1
+    if [ -s "$R/ref_spark26_wiki.dat" ]; then
+        echo "=== 1) REF exists, skipping $(date '+%T') ===" >> "$LOG"
+    else
+        echo "=== 1) REF from BF16 base (wiki) $(date '+%T') ===" >> "$LOG"
+        $B -m /mnt/Vsio/Downloads/Spark-X2.6-4B.gguf -f $WIKI --save-all-logits "$R/ref_spark26_wiki.dat" \
+           -c 1024 -b 128 -ngl $NGL --load-mode mmap --seed 7 >> "$LOG" 2>&1
+    fi
     for f in Spark-X2.6-4B-Q4_K_M Spark-X2.6-4B-MERNIK-2250-SMSE \
              Spark-X2.6-4B-MERNIK-2250-NETPURE Spark-X2.6-4B-MERNIK-2250-LAWONLY; do
-        echo "--- KLD $f $(date '+%T')" >> "$LOG"
+        if [ -s "$R/kld_$f.txt" ]; then
+            echo "--- KLD $f exists, skipping" >> "$LOG"; continue
+        fi
         $B -m "$M/$f.gguf" -f $WIKI --kl-divergence --kl-divergence-base "$R/ref_spark26_wiki.dat" \
            -c 1024 -b 128 -ngl $NGL --load-mode mmap --seed 7 > "$R/kld_$f.txt" 2>&1
         tail -26 "$R/kld_$f.txt" >> "$LOG"
@@ -70,6 +76,8 @@ run() {
 
     # --- 2) HE batteries (stock already measured) ---
     he_arm spark26_netpure "$M/Spark-X2.6-4B-MERNIK-2250-NETPURE.gguf"
+    he_arm spark26_gf16    "$M/Spark-X2.6-4B-MERNIK-4050-GNOMF16.gguf"
+    he_arm spark26_q8      "$M/Spark-X2.6-4B-Q8_0.gguf"
     he_arm spark26_smse    "$M/Spark-X2.6-4B-MERNIK-2250-SMSE.gguf"
     he_arm spark26_lawonly "$M/Spark-X2.6-4B-MERNIK-2250-LAWONLY.gguf"
     echo "=== SHELF QUEUE COMPLETE $(date '+%F %T') ===" >> "$LOG"

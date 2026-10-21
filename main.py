@@ -87,7 +87,7 @@ def main():
                          help="SQUEEZE mode (separate path): only IQ1_S or F16, "
                               "nothing between. Dungeon or palace per tensor; "
                               "the queue rescues kings to F16. Bottom-up only.")
-    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "netpure", "mix", "smse", "srmse", "balance", "logratio", "powalpha", "recovery"],
+    parser.add_argument("--utility", choices=["mse", "rmse", "hybrid", "huber", "logcosh", "smape", "ssim", "smape_ssim", "smape_frag", "pw_ssim", "netdmg", "netpure", "netfd", "mix", "smse", "srmse", "balance", "logratio", "powalpha", "recovery"],
                         default="mse",
                         help="BATTLEFIELD: utility metric for the queue "
                              "(default: mse)")

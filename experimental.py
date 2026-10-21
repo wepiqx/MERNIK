@@ -18,7 +18,8 @@ LINF_ERR = {
 _NETPRED_CACHE: Dict[str, Dict[str, float]] = {}
 _PDMG_CACHE: Dict[str, Dict[str, Dict[str, float]]] = {}
 
-EXPERIMENTAL_MODES = ("huber", "hybrid", "pw_ssim", "netdmg", "netpure")
+EXPERIMENTAL_MODES = ("huber", "hybrid", "pw_ssim", "netdmg", "netpure",
+                     "netfd")
 
 
 def experimental_gain_modes():
@@ -48,6 +49,34 @@ def _group_netdmg_z(g_names: List[str], path: str | None) -> float:
     vals = np.array(sorted(table.values()))
     mu, sd = vals.mean(), vals.std() + 1e-12
     return (table[tag] - mu) / sd
+
+
+def _group_netdmg_raw(g_names: List[str], path: str | None) -> float:
+    """Gnom's predicted damage for this group, RAW (not z-scored).
+
+    The top-down path needs a quantity whose SIGN matches "value of
+    keeping the higher tier" (>= 0), and the ORDER must be damage per
+    byte saved. Raw predicted damage is >= 0 by construction (a damage
+    estimate), so it is used directly as the loss; unknown groups get
+    0.0 and are demoted first (nothing to lose there).
+    """
+    if not path or path not in _NETPRED_CACHE:
+        if not path:
+            return 0.0
+        try:
+            import json as _json
+            with open(path) as f:
+                _NETPRED_CACHE[path] = {k: float(v) for k, v in
+                                        _json.load(f).items()}
+        except Exception:
+            _NETPRED_CACHE[path] = {}
+    table = _NETPRED_CACHE[path]
+    if not table:
+        return 0.0
+    tag = "+".join(n.replace(".weight", "").split(".")[-1] + "@" +
+                   n.split(".")[1] for n in g_names
+                   if n.startswith("blk.")) or "global"
+    return float(table.get(tag, 0.0))
 
 
 def _pdamage_table(path: str | None) -> Dict[str, Dict[str, float]]:
@@ -132,6 +161,13 @@ def experimental_gain(cur_tier: str, next_tier: str, g_names: List[str],
         # coincides with smape; this mode removes that shared component).
         # Rung-independent: the allocator still ranks by gain/cost.
         return _group_netdmg_z(g_names, (uopt or {}).get("netpred"))
+    if mode == "netfd":
+        # top-down variant: the loss IS the predicted damage (raw, >= 0),
+        # so the demotion order becomes damage-per-byte-saved and the
+        # fragile tensors are the ones that keep the high tiers (F16).
+        # The imatrix importance is NOT mixed in (see classifier._push_
+        # downgrade: for netfd the group weight is 1.0).
+        return _group_netdmg_raw(g_names, (uopt or {}).get("netpred"))
     if mode == "pw_ssim":
         return _pdamage_gain(cur_tier, next_tier, g_names,
                              tensor_importance, (uopt or {}).get("ptable"))
