@@ -340,6 +340,26 @@ wins the temp-0 duel 3/3 significant (−16 tasks real). Best of ours:
 HUBER-3500 122/164. Full table in the lab notes; the α-axis map
 (110→117→120→122→109) lives in §3 above.
 
+### The PPL ladder (wiki, ctx 1024) — every arm, recorded
+
+`llama-perplexity` on wikitext-2-raw test, ctx 1024, seed 7. Same corpus, same harness;
+PPL is the **canary** (see the warning below), but it is the cheapest cross-build
+comparison we have, so it gets written down.
+
+| build | weight | PPL | note |
+|:---|---:|---:|:---|
+| **MERNIK-2250-Gnom** | 2254.8 MiB | **18.3646** | best arm; 2255 MiB |
+| MERNIK-2250-LAWONLY | 2254.8 MiB | 18.6080 | law picked by hand (layers 7, 11) |
+| MERNIK-4050-GNOMF16 | 4053.4 MiB | 18.6228 | F16 on the fragile layers (46 tensors) |
+| *BF16 base* (anchor) | 7848.7 MiB | *18.8263* | zero-loss reference, not a quant |
+| stock Q8_0 | 4172.3 MiB | 19.0307 | "almost lossless" — beaten by all three of ours |
+| MERNIK-2250-SMSE | 2254.8 MiB | 19.2660 | imatrix-driven (layer 27) |
+| stock Q4_K_M | 2479.8 MiB | 20.6148 | vendor mix (853 MiB in Q6) |
+
+Three of our quants beat the stock Q8_0 **while being smaller**, and the smallest (2255 MiB)
+beats everything including the BF16 anchor's own perplexity. "Just quantize to Q8" is not
+the better strategy — deciding *what* to keep at full precision is.
+
 ### Reference Results V: Spark-X2.6-4B — blind spread vs measured importance
 
 Fresh release (leaked on HF, dropped hours later; same `spark2_5` architecture
