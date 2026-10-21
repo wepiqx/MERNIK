@@ -28,7 +28,8 @@ export HUMANEVAL_SERVER_ARGS="--reasoning-effort high --cache-ram 0"
 done_rows() { [ -f "$1" ] && [ "$(wc -l < "$1")" -ge 164 ] && echo yes || echo no; }
 
 he_arm() {   # tag model
-    local tag=$1 model=$2 out="$E/humaneval_$tag.jsonl"
+    local tag=$1 model=$2
+    local out="$E/humaneval_$tag.jsonl"
     if [ "$(done_rows "$out")" = "yes" ]; then
         echo "=== HE $tag: already done, skipping ===" >> "$LOG"; return 0
     fi
@@ -109,7 +110,7 @@ status() {
 }
 
 case "${1:-}" in
-    start)  nohup setsid "$0" run >/dev/null 2>&1 & echo $! > "$PIDFILE"; echo "shelf queue started (pid $(cat "$PIDFILE"))" ;;
+    start)  nohup setsid "$0" run >> "$LOG.err" 2>&1 & echo $! > "$PIDFILE"; echo "shelf queue started (pid $(cat "$PIDFILE"))" ;;
     stop)   stop ;;
     status) status ;;
     run)    run ;;

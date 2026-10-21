@@ -28,6 +28,11 @@ tags:
 utility duels, more verdicts. The method (priority-queue allocation) is built; MERNIK is how
 we prove and certify it.
 
+Think of MERNIK as a **finetune of ASHQ1**: same base weights (queue, pins, tied groups),
+retrained objective (measure-first protocol, columns that carry their own ring), and
+expanded capabilities (slow capability ring, KLD-aware teachers, relief ceilings, the zoo
+bench, and norms shields).
+
 ---
 
 ## 0. TL;DR — what the last weeks produced
@@ -47,53 +52,76 @@ multiset** (Q4_K ×213 + Q5_K ×4) — they differ only in *which* tensors got t
 The learned ranker beats the static lens **and** a hand-picked reading of its own law — and
 by 24% on the tail. The monotone prior cannot see the layer-0 spike; the ranker can.
 
-**The PPL ladder** (wikitext-2-raw test, ctx 1024, seed 7 — same corpus, same harness):
+**The PPL ladder** — `llama-perplexity` on wikitext-2-raw test, ctx 1024, seed 7. Same
+corpus, same harness; PPL is the **canary**, but it is the cheapest cross-build comparison we
+have, so it gets written down:
 
 | build | weight | PPL | note |
 |:---|---:|---:|:---|
-| **MERNIK-2250-Gnom** | 2254.8 MiB | **18.3646** | best arm; the smallest one |
+| **MERNIK-2250-Gnom** | 2254.8 MiB | **18.3646** | Gnom-driven (Q5 on layer 0) |
 | MERNIK-2250-LAWONLY | 2254.8 MiB | 18.6080 | law picked by hand (layers 7, 11) |
 | MERNIK-4050-GNOMF16 | 4053.4 MiB | 18.6228 | F16 on the fragile layers (46 tensors) |
 | *BF16 base* (anchor) | 7848.7 MiB | *18.8263* | zero-loss reference, not a quant |
-| stock Q8_0 | 4172.3 MiB | 19.0307 | "almost lossless" — beaten by all three of ours |
-| MERNIK-2250-SMSE | 2254.8 MiB | 19.2660 | imatrix-driven (layer 27) |
+| stock Q8_0 | 4172.3 MiB | 19.0307 | "almost lossless" (KLD 0.0061 — 27× closer to BF16) |
+| MERNIK-2250-SMSE | 2254.8 MiB | 19.2660 | imatrix-driven (Q5 on layer 27) |
 | stock Q4_K_M | 2479.8 MiB | 20.6148 | vendor mix (853 MiB in Q6) |
 
-Three of our quants beat the stock Q8_0 **while being smaller**; the smallest (2255 MiB)
-beats everything including the BF16 anchor's own perplexity. "Just quantize to Q8" is not
-the better strategy — deciding *what* to keep at full precision is.
+The three 2255 MiB arms beat the stock Q8_0 **on PPL while being 46% smaller** — but the
+KLD column below says plainly what Q8 buys: it is **27× closer to the BF16 base**
+(mean KLD 0.0061 vs 0.1769) and keeps the argmax on 96.94% of positions against our ~82%.
+Q8 is the honest "touch nothing" reference; our arms are the cheap ones, and what they
+trade away is written down in the same table.
 
 **The KLD column, in full** — every build against the **same BF16 reference** (wiki test,
 302 chunks, ctx 1024, `llama-perplexity --kl-divergence --kl-divergence-base`):
 
-| metric | stock Q4_K_M | MERNIK-2250-SMSE | MERNIK-2250-Gnom |
-|:---|---:|---:|---:|
-| Mean KLD | **0.166641** ± 0.000872 | 0.180843 ± 0.000904 | 0.176940 ± 0.000894 |
-| Maximum KLD | 17.646482 | 17.770252 | **14.172658** (−20%) |
-| 99.9% KLD | 4.042008 | 4.074759 | 4.134612 |
-| 99.0% KLD | 1.346914 | 1.493514 | 1.490102 |
-| 95.0% KLD | 0.582286 | 0.644909 | 0.637474 |
-| 90.0% KLD | 0.386221 | 0.425906 | 0.414667 |
-| Median KLD | **0.077591** | 0.083268 | 0.080211 |
-| Mean Δp | −1.015 ± 0.024 % | −0.733 ± 0.024 % | **−0.306 ± 0.024 %** |
-| Maximum Δp | 99.747% | 99.924% | 99.639% |
-| 99.9% Δp | 55.175% | 63.900% | 67.559% |
-| 99.0% Δp | 25.209% | 28.549% | 30.309% |
-| 95.0% Δp | 10.534% | 11.624% | 12.468% |
-| 90.0% Δp | 5.344% | 5.888% | 6.464% |
-| 75.0% Δp | 0.560% | 0.695% | 0.907% |
-| Median Δp | −0.015% | −0.009% | **−0.002%** |
-| Minimum Δp | −99.741% | −99.072% | −99.094% |
-| RMS Δp | 9.444 ± 0.055 % | 9.539 ± 0.052 % | **9.398 ± 0.053 %** |
-| Same top p | **82.199** ± 0.097 % | 81.482 ± 0.099 % | 81.769 ± 0.098 % |
+| metric | stock Q4_K_M | stock Q8_0 | MERNIK-2250-SMSE | MERNIK-2250-Gnom | MERNIK-2250-LAWONLY | MERNIK-4050-GNOMF16 |
+|:---|---:|---:|---:|---:|---:|---:|
+| Mean KLD | 0.166641 ±   0.000872 | 0.006139 ±   0.000161 | 0.180843 ±   0.000904 | 0.176940 ±   0.000894 | 0.178306 ±   0.000894 | 0.062301 ±   0.000481 |
+| Maximum KLD | 17.646482 | 6.612764 | 17.770252 | 14.172658 | 18.709267 | 13.859949 |
+| 99.9% KLD | 4.042008 | 0.442399 | 4.074759 | 4.134612 | 3.953914 | 2.491301 |
+| 99.0% KLD | 1.346914 | 0.059898 | 1.493514 | 1.490102 | 1.489377 | 0.624270 |
+| 95.0% KLD | 0.582286 | 0.016562 | 0.644909 | 0.637474 | 0.640173 | 0.209655 |
+| 90.0% KLD | 0.386221 | 0.009498 | 0.425906 | 0.414667 | 0.419712 | 0.127790 |
+| Median KLD | 0.077591 | 0.001394 | 0.083268 | 0.080211 | 0.081173 | 0.025654 |
+| Mean Δp | -1.015 ± 0.024 | -0.083 ± 0.005 | -0.733 ± 0.024 | -0.306 ± 0.024 | -0.445 ± 0.024 | 0.089 ± 0.015 |
+| Maximum Δp | 99.747 | 97.502 | 99.924 | 99.639 | 99.818 | 98.523 |
+| 99.9% Δp | 55.175 | 12.304 | 63.900 | 67.559 | 65.434 | 46.425 |
+| 99.0% Δp | 25.209 | 4.206 | 28.549 | 30.309 | 29.513 | 18.499 |
+| 95.0% Δp | 10.534 | 1.671 | 11.624 | 12.468 | 12.188 | 7.753 |
+| 90.0% Δp | 5.344 | 0.869 | 5.888 | 6.464 | 6.336 | 4.214 |
+| 75.0% Δp | 0.560 | 0.117 | 0.695 | 0.907 | 0.838 | 0.680 |
+| Median Δp | -0.015 | -0.000 | -0.009 | -0.002 | -0.004 | -0.000 |
+| Minimum Δp | -99.741 | -98.934 | -99.072 | -99.094 | -98.129 | -99.536 |
+| RMS Δp | 9.444 ± 0.055 | 1.904 ± 0.046 | 9.539 ± 0.052 | 9.398 ± 0.053 | 9.460 ± 0.052 | 5.817 ± 0.046 |
+| Same top p | 82.199 ± 0.097 | 96.940 ± 0.044 | 81.482 ± 0.099 | 81.769 ± 0.098 | 81.644 ± 0.099 | 88.864 ± 0.080 |
 
-(The two newer arms measured separately: stock Q8_0 holds the argmax on **96.94%** of
-positions — the price of "touching nothing"; our Q4 mixes sit at ~82% and pay 15% of
-positions in flipped decisions.)
 
 The imatrix carries across the model version almost unchanged (**Spearman 0.9964**, top-50
 overlap 100% between X2.5 and X2.6), so the X2.5 labels applied to X2.6 without
 re-measuring. That is why the arms above are comparable at all.
+
+**What is in the files** (read straight from the GGUF headers — the allocation, not a
+claim):
+
+| | stock Q4_K_M | MERNIK-2250 (any arm) | stock Q8_0 | MERNIK-4050-GNOMF16 |
+|:---|:---|:---|:---|:---|
+| Q4_K | 180 (1620.8 MiB) | 213 (2011.7 MiB) | — | — |
+| Q5_K | — | 4 (237.2 MiB) | — | — |
+| Q6_K | 37 (853.1 MiB) | — | — | 44 |
+| Q8_0 | — | — | 217 | 85 |
+| F16 | — | — | — | 46 (1510 MiB) |
+| attn_proj | Q4_K×54 Q6_K×18 | Q4_K×70 Q5_K×2 | — | — |
+| ffn_down | Q4_K×18 **Q6_K×18** | Q4_K×36 | — | — |
+| gate | Q4_K×36 | Q4_K×35 Q5_K×1 | — | — |
+
+The stock mix spends **853 MiB in Q6** (and gives `ffn_down` the lion's share of it); the
+2250 arms spend **237 MiB in Q5** on four tensors. 3.6× less high-tier weight, **better
+perplexity**, 9% smaller file — that is the project thesis in two rows: *measured importance
+beats blind spreading*. And the whole gap between SMSE and Gnom is **three tensors**:
+SMSE upgrades `blk.27.attn_gate/qkv` + `blk.35.attn_output`; Gnom upgrades
+`blk.0.attn_gate/qkv` + `blk.11.attn_output` — same count, same bytes, and that is the
+*entire* difference between 19.2660 and 18.3646.
 
 **The law behind it** (measured on rlmini KLD labels, three models, transfers zero-shot):
 
@@ -135,6 +163,25 @@ silent rather than babble. Decisiveness is governed by the finetune, not model s
 Qwen3.5 bones, Neo hesitates while OxCoder commits). **Saturation rule** — bases at ~98%
 cannot resolve fine differences; capability duels need bases at 60–85% or they only answer
 the collapse threshold.
+
+### The rules (all of them, in one place)
+
+1. **Allocator signals never certify. Capability scores never steer.** Mixing them is how
+   the PPL disease started.
+2. **PPL is a canary** — never quoted without that label, and never as a result.
+3. **Verdicts travel with MDE.** A difference of 5 tasks out of 164 is a direction, not a
+   rank. Below ~8–10 tasks nothing is reproducible.
+4. **The verdict column certifies preservation, not rank** (nine-way tie at the top: 151,
+   then eight on 150).
+5. **Every claim carries a number, a date, and a source** (a file, a repo link, a battery
+   tag). A claim without all three is a story, not a measurement.
+6. **One table per subject.** The same numbers must not appear in two sections — link
+   instead. Family tables live on their own cards for exactly this reason.
+7. **Dead results stay filed**, with the number that killed them — that is how we avoid
+   re-testing them.
+8. **A censored unit is never imputed.** TERMINAL records (`damage: null`,
+   `retryable: false`) are visible and excluded by construction, not filled in.
+9. **Cross-family verdicts are void** — different models, different rulers.
 
 ---
 
@@ -315,7 +362,14 @@ boost" backfired, filed as dead.
 - `--cache-ram 0` on HE chains (164 distinct prompts share nothing, so the prompt cache only
   eats RAM — unbounded on hybrid archs); `LLAMA_PPL_BATCH` env overrides the sweep's hardcoded
   `-b 512` (forge iGPU OOMs a 9B at 512; 128 holds).
-- `scripts/audit_tiers.py` — tier auditing: `--model M.gguf [--big 10] [--layer 31] [--per-layer]`.
+- `scripts/audit_tiers.py` — tier auditing:
+
+```bash
+python scripts/audit_tiers.py --model M-6500.gguf
+python scripts/audit_tiers.py --model M-6500.gguf --big 10
+python scripts/audit_tiers.py --model M-6500.gguf --layer 31
+python scripts/audit_tiers.py --model M-6500.gguf --per-layer   # every layer
+```
 - `scripts/consolidate_labels.py` — builds the clean label pool (corpus-tagged, dedup-checked)
   so a mixed archive can never leak into a training run again.
 - `scripts/shelf_x26.sh` — resumable measurement queue (one GPU job at a time, skips finished
@@ -414,6 +468,20 @@ transfer exists and is large. See [L2](#l2--the-depth-law-2026-10-21-early-layer
 and [L3](#l3--the-layer-0-spike-a-learned-ranker-beats-a-monotone-prior) for what the
 ranker actually learned, and [§0](#0-tldr--what-the-last-weeks-produced) for what it buys
 on a real build.
+
+**The teacher** (5-column, KLD-only, 2026-10): `group_damage_sweep.py --kld-only` skips
+the plain-PPL pass (it lies) and scores five columns per unit against the unquantized
+reference on `rl_reasoning_mini`: `damage_kld` (mean), `damage_kld_max` (tail
+detonations), `damage_kld_median` (core), `damage_dp_rms` (decisiveness),
+`damage_same_top` (rank). `ppl`/`damage` are `null` — not measured.
+
+* **Machine split:** the 9B (Ornith) sweeps on the **16 GB Vega-11 forge**
+  (memory-bandwidth-bound; a 9B is unreasonable to torture through a 1070), the 1.7B and 4B
+  on the **GTX 1070**.
+* **Cost:** 9B ≈ 90 min/unit × 210 = **~13 days** continuous (the crown-jewel file);
+  1.7B ≈ 7.5 h; 4B ≈ 5 h.
+* **Result:** the [`MERNIK-Fracture`](https://huggingface.co/datasets/wepiqx/MERNIK-Fracture)
+  dataset — complete, clean, uniform schema — the origin of the project's current paradigm.
 
 **Adding a leg to the pool:**
 
@@ -581,11 +649,6 @@ L2/L3 turned into an allocator mode.
 | `gemma4` | layer-scale norms | QAT support, Q4_K attention floor |
 | llama (generic) | tensor names | Dense GQA (MiniCPM5, NeoHorse, etc.) |
 
-Scaling: Spark-1.7B @1000 (zoo stand) → Spark-4B @4000 (PPL 31.25 vs Q8 30.86) →
-Ornith-9B-MTP @6500 (PPL 8.6541) → NeoHorse-9B @6500 (HE 141 vs Q6_K 135) →
-Mellum2.1-MoE @10000 (HE 134 vs stock Q6 119, 3/3 SIGNIFICANT) → FrogNano-4B @3500 (stock
-wins temp-0 3/3) → K2-Horizon-7B @5500 (saturated shelf) → **Spark-X2.6-4B @2250
-(18.3646 PPL, −20% max KLD vs the imatrix arm at equal weight)**.
 
 ---
 
@@ -611,30 +674,4 @@ battery ended our PPL theater. Field journals with every scar: `FUSION.md` (mons
 
 ---
 
-## 11. How to extend this README
-
-The file is organised so that every new thing has exactly one home. When you add
-something, put it in the place below and nowhere else.
-
-| what you added | where it goes |
-|:---|:---|
-| a **new utility mode** | §3 modes table — one row: what it believes, where it won/lost |
-| a **new CLI flag** | §3 flags table — one row |
-| a **new law** | §2 — name, date, the number that proves it, the model it was measured on |
-| a **new result** | §0 tables (the short version) + §7 (the family-card link) |
-| a **new model in the label pool** | §5 — the pool step list + the transfer table |
-| a **new architecture** | §9 — one row |
-| a **new repo / dataset / model** | §10 — one link |
-| a **new ring or column** | §1 — the ring table, with the date of the revision |
-
-**House rules (they are what keep this readable):**
-
-1. **Every claim carries a number, a date, and a source** (a file, a repo link, or a battery
-   tag). A claim without all three is a story, not a measurement.
-2. **Allocator signals never certify.** If a number is PPL, it is labelled a canary.
-3. **One table per subject.** The same numbers must not appear in two sections — link
-   instead. (Family tables live on their own cards for exactly this reason.)
-4. **Verdicts travel with MDE.** A difference of 5 tasks out of 164 is a direction, not a
-   rank.
-5. **Dead results stay filed.** A mode that lost is still a row in the modes table, marked
-   with the number that killed it — that is how we avoid re-testing it.
+---
