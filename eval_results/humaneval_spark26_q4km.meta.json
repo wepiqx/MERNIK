@@ -1,0 +1,46 @@
+{
+  "battery_min": 162.1,
+  "dirty": false,
+  "empties": 14,
+  "env_overrides": {
+    "HE_CTX": "16384",
+    "HE_MAX_TOKENS": "8192",
+    "HE_MIN_P": "0.05",
+    "HE_TEMP": "1.0",
+    "HE_TOP_K": "0",
+    "HE_TOP_P": "0.95"
+  },
+  "finished": "2026-10-21T20:11:35",
+  "git_sha": "b1a494e",
+  "n_tasks": 164,
+  "out": "humaneval_spark26_q4km.jsonl",
+  "platform": "Linux-7.2.9-artix1-1-x86_64-with-glibc2.44",
+  "python": "3.14.8",
+  "s_per_task": 59.3,
+  "sample": {
+    "max_tokens": 8192,
+    "min_p": 0.05,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 0,
+    "top_p": 0.95
+  },
+  "serve_model": "/mnt/Vsio/assets/models/Spark-X2.6-4B-Q4_K_M.gguf",
+  "serve_sha256": "7da9cc7afe304a26409fc019946118a41b3dd7f589b398db2784a68cd74377a2",
+  "server_args": [
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--log-disable",
+    "--reasoning-effort",
+    "high",
+    "--cache-ram",
+    "0"
+  ],
+  "server_bin": "/home/wepiqx/llama.cpp/build/bin/llama-server",
+  "server_url": "http://127.0.0.1:28082",
+  "started": "2026-10-21T17:29:30"
+}
