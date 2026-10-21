@@ -340,6 +340,30 @@ wins the temp-0 duel 3/3 significant (−16 tasks real). Best of ours:
 HUBER-3500 122/164. Full table in the lab notes; the α-axis map
 (110→117→120→122→109) lives in §3 above.
 
+### Reference Results V: Spark-X2.6-4B — blind spread vs measured importance
+
+Fresh release (leaked on HF, dropped hours later; same `spark2_5` architecture
+as X2.5, post-training only — imatrix correlation between the two versions:
+**Spearman 0.9964**, top-50 overlap 100%). Same model, same corpus, same
+harness, one variable — the allocation:
+
+| | MERNIK-2250-SMSE | stock Q4_K_M (XHToken) |
+|:---|:---|:---|
+| weight | **2250 MiB** | 2475 MiB |
+| PPL (wiki, ctx 1024) | **19.2660** | 20.6148 |
+| Q4_K | 213 (2011.7 MiB) | 180 (1620.8 MiB) |
+| Q5_K | 4 (237.2 MiB) | — |
+| Q6_K | — | 37 (853.1 MiB) |
+| attn_proj | Q4_K×70 Q5_K×2 | Q4_K×54 Q6_K×18 |
+| ffn_down | Q4_K×36 | Q4_K×18 **Q6_K×18** |
+| gate | Q4_K×35 Q5_K×1 | Q4_K×36 |
+
+The stock mix spends **853 MiB in Q6** (and gives `ffn_down` the lion's share
+of it); SMSE spends **237 MiB in Q5** on the four tensors the imatrix marks as
+load-bearing. 3.6× less high-tier weight, **better perplexity**, 9% smaller
+file. That is the project thesis in two rows: *measured importance beats blind
+spreading*. (HE verdict column: in flight — PPL never certifies.)
+
 ### Fast-Ring Diagnostic: GPQA-Recognition
 
 Recognition decisiveness (first-token P(letter) over top-30, no CoT). Via `scripts/gpqa_duel.py`.
@@ -358,6 +382,42 @@ Recognition decisiveness (first-token P(letter) over top-30, no CoT). Via `scrip
 ### MTP Head Grafting
 
 Transplant of a 15-tensor (464 MB) MTP donor head onto OxCoder-9B via `scripts/graft_mtp3.py`. Draft engages (5–23% acceptance); economics negative (31→20 t/s on mismatched head). Mechanics proven; full saga in `SAGA.md`.
+
+### Gnom-0.3: the depth law (2026-10-21)
+
+The ranker learned a law, and the law **transfers to an architecture it never saw**:
+
+| model | share of damage in layers 0–5 | in layers ≥24 |
+|:---|---:|---:|
+| Spark-1.7B-Q4 (measured truth) | 43.2% | 3.2% |
+| Spark-4B-Q4 (measured truth) | 36.4% | 7.4% |
+| **Ornith-1.5-9B (Gnom zero-shot)** | **48.3%** | **6.4%** |
+
+**Early layers carry the damage; deep layers are safe.** Gnom was trained on the 1.7B/4B
+rlmini legs and never saw Ornith (9B, hybrid SSM, 33 layers) — yet it predicts the same
+profile. The previous "no transfer" verdict was an artifact of contaminated labels; on
+clean data, strict leave-one-MODEL-out gives **trunk LOMO 0.801** (bar 0.45, ×6 MDE) with
+the static imatrix proxy at **−0.103**.
+
+**The mechanism — and why the imatrix looks the other way.** Activation magnitude grows with
+depth, so the imatrix keeps handing bits to the *late* layers; measured reasoning damage
+lives *early*. The two allocations therefore disagree on purpose, and the disagreement is
+the experiment:
+
+| Ornith-9B | SMSE @5310 | Gnom @5310 | SMSE @4000 | Gnom @4000 |
+|:---|---:|---:|---:|---:|
+| Q8 | 15 | **30** | 15 | **32** |
+| Q6 | 0 | 3 | 0 | 3 |
+| Q5 | **88** | 4 | 44 | 1 |
+| Q4 | 162 | **228** | 78 | **113** |
+| IQ2 (sub-4) | — | — | 117 | 110 |
+| tensors moved | — | 103/442 | — | 117/442 |
+
+SMSE builds a **pyramid** (88 Q5 in the middle); Gnom says *"Q4 everywhere, bits only to
+the early peaks"* — and its leg is **leaner** (4 Q5 vs 88), which is the project's own
+"fewer is better" law applied to the upper tiers. Note @4000 puts both arms into sub-4
+(lava), so the meaningful duel is at the Q4 floor. The same test runs at 4B scale on
+Spark-X2.6-4B (§5, Reference Results V).
 
 ### Teacher & Gini (v3 DONE 2026-09-19)
 

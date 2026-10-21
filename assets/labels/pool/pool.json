@@ -1,0 +1,81 @@
+{
+  "base_tier": "Q5_K",
+  "files": [
+    {
+      "name": "rl17_q4",
+      "model": "spark17",
+      "tier": "Q4_K",
+      "corpus": "rlmini",
+      "n_cols": 5,
+      "path": "/mnt/Vsio/assets/labels/damage_17b_rlmini_kldonly.jsonl",
+      "file": "rl17_q4.jsonl",
+      "rows": 113,
+      "units": 112,
+      "terminated": 0,
+      "kld_cols": [
+        "damage_kld",
+        "damage_kld_max",
+        "damage_kld_median",
+        "damage_dp_rms",
+        "damage_same_top"
+      ]
+    },
+    {
+      "name": "rl17_q3",
+      "model": "spark17",
+      "tier": "Q3_K",
+      "corpus": "rlmini",
+      "n_cols": 5,
+      "path": "/mnt/Vsio/assets/labels/damage_17b_rlmini_q3.jsonl",
+      "file": "rl17_q3.jsonl",
+      "rows": 113,
+      "units": 112,
+      "terminated": 0,
+      "kld_cols": [
+        "damage_kld",
+        "damage_kld_max",
+        "damage_kld_median",
+        "damage_dp_rms",
+        "damage_same_top"
+      ]
+    },
+    {
+      "name": "rl4b_q4",
+      "model": "spark4b",
+      "tier": "Q4_K",
+      "corpus": "rlmini",
+      "n_cols": 5,
+      "path": "/mnt/Vsio/assets/labels/damage_4b_rlmini_kldonly.jsonl",
+      "file": "rl4b_q4.jsonl",
+      "rows": 145,
+      "units": 144,
+      "terminated": 0,
+      "kld_cols": [
+        "damage_kld",
+        "damage_kld_max",
+        "damage_kld_median",
+        "damage_dp_rms",
+        "damage_same_top"
+      ]
+    },
+    {
+      "name": "rl4b_q3",
+      "model": "spark4b",
+      "tier": "Q3_K",
+      "corpus": "rlmini",
+      "n_cols": 5,
+      "path": "/mnt/Vsio/assets/labels/damage_4b_rlmini_q3.jsonl",
+      "file": "rl4b_q3.jsonl",
+      "rows": 145,
+      "units": 144,
+      "terminated": 0,
+      "kld_cols": [
+        "damage_kld",
+        "damage_kld_max",
+        "damage_kld_median",
+        "damage_dp_rms",
+        "damage_same_top"
+      ]
+    }
+  ]
+}
