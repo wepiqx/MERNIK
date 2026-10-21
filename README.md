@@ -399,6 +399,15 @@ profile. The previous "no transfer" verdict was an artifact of contaminated labe
 clean data, strict leave-one-MODEL-out gives **trunk LOMO 0.801** (bar 0.45, ×6 MDE) with
 the static imatrix proxy at **−0.103**.
 
+**The spike at layer 0 — why a learned ranker beats a monotone prior.** Layer 0 is not
+merely "early", it is an **outlier**: mean damage in layer 0 vs the average of layers 1–3
+is **2.3× (1.7B Q4), 1.6× (1.7B Q3), 4.6× (4B Q4), 3.3× (4B Q3)**. A monotone prior
+("damage decays with depth") cannot express that — it puts the first block at rank 1 or 2.
+Gnom can, because it learns the *profile*, not the trend: it upgrades
+`blk.0.attn_gate/attn_qkv` while the hand-picked law build upgrades `blk.7`. That single
+decision is worth **−0.24 PPL** (18.3646 vs 18.6080) — the gap between the learned
+allocator and the best monotone reading of its own law.
+
 **The mechanism — and why the imatrix looks the other way.** Activation magnitude grows with
 depth, so the imatrix keeps handing bits to the *late* layers; measured reasoning damage
 lives *early*. The two allocations therefore disagree on purpose, and the disagreement is
