@@ -358,11 +358,41 @@ harness, one variable — the allocation:
 | ffn_down | Q4_K×36 | Q4_K×18 **Q6_K×18** |
 | gate | Q4_K×35 Q5_K×1 | Q4_K×36 |
 
-The stock mix spends **853 MiB in Q6** (and gives `ffn_down` the lion's share
-of it); SMSE spends **237 MiB in Q5** on the four tensors the imatrix marks as
-load-bearing. 3.6× less high-tier weight, **better perplexity**, 9% smaller
-file. That is the project thesis in two rows: *measured importance beats blind
-spreading*. (HE verdict column: in flight — PPL never certifies.)
+The stock mix spends **853 MiB in Q6** (and gives `ffn_down` the lion's share of it);
+ours spend **237 MiB in Q5** on four tensors. 3.6× less high-tier weight, **better
+perplexity**, 9% smaller file. That is the project thesis in two rows: *measured importance
+beats blind spreading*.
+
+**KLD against the BF16 base** (same corpus, wikitext-2-raw test, 302 chunks) — the
+fidelity column, and the one that shows where the damage actually lands:
+
+| metric | Stock Q4_K_M | MERNIK-2250-SMSE | MERNIK-2250-Gnom |
+|:---|---:|---:|---:|
+| Mean KLD | **0.166641** | 0.180843 | 0.176940 |
+| **Maximum KLD** | 17.646482 | 17.770252 | **14.172658** (−20%) |
+| Median KLD | **0.077591** | 0.083268 | 0.080211 |
+| **Mean Δp** | −1.015% | −0.733% | **−0.306%** |
+| Median Δp | −0.015% | −0.009% | **−0.002%** |
+| RMS Δp | 9.444% | 9.539% | **9.398%** |
+| Same top p | **82.199%** | 81.482% | 81.769% |
+
+The Gnom build is the closest to the BF16 base in the **worst case** (max KLD 14.17 vs
+17.65/17.77 — a 20% cheaper tail) and preserves the model's own confidence best
+(mean Δp −0.306% vs −1.015%, median Δp essentially unchanged). The stock edges it on
+*average* distributional distance — the one column that averages a catastrophe away. That
+is the whole argument for five columns instead of one number.
+
+**And the whole gap is three tensors.** SMSE upgrades `blk.27.attn_gate/attn_qkv` +
+`blk.35.attn_output`; Gnom upgrades `blk.0.attn_gate/attn_qkv` + `blk.11.attn_output`
+(same count, same bytes) — and that is the *entire* difference between 19.2660 and
+18.3646. Same weight, same tier multiset, three tensors moved, ~0.9 PPL. A knife edge: the
+allocation is decided by a handful of layers, which is exactly what the depth law says
+(early layers carry the damage).
+
+> **PPL is the canary, not the verdict.** It is demoted everywhere in this project because
+> it lies — it saturates on reasoning-critical layers and can be bought by sharpening. The
+> numbers above are a direction, not a crown. The verdict column (HumanEval / HumanEval+)
+> is the only thing that certifies, and it is in flight.
 
 ### Fast-Ring Diagnostic: GPQA-Recognition
 
