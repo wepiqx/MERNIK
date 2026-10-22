@@ -101,6 +101,34 @@ The imatrix carries across the model version almost unchanged (**Spearman 0.9964
 overlap 100% between X2.5 and X2.6), so the X2.5 labels applied to X2.6 without
 re-measuring. That is why the arms above are comparable at all.
 
+### The verdict column (in flight)
+
+| arm | weight | HE | HE+ | empties | PPL | max KLD | verdict vs stock |
+|:---|---:|---:|---:|---:|---:|---:|:---|
+| stock Q4_K_M | 2479.8 MiB | 139/164 (84.76%) | 132/164 (80.49%) | 14 | 20.6148 | 17.65 | reference |
+| **MERNIK-2250-Gnom** | **2254.8 MiB** | 136/164 (82.93%) | 130/164 (79.27%) | 18 | **18.3646** | **14.17** | **0/3 columns separate — NOISE** (McNemar p = 0.70 / 0.86 / 0.42) |
+| MERNIK-4050-GNOMF16 | 4053.4 MiB | *in flight* | | | 18.6228 | 13.86 | |
+| stock Q8_0 | 4172.3 MiB | *in flight* | | | 19.0307 | 6.61 | |
+| MERNIK-2250-SMSE | 2254.8 MiB | *in flight* | | | 19.2660 | 17.77 | |
+| MERNIK-2250-LAWONLY | 2254.8 MiB | *in flight* | | | 18.6080 | 18.71 | |
+
+**What the first duel actually says (honest reading).** At the instrument's resolution the
+capability is **indistinguishable** — 0 of 3 columns separate the arms, and the arms even
+swap which tasks they pass (15 stock-only vs 12 Gnom-only discordant pairs). The win is
+**not capability**: it is that the same bytes are spent better. **−9.1% weight, a 20%
+cheaper tail (max KLD 14.17 vs 17.65), 2.25 better PPL — at indistinguishable
+capability.** That is a quality-per-megabyte win: the first allocator result where the same
+verdict buys a smaller file *and* a closer model.
+
+One trap worth naming, because the table is easy to read backwards: the Gnom arm went
+silent on **4 more** tasks (18 vs 14 empties) and that **is** the score difference, counted
+twice. Drop those 4 from the denominator and "accuracy among answered tasks" flips to
+93.15% vs 92.67% — a selection artifact, not a win. An empty answer is a failed task.
+
+**And the limit of the claim.** Moving 3 tensors out of 290 is below what the verdict column
+can resolve (13-task floor). The law has to show up where the intervention is larger — the
+F16-blend arm (46 tensors in F16) or the 9B, where the budget is looser.
+
 **What is in the files** (read straight from the GGUF headers — the allocation, not a
 claim):
 
