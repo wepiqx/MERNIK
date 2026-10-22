@@ -101,31 +101,54 @@ The imatrix carries across the model version almost unchanged (**Spearman 0.9964
 overlap 100% between X2.5 and X2.6), so the X2.5 labels applied to X2.6 without
 re-measuring. That is why the arms above are comparable at all.
 
-### The verdict column (in flight)
+### The verdict column — all five arms, all pairs
 
-| arm | weight | HE | HE+ | empties | PPL | max KLD | verdict vs stock |
-|:---|---:|---:|---:|---:|---:|---:|:---|
-| stock Q4_K_M | 2479.8 MiB | 139/164 (84.76%) | 132/164 (80.49%) | 14 | 20.6148 | 17.65 | reference |
-| **MERNIK-2250-Gnom** | **2254.8 MiB** | 136/164 (82.93%) | 130/164 (79.27%) | 18 | **18.3646** | **14.17** | **0/3 columns separate — NOISE** (McNemar p = 0.70 / 0.86 / 0.42) |
-| MERNIK-4050-GNOMF16 | 4053.4 MiB | *in flight* | | | 18.6228 | 13.86 | |
-| stock Q8_0 | 4172.3 MiB | *in flight* | | | 19.0307 | 6.61 | |
-| MERNIK-2250-SMSE | 2254.8 MiB | *in flight* | | | 19.2660 | 17.77 | |
-| MERNIK-2250-LAWONLY | 2254.8 MiB | *in flight* | | | 18.6080 | 18.71 | |
+| arm | weight | HE | HE+ | empties | PPL | max KLD | same-top |
+|:---|---:|---:|---:|---:|---:|---:|---:|
+| stock Q8_0 | 4172.3 MiB | 140/164 (85.37%) | 132/164 (80.49%) | 13 | 19.0307 | 6.61 | **96.94%** |
+| stock Q4_K_M | 2479.8 MiB | 139/164 (84.76%) | 132/164 (80.49%) | 14 | 20.6148 | 17.65 | 82.20% |
+| MERNIK-2250-LAWONLY | 2254.8 MiB | 137/164 (83.54%) | 127/164 (77.44%) | 13 | 18.6080 | 18.71 | 81.64% |
+| MERNIK-2250-Gnom | 2254.8 MiB | 136/164 (82.93%) | 130/164 (79.27%) | 18 | **18.3646** | **14.17** | 81.77% |
+| MERNIK-2250-SMSE | 2254.8 MiB | 136/164 (82.93%) | 130/164 (79.27%) | 9 | 19.2660 | 17.77 | 81.48% |
+| MERNIK-4050-GNOMF16 | 4053.4 MiB | 134/164 (81.71%) | 129/164 (78.66%) | 16 | 18.6228 | 13.86 | 88.86% |
 
-<small><b>HE</b> = HumanEval (164 tasks, pass@1, <code>human_eval</code> harness). <b>HE+</b> = EvalPlus HumanEval+ (base + extra tests, 80&times; per task). <b>One run per battery</b> &mdash; no averaging over seeds or repeats; at temp 1.0 the verdict column is a <i>draw</i>, not a certificate (a repeat would move it by ~&plusmn;3.6pp, the binomial noise budget). <b>The comparison is paired</b>: <code>scripts/duel.py</code> (McNemar exact, two-sided, &alpha; = 0.05) on the task intersection, per column; arms are compared only within the same harness, never averaged across harnesses. Reported alongside the resolution floor (13 tasks) and the MDE.</small>
+Every pair, arbitrated by `scripts/duel.py` (McNemar exact, α = 0.05):
 
-**What the first duel actually says (honest reading).** At the instrument's resolution the
-capability is **indistinguishable** — 0 of 3 columns separate the arms, and the arms even
-swap which tasks they pass (15 stock-only vs 12 Gnom-only discordant pairs). The win is
-**not capability**: it is that the same bytes are spent better. **−9.1% weight, a 20%
-cheaper tail (max KLD 14.17 vs 17.65), 2.25 better PPL — at indistinguishable
-capability.** That is a quality-per-megabyte win: the first allocator result where the same
-verdict buys a smaller file *and* a closer model.
+| duel | HE | HE+ | empties | verdict |
+|:---|:---|:---|:---|:---|
+| stock Q4_K_M vs Q8_0 | p=1.00 | p=1.00 | p=1.00 | **0/3 — noise** |
+| stock Q4_K_M vs GNOMF16 | p=0.38 | p=0.66 | p=0.77 | **0/3 — noise** |
+| Q8_0 vs GNOMF16 | p=0.34 | p=0.73 | p=0.58 | **0/3 — noise** |
+| Gnom vs SMSE | p=1.00 | p=1.00 | **p=0.035** | 1/3 — empties only |
+| Gnom vs LAWONLY | p=1.00 | p=0.73 | p=0.33 | **0/3 — noise** |
 
-One trap worth naming, because the table is easy to read backwards: the Gnom arm went
-silent on **4 more** tasks (18 vs 14 empties) and that **is** the score difference, counted
-twice. Drop those 4 from the denominator and "accuracy among answered tasks" flips to
-93.15% vs 92.67% — a selection artifact, not a win. An empty answer is a failed task.
+**What the whole shelf actually says (honest reading).**
+
+1. **At this scale the verdict column cannot separate any of the allocations** — 0 of 3 columns
+   for four of the five pairs. The three 2250 MiB arms (SMSE / Gnom / LAWONLY) score *the
+   same* HE (136 / 136 / 137) and even swap tasks symmetrically (Gnom vs SMSE: 15 stock-only
+   vs 15 Gnom-only discordant pairs, p=1.00). Which three tensors get the Q5 does not move
+   capability.
+2. **The one column that did separate is empties, and it points against us:** Gnom gives up on
+   **18** tasks vs SMSE's **9** (p=0.035) — and it is *monotonic in depth*: the deeper the
+   upgrade (SMSE blk.27/35 → 9 empties; LAWONLY blk.7 → 13; Gnom blk.0 → 18). Protect the
+   earliest blocks and the model becomes **more hesitant**. But: that p=0.035 is 1 of 15
+   comparisons run tonight, so it does not survive multiple-comparison correction
+   (Bonferroni 0.0033) — it is a **lead to chase**, not a result.
+3. **Q8_0 — the near-lossless reference — is NOT better than Q4_K_M** (140 vs 139 HE, all
+   columns p=1.00). At 4B scale capability is indifferent to fidelity across this whole range,
+   which kills the "just use Q8" intuition and vindicates spending the bytes elsewhere.
+4. **So the win is not capability — it is quality-per-megabyte:** the same verdict
+   (indistinguishable), **9.1% less weight**, a **20% cheaper tail** (max KLD 14.17 vs 17.65)
+   and **2.25 better PPL**. The PPL/KLD advantages are real measurements that do **not**
+   convert into capability at this intervention size.
+
+**And the honest bottom line for the write-up:** the *damage law* (first blocks carry the
+damage) is a **measurement** — it is what the KLD labels say, and it transfers across
+architectures. Whether spending bits there buys **capability** is a separate question that at
+4B/3-tensor scale the instrument cannot answer. It stays open, and the heavier arms
+(46 tensors in F16, the 9B with a looser budget, the sub-4 regime) are where it can be
+tested.
 
 **And the limit of the claim.** Moving 3 tensors out of 290 is below what the verdict column
 can resolve (13-task floor). The law has to show up where the intervention is larger — the
