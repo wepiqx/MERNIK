@@ -112,15 +112,7 @@ re-measuring. That is why the arms above are comparable at all.
 | MERNIK-2250-SMSE | 2254.8 MiB | *in flight* | | | 19.2660 | 17.77 | |
 | MERNIK-2250-LAWONLY | 2254.8 MiB | *in flight* | | | 18.6080 | 18.71 | |
 
-<small>
-**HE** = HumanEval (164 tasks, pass@1, `human_eval` harness).
-**HE+** = EvalPlus HumanEval+ (base + extra tests, 80× per task).
-**One run per battery** — no averaging over seeds or repeats; at temp 1.0 the verdict column is a
-*draw*, not a certificate (a repeat would move it by ~±3.6pp, the binomial noise budget).
-**The comparison is paired**: `scripts/duel.py` (McNemar exact, two-sided, α = 0.05) on the task
-intersection, per column; arms are compared only within the same harness, never averaged across
-harnesses. Reported alongside the resolution floor (13 tasks) and the MDE.
-</small>
+<small><b>HE</b> = HumanEval (164 tasks, pass@1, <code>human_eval</code> harness). <b>HE+</b> = EvalPlus HumanEval+ (base + extra tests, 80&times; per task). <b>One run per battery</b> &mdash; no averaging over seeds or repeats; at temp 1.0 the verdict column is a <i>draw</i>, not a certificate (a repeat would move it by ~&plusmn;3.6pp, the binomial noise budget). <b>The comparison is paired</b>: <code>scripts/duel.py</code> (McNemar exact, two-sided, &alpha; = 0.05) on the task intersection, per column; arms are compared only within the same harness, never averaged across harnesses. Reported alongside the resolution floor (13 tasks) and the MDE.</small>
 
 **What the first duel actually says (honest reading).** At the instrument's resolution the
 capability is **indistinguishable** — 0 of 3 columns separate the arms, and the arms even
@@ -156,10 +148,13 @@ claim):
 The stock mix spends **853 MiB in Q6** (and gives `ffn_down` the lion's share of it); the
 2250 arms spend **237 MiB in Q5** on four tensors. 3.6× less high-tier weight, **better
 perplexity**, 9% smaller file — that is the project thesis in two rows: *measured importance
-beats blind spreading*. And the whole gap between SMSE and Gnom is **three tensors**:
+beats blind spreading*. The whole gap between SMSE and Gnom is **three tensors**:
 SMSE upgrades `blk.27.attn_gate/qkv` + `blk.35.attn_output`; Gnom upgrades
 `blk.0.attn_gate/qkv` + `blk.11.attn_output` — same count, same bytes, and that is the
-*entire* difference between 19.2660 and 18.3646.
+*entire* difference between 19.2660 and 18.3646. Whether that shows up in the verdict column
+is an open question: three tensors out of 290 is a small intervention, and the verdict column
+has a 13-task floor. The heavier arms (46 tensors in F16, the 9B) are where the law can
+actually be tested.
 
 **The law behind it** (measured on rlmini KLD labels, three models, transfers zero-shot):
 
