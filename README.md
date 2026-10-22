@@ -226,7 +226,7 @@ architecturally**:
 | model | family | damage in layers 0–5 | in layers ≥24 | how measured |
 |:---|:---|---:|---:|:---|
 | gemma-4-12B-it | dense, 48 layers | — | — | manual imatrix, June 2026 (SHQ6) |
-| Spark-X2.5-1.7B | hybrid SWA, 36 layers | **43.2%** | 3.2% | KLD labels (teacher) |
+| Spark-X2.5-1.7B | hybrid SWA, 28 layers | **43.2%** | 3.2% | KLD labels (teacher) |
 | Spark-X2.5-4B | hybrid SWA, 36 layers | **36.4%** | 7.4% | KLD labels (teacher) |
 | Ornith-1.5-9B | hybrid + SSM, 33 layers | **57.2%** | 8.9% | KLD labels (teacher, blind to the ranker) |
 
