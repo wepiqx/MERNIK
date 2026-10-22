@@ -112,6 +112,16 @@ re-measuring. That is why the arms above are comparable at all.
 | MERNIK-2250-SMSE | 2254.8 MiB | *in flight* | | | 19.2660 | 17.77 | |
 | MERNIK-2250-LAWONLY | 2254.8 MiB | *in flight* | | | 18.6080 | 18.71 | |
 
+<small>
+**HE** = HumanEval (164 tasks, pass@1, `human_eval` harness).
+**HE+** = EvalPlus HumanEval+ (base + extra tests, 80× per task).
+**One run per battery** — no averaging over seeds or repeats; at temp 1.0 the verdict column is a
+*draw*, not a certificate (a repeat would move it by ~±3.6pp, the binomial noise budget).
+**The comparison is paired**: `scripts/duel.py` (McNemar exact, two-sided, α = 0.05) on the task
+intersection, per column; arms are compared only within the same harness, never averaged across
+harnesses. Reported alongside the resolution floor (13 tasks) and the MDE.
+</small>
+
 **What the first duel actually says (honest reading).** At the instrument's resolution the
 capability is **indistinguishable** — 0 of 3 columns separate the arms, and the arms even
 swap which tasks they pass (15 stock-only vs 12 Gnom-only discordant pairs). The win is
