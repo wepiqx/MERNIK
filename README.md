@@ -37,6 +37,44 @@ bench, and norms shields).
 
 ## 0. TL;DR — what the last weeks produced
 
+### Pre-registered: the 9B test (written 2026-10-22, before the result)
+
+The 4B shelf could not separate the allocations (0/3 columns on four of five pairs). The 9B
+can: at the Q4 floor (5300 MiB) the two allocations differ in **97 tensors of 442**, so the
+verdict column finally has the power to tell them apart.
+
+| | Q8_0 | Q5_K | Q4_K | the bet |
+|:---|:---|:---|:---|:---|
+| SMSE (imatrix) | layer 32 only | **82** (layers 0, 3, 7, 13–31) | 168 | a broad Q5 pyramid through the middle |
+| **Gnom (zero-shot)** | layers 1–4 + 32 | 1 | **230** | *depth is safe at Q4; bits only on the first blocks* |
+
+(layer 32 in Q8 in both arms is the allocator's **fallback** for the last block, not a
+decision of either method.)
+
+**Provenance:** the ranker behind the Gnom arm was trained on the 1.7B/4B rlmini legs only —
+**the 9B leg was not in its training set**, so this is a genuine zero-shot on an unseen model.
+
+**Pre-registered outcomes** (recorded before the batteries finished):
+
+| result | what it means |
+|:---|:---|
+| **Gnom ≥ SMSE on HE/HE+** | the law transfers to a hybrid architecture it never saw — the first capability win for the learned allocator |
+| **SMSE clearly better** | "early layers are fragile" is transformer-specific and fails on the recurrent/SSM hybrid: the deep blocks cannot hold Q4 here. The ranker gets a *boundary of applicability* — worth more than a win |
+| **tie on capability** | as on Spark: capability does not separate them and the win stays quality-per-megabyte. Then the next fight is **below Q4**, where the arms diverge on 117/442 tensors |
+| **empties trend deeper** (recorded as a third, separate axis) | on the 4B, empties were monotonic in the depth of the upgrade (SMSE blk.27 → 9 empties, LAWONLY blk.7 → 13, Gnom blk.0 → 18). If it repeats on the 9B, the first blocks govern *decisiveness*, not just signal — and the right answer would be Q8 for the first blocks, but not F16 for them wholesale |
+
+**Falsification controls, built before the result** (`models/netpred_ornith_law.json`,
+`models/netpred_ornith_deep.json`): if the "deep" arm — the *opposite* bet — also wins,
+then the win was not about depth at all. One command from a build, no re-training.
+
+**The named risk.** If the 9B hybrid's depth genuinely cannot hold Q4, that is not the law
+failing: the ranker was trained on Spark (1.7B/4B) and knows nothing about recurrent blocks.
+The 9B's *own* labels do support the bet (57.2% of the damage in layers 0–5, 8.9% in ≥24,
+blocks 0–2 at 7.4× the middle) — so a collapse would indict the *transfer*, not the
+measurement.
+
+---
+
 **One model, one byte budget, three beliefs about where the bits go.** Spark-X2.6-4B
 (released hours after its weights leaked; same `spark2_5` architecture as X2.5,
 post-training only). All three MERNIK arms are the **same 2254.8 MiB** with the **same tier
