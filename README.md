@@ -45,20 +45,24 @@ The pre-registered 9B batteries (below) closed on 2026-10-22. Duel `scripts/duel
 |:---|:---|:---|:---|:---|
 | **NETPURE (Gnom, zero-shot) vs SMSE (imatrix)** | 137 vs **140** (p=0.66) | 129 vs **133** (p=0.48) | **14 vs 19** (fewer better, p=0.23) | **0/3 — NOISE** |
 
-| arm | bet | HE (runner) | HE+ (evalplus) | empties | PPL wiki | KLD rlmini (vs Q8 forge ref, interim) |
-|:---|:---|---:|---:|---:|---:|---:|
-| **Gnom (netpure)** — ranker never saw the 9B, **no imatrix** | Q8 on the early peaks + Q4 floor | 137/164 (83.54%) | 129/164 (78.66%) | **14** | 8.7973 ±0.0626 | **0.2889** ±0.0064 |
-| **SMSE** — imatrix-driven, trained on Ornith's own data | Q5 pyramid through the middle | **140/164 (85.37%)** | **133/164 (81.10%)** | 19 | **8.7349** ±0.0619 | 0.2915 ±0.0065 |
-| DEEP (opposite-bet control) | — | — | — | — | 8.7760 | 0.2972 (worst, as intended) |
-| LAW (hand-law control) | — | not run | not run | — | hole — closed tonight | hole — closed tonight |
+| arm | bet | HE (runner) | HE+ (evalplus) | empties | PPL wiki | KLD wiki vs Q8 ref | KLD wiki vs BF16 ref | KLD rlmini (interim) |
+|:---|:---|---:|---:|---:|---:|---:|---:|---:|
+| **Gnom (netpure)** — ranker never saw the 9B, **no imatrix** | Q8 on the early peaks + Q4 floor | 137/164 (83.54%) | 129/164 (78.66%) | **14** | 8.7973 ±0.0626 | 0.12267 ±0.00199 | 0.12150 ±0.00197 | 0.2889 ±0.0064 |
+| **SMSE** — imatrix-driven, trained on Ornith's own data | Q5 pyramid through the middle | **140/164 (85.37%)** | **133/164 (81.10%)** | 19 | **8.7349** ±0.0619 | 0.12620 ±0.00206 | 0.12427 ±0.00203 | 0.2915 ±0.0065 |
+| DEEP (opposite-bet control) | — | — | — | — | 8.7760 | 0.12394 | 0.12225 | 0.2972 (worst, as intended) |
+| LAW (hand-law control) | — | not run | not run | — | **8.7879 ±0.0625** | 0.12270 | **0.12094** (top) | — |
 
 **What the tie is worth.** The 0/3 columns read "crown must not move" — and the tie has teeth: **the learned ranker, blind (zero-shot, no imatrix, never trained on the 9B), holds an even score on both pass columns against an allocator trained on this model's own imatrix.** The pre-registered outcome is **(c) tie on capability** — the next fight is below Q4, where the arms diverge on 117/442 tensors (open).
 
 **Decisiveness axis (pre-registered as a separate column):** Gnom delivers **fewer empties — 14 vs 19** (5-task lead, p=0.23 — *a lead, not a result*, same discipline as the 4B p=0.035). And the direction **reverses the 4B empties law**: there, empty count grew monotonically with the depth of the upgrade (blk.27 → 9, blk.7 → 13, blk.0 → 18 empties "protect the earliest blocks and the model becomes more hesitant"). Here the arm that puts bits on the earliest blocks delivers **fewer** refusals at 97-tensor intervention scale. The 4B empties-monotonic claim does not survive its first big-intervention test — demoted to small-intervention artifact (recorded with both numbers, kept as history).
 
-**Fidelity columns (interim, being re-measured tonight).** The KLD numbers above come from the rlmini corpus against the forge Q8 ref (the labels' home corpus; arms-vs-arms paired and clean). PPL is wiki (canary) — netpure 8.7973 vs smse 8.7349, diff 0.062 ≈ 0.7σ = tie inside canary resolution, direction marginal SMSE. Tonight's wiki legs (in flight, results below when landed): KLD re-measured on the protocol corpus (302 chunks, wiki.test) against **two refs sequentially** — **Q8 base, then BF16 base** — so the delta answers *which ref tier future batteries should use* (deviation note vs the 4B BF16-ref protocol will be recorded with both numbers). LAW PPL/KLD holes close in the same legs.
+**Fidelity columns — landed (2026-10-23 06:52, both ref legs closed, zero failures).** KLD on the protocol corpus (302-chunk wiki.test) measured twice per arm: against a **Q8-base ref** and a **BF16-base ref** (the 4B protocol's tier). The ref-tier debate is answered, and boringly: **the tier moves every arm by the same small constant (+0.0012…+0.0019, mean +0.0016, 4/4 same sign) and flips no ranking** — NETPURE/LAW hold the top-2 on both refs (their ≤0.00056 order swap is deep inside σ), DEEP between, SMSE the furthest from base on BOTH refs. So future batteries rank identically on either tier; the honest "distance to base" number is the BF16 one; the Q8 ref is ~4× cheaper to build (~22 min vs ~75 min on this box, byte-identical 73.6 GB file format). Deviation note by the protocol law: the 4B batteries measured against a BF16 ref — both tiers are now on file and the offset is measured, not assumed.
 
-*Sources:* `eval_results/humaneval_ornith5300{netpure,smse}*` (sidecar-stamped, git `8cce6d2`), duel run 2026-10-23; HE `shelf_9b.log`, fidelity `shelf_9b_kld.log`, tonight's legs `shelf_9b_kld_wiki.log` + `shelf_9b_ref_ab.log`. HE column = runner's per-task `passed` (`.jsonl_results.jsonl`); evalplus `base_status` disagrees by the usual ~0.5pp harness gap (136/139).
+**The cross-metric tension (noise-level, stated — it is the honest texture of this verdict):** SMSE wins the canary (PPL 8.7349 vs 8.7973, ~0.7σ) and the task column by raw count (140 vs 137, p=0.66) — but it is the arm drifted **furthest from base** on the protocol KLD (0.12427 vs 0.12150 = 0.98σ vs BF16 ref; same sign vs the interim rlmini ref, 0.4σ → 3/3 refs). NETPURE — blind, imatrix-free, never trained on the 9B — is the one closest to base. Both directions live inside noise, which is exactly why the verdict column stays a tie.
+
+**The hand-law control also earned its slot:** LAW is top-of-ranking on the BF16 ref (0.12094) and co-top on Q8 (0.12270) — never scored on tasks by design, but the hand-law allocation is not fidelity-nonsense; its PPL hole closed at 8.7879 ±0.0625.
+
+*Sources:* `eval_results/humaneval_ornith5300{netpure,smse}*` (sidecar-stamped, git `8cce6d2`), duel run 2026-10-23; HE `shelf_9b.log`, fidelity legs `shelf_9b_kld.log` (rlmini/Q8-forge interim), `shelf_9b_kld_wiki.log` (Q8 ref, closed 04:24), `shelf_9b_ref_ab.log` (BF16 ref, closed 06:52); refs `assets/refs/ref_ornith{q8,bf16}_wiki.dat` — 73,599,454,980 B each, byte-identical format (BF16 ref kept on disk). HE column = runner's per-task `passed` (`.jsonl_results.jsonl`); evalplus `base_status` disagrees by the usual ~0.5pp harness gap (136/139).
 
 ### Pre-registered: the 9B test (written 2026-10-22, before the result)
 
