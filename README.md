@@ -91,7 +91,7 @@ is good enough to survive contact with the score columns.
 *Sources:* `scripts/audit_tiers.py` audit dumps 2026-10-23; battery in flight
 `shelf_9b_stockq4.log`, sidecar-stamped when closed.
 
-*Sources:* `eval_results/humaneval_ornith5300{netpure,smse}*` (sidecar-stamped, git `8cce6d2`), duel run 2026-10-23; HE `shelf_9b.log`, fidelity legs `shelf_9b_kld.log` (rlmini/Q8-forge interim), `shelf_9b_kld_wiki.log` (Q8 ref, closed 04:24), `shelf_9b_ref_ab.log` (BF16 ref, closed 06:52); refs `assets/refs/ref_ornith{q8,bf16}_wiki.dat` — 73,599,454,980 B each, byte-identical format (BF16 ref kept on disk). HE column = runner's per-task `passed` (`.jsonl_results.jsonl`); evalplus `base_status` disagrees by the usual ~0.5pp harness gap (136/139).
+*Sources:* `eval_results/humaneval_ornith5300{netpure,smse}*` (sidecar-stamped, git `8cce6d2`), duel run 2026-10-23; HE `shelf_9b.log`, fidelity legs `shelf_9b_kld.log` (rlmini/Q8-forge interim), `shelf_9b_kld_wiki.log` (Q8 ref, closed 04:24), `shelf_9b_ref_ab.log` (BF16 ref, closed 06:52); refs `assets/refs/ref_ornith{q8,bf16}_wiki.dat` — 73,599,454,980 B each, byte-identical format (BF16 ref kept on disk); stock control row `shelf_9b_stockq4.log` + `eval_results/humaneval_ornithstockq4km*` (in flight 2026-10-23, sidecars land with the run, fingerprint via `scripts/audit_tiers.py`); HE column = runner's per-task `passed` (`.jsonl_results.jsonl`); evalplus `base_status` disagrees by the usual ~0.5pp harness gap (136/139).
 
 ### Pre-registered: the 9B test (written 2026-10-22, before the result)
 
