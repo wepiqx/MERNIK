@@ -37,9 +37,9 @@ bench, and norms shields).
 
 ## 0. TL;DR — what the last weeks produced
 
-### The 9B verdict (2026-10-23): a zero-shot Gnom statistically ties the imatrix-trained SMSE — blindness costs nothing
+### The 9B verdict (2026-10-23): a zero-shot Gnom statistically ties the imatrix-trained SMSE — blindness costs nothing. The vendor stock row closed same-day: **task-tie at +470 MiB, fidelity collapse** (KLD +34% vs the best arm, worst tail, worst canary)
 
-The pre-registered 9B batteries (below) closed on 2026-10-22. Duel `scripts/duel.py` (McNemar exact, α=0.05, same protocol, 164 tasks):
+The pre-registered 9B batteries (below) closed on 2026-10-22; the vendor control (plain Q4_K_M, no imatrix, no allocator) closed 2026-10-23 16:17. Duel `scripts/duel.py` (McNemar exact, α=0.05, same protocol, 164 tasks):
 
 | duel | HE | HE+ | empties | verdict |
 |:---|:---|:---|:---|:---|
