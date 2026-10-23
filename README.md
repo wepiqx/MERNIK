@@ -62,6 +62,35 @@ The pre-registered 9B batteries (below) closed on 2026-10-22. Duel `scripts/duel
 
 **The hand-law control also earned its slot:** LAW is top-of-ranking on the BF16 ref (0.12094) and co-top on Q8 (0.12270) — never scored on tasks by design, but the hand-law allocation is not fidelity-nonsense; its PPL hole closed at 8.7879 ±0.0625.
 
+### The stock control row: plain Q4_K_M (2026-10-23, running now)
+
+The row the top never had: `Ornith-1.5-9B-Q4_K_M.gguf` (5,780,090,240 B), quantized from
+the BF16 base by plain `llama-quantize Q4_K_M` — **no imatrix, no allocator**, the vendor
+heuristic exactly as anyone gets it. Through the full shelf right now: HE (164 tasks,
+same protocol) → HE+ (evalplus) → PPL (wiki canary) → KLD (wiki, vs the BF16 ref).
+Numbers land here when the run closes; the duel column pair is already armed
+(`stock vs netpure`, `stock vs smse`, McNemar exact).
+
+**The vendor fingerprint, counted from the file** (`scripts/audit_tiers.py --per-layer`,
+the same tool over all three arms):
+
+| build | file | tensors above Q4 | notes |
+|:---|---|:---|:---|
+| stock Q4_K_M | 5.78 GB | **Q6 ×35**, Q8 ×0 | static llama.cpp pattern: `attn_qkv`+`ffn_down` Q6 on layers 0,1,2,6,9,12,18,21,24,28–31 (`attn_v` on the full-attention layers 3,15,27,31,32) + output head; **layers 4,5,7,8,… at full Q4** |
+| Gnom (netpure) | 5.31 GB | **Q8 ×23**, Q5 ×1 | Q8 = first blocks' `attn_qkv`/`attn_gate`/`ssm_alpha`/`ssm_beta` layers 1–4 + heads — the exact zone the Fracture labels call the epicenter |
+| SMSE (imatrix) | 5.31 GB | **Q5 ×82**, Q8 ×8 | the activation-magnitude pyramid through attention projections + gates |
+
+Three sentences of physics from that table: (1) the stock carries **+470 MiB more than
+either allocator** and places every upgrade by a frozen layer-list, not by a measurement —
+not one tensor above Q6, no Q8 anywhere; (2) layers 0–2 happen to be covered, but
+**layers 4–8 — the measured damage epicenter of this family — sit at untouched full Q4**;
+(3) both allocator builds spend a *smaller* budget and still aim Q8 at the zone the
+blame lives in. The stock row will read as the experiment answering whether the pattern
+is good enough to survive contact with the score columns.
+
+*Sources:* `scripts/audit_tiers.py` audit dumps 2026-10-23; battery in flight
+`shelf_9b_stockq4.log`, sidecar-stamped when closed.
+
 *Sources:* `eval_results/humaneval_ornith5300{netpure,smse}*` (sidecar-stamped, git `8cce6d2`), duel run 2026-10-23; HE `shelf_9b.log`, fidelity legs `shelf_9b_kld.log` (rlmini/Q8-forge interim), `shelf_9b_kld_wiki.log` (Q8 ref, closed 04:24), `shelf_9b_ref_ab.log` (BF16 ref, closed 06:52); refs `assets/refs/ref_ornith{q8,bf16}_wiki.dat` — 73,599,454,980 B each, byte-identical format (BF16 ref kept on disk). HE column = runner's per-task `passed` (`.jsonl_results.jsonl`); evalplus `base_status` disagrees by the usual ~0.5pp harness gap (136/139).
 
 ### Pre-registered: the 9B test (written 2026-10-22, before the result)
