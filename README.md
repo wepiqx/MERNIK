@@ -37,6 +37,29 @@ bench, and norms shields).
 
 ## 0. TL;DR — what the last weeks produced
 
+### The 9B verdict (2026-10-23): a zero-shot Gnom statistically ties the imatrix-trained SMSE — blindness costs nothing
+
+The pre-registered 9B batteries (below) closed on 2026-10-22. Duel `scripts/duel.py` (McNemar exact, α=0.05, same protocol, 164 tasks):
+
+| duel | HE | HE+ | empties | verdict |
+|:---|:---|:---|:---|:---|
+| **NETPURE (Gnom, zero-shot) vs SMSE (imatrix)** | 137 vs **140** (p=0.66) | 129 vs **133** (p=0.48) | **14 vs 19** (fewer better, p=0.23) | **0/3 — NOISE** |
+
+| arm | bet | HE (runner) | HE+ (evalplus) | empties | PPL wiki | KLD rlmini (vs Q8 forge ref, interim) |
+|:---|:---|---:|---:|---:|---:|---:|
+| **Gnom (netpure)** — ranker never saw the 9B, **no imatrix** | Q8 on the early peaks + Q4 floor | 137/164 (83.54%) | 129/164 (78.66%) | **14** | 8.7973 ±0.0626 | **0.2889** ±0.0064 |
+| **SMSE** — imatrix-driven, trained on Ornith's own data | Q5 pyramid through the middle | **140/164 (85.37%)** | **133/164 (81.10%)** | 19 | **8.7349** ±0.0619 | 0.2915 ±0.0065 |
+| DEEP (opposite-bet control) | — | — | — | — | 8.7760 | 0.2972 (worst, as intended) |
+| LAW (hand-law control) | — | not run | not run | — | hole — closed tonight | hole — closed tonight |
+
+**What the tie is worth.** The 0/3 columns read "crown must not move" — and the tie has teeth: **the learned ranker, blind (zero-shot, no imatrix, never trained on the 9B), holds an even score on both pass columns against an allocator trained on this model's own imatrix.** The pre-registered outcome is **(c) tie on capability** — the next fight is below Q4, where the arms diverge on 117/442 tensors (open).
+
+**Decisiveness axis (pre-registered as a separate column):** Gnom delivers **fewer empties — 14 vs 19** (5-task lead, p=0.23 — *a lead, not a result*, same discipline as the 4B p=0.035). And the direction **reverses the 4B empties law**: there, empty count grew monotonically with the depth of the upgrade (blk.27 → 9, blk.7 → 13, blk.0 → 18 empties "protect the earliest blocks and the model becomes more hesitant"). Here the arm that puts bits on the earliest blocks delivers **fewer** refusals at 97-tensor intervention scale. The 4B empties-monotonic claim does not survive its first big-intervention test — demoted to small-intervention artifact (recorded with both numbers, kept as history).
+
+**Fidelity columns (interim, being re-measured tonight).** The KLD numbers above come from the rlmini corpus against the forge Q8 ref (the labels' home corpus; arms-vs-arms paired and clean). PPL is wiki (canary) — netpure 8.7973 vs smse 8.7349, diff 0.062 ≈ 0.7σ = tie inside canary resolution, direction marginal SMSE. Tonight's wiki legs (in flight, results below when landed): KLD re-measured on the protocol corpus (302 chunks, wiki.test) against **two refs sequentially** — **Q8 base, then BF16 base** — so the delta answers *which ref tier future batteries should use* (deviation note vs the 4B BF16-ref protocol will be recorded with both numbers). LAW PPL/KLD holes close in the same legs.
+
+*Sources:* `eval_results/humaneval_ornith5300{netpure,smse}*` (sidecar-stamped, git `8cce6d2`), duel run 2026-10-23; HE `shelf_9b.log`, fidelity `shelf_9b_kld.log`, tonight's legs `shelf_9b_kld_wiki.log` + `shelf_9b_ref_ab.log`. HE column = runner's per-task `passed` (`.jsonl_results.jsonl`); evalplus `base_status` disagrees by the usual ~0.5pp harness gap (136/139).
+
 ### Pre-registered: the 9B test (written 2026-10-22, before the result)
 
 The 4B shelf could not separate the allocations (0/3 columns on four of five pairs). The 9B
