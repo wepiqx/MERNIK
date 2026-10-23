@@ -634,6 +634,12 @@ per-tensor KLD damage on a reasoning corpus (`rl_reasoning_mini`), five columns 
 and tiers. The 9B file took ~13 days of continuous sweeping; the 1.7B/4B legs minutes each.
 **Cheap instruments are for the shelf; the expensive one is for the model you care about.**
 
+**The corpus ships with the repo** — `corpus/rl_reasoning_mini.raw` (343 prompts,
+479,633 B, sha256 `82b2e153…de400866fbe`; the same bytes the forge and GTX-1070 legs
+measured against). Rebuilding a reference against it is one
+`llama-perplexity --save-all-logits` call on your machine, so a volunteer run reproduces
+the exact measurement stack.
+
 **What the labels bought** (clean rlmini pool, 512 units, 768 tensors, 0 censored):
 
 | exam | result |
