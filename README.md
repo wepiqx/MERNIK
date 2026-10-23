@@ -44,6 +44,8 @@ The pre-registered 9B batteries (below) closed on 2026-10-22. Duel `scripts/duel
 | duel | HE | HE+ | empties | verdict |
 |:---|:---|:---|:---|:---|
 | **NETPURE (Gnom, zero-shot) vs SMSE (imatrix)** | 137 vs **140** (p=0.66) | 129 vs **133** (p=0.48) | **14 vs 19** (fewer better, p=0.23) | **0/3 — NOISE** |
+| **stock Q4_K_M (vendor) vs NETPURE** | 137 vs 137 (p=1.00) | 125 vs 129 (p=0.60) | 18 vs 14 (p=0.45) | **0/3 — NOISE** |
+| **stock Q4_K_M (vendor) vs SMSE** | 137 vs 140 (p=0.69) | 125 vs 133 (p=0.17) | 18 vs 19 (p=1.00) | **0/3 — NOISE** |
 
 | arm | bet | HE (runner) | HE+ (evalplus) | empties | PPL wiki | KLD wiki vs Q8 ref | KLD wiki vs BF16 ref | KLD rlmini (interim) |
 |:---|:---|---:|---:|---:|---:|---:|---:|---:|
@@ -51,6 +53,7 @@ The pre-registered 9B batteries (below) closed on 2026-10-22. Duel `scripts/duel
 | **SMSE** — imatrix-driven, trained on Ornith's own data | Q5 pyramid through the middle | **140/164 (85.37%)** | **133/164 (81.10%)** | 19 | **8.7349** ±0.0619 | 0.12620 ±0.00206 | 0.12427 ±0.00203 | 0.2915 ±0.0065 |
 | DEEP (opposite-bet control) | — | — | — | — | 8.7760 | 0.12394 | 0.12225 | 0.2972 (worst, as intended) |
 | LAW (hand-law control) | — | not run | not run | — | **8.7879 ±0.0625** | 0.12270 | **0.12094** (top) | — |
+| **stock Q4_K_M (vendor)** — no imatrix, no allocator, **+470 MiB** | frozen llama.cpp pattern (Q6×35, **Q8×0**) | 137/164 (83.54%) | 125/164 (76.22%) | 18 | **8.8456** ±0.0626 (worst) | — (ref deleted) | **0.16304** ±0.00228 (worst of five) | — |
 
 **What the tie is worth.** The 0/3 columns read "crown must not move" — and the tie has teeth: **the learned ranker, blind (zero-shot, no imatrix, never trained on the 9B), holds an even score on both pass columns against an allocator trained on this model's own imatrix.** The pre-registered outcome is **(c) tie on capability** — the next fight is below Q4, where the arms diverge on 117/442 tensors (open).
 
@@ -85,8 +88,12 @@ either allocator** and places every upgrade by a frozen layer-list, not by a mea
 not one tensor above Q6, no Q8 anywhere; (2) layers 0–2 happen to be covered, but
 **layers 4–8 — the measured damage epicenter of this family — sit at untouched full Q4**;
 (3) both allocator builds spend a *smaller* budget and still aim Q8 at the zone the
-blame lives in. The stock row will read as the experiment answering whether the pattern
-is good enough to survive contact with the score columns.
+blame lives in. **The answer landed same day (16:17):** the stock ties BOTH allocator
+builds on tasks (0/3 both duels: HE p=1.00/0.69, HE+ p=0.60/0.17, empties p=0.45/1.00)
+while paying +470 MiB — and **collapses the fidelity board: KLD 0.16304 = +34% over the
+best arm, the worst tail of all five builds (max 30.60), the worst canary PPL 8.8456,
+and more refusals than Gnom (18 vs 14)**. The frozen pattern buys nothing and pays the
+physics price; "fewer bytes, same scores" is now measured, not assumed.
 
 *Sources:* `scripts/audit_tiers.py` audit dumps 2026-10-23; battery in flight
 `shelf_9b_stockq4.log`, sidecar-stamped when closed.

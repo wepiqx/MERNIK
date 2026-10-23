@@ -1,0 +1,44 @@
+{
+  "battery_min": 86.2,
+  "dirty": false,
+  "empties": 18,
+  "env_overrides": {
+    "HE_MAX_TOKENS": "2048",
+    "HE_MIN_P": "0.0",
+    "HE_PRESENCE": "0.0",
+    "HE_TEMP": "1.0",
+    "HE_TOP_K": "20",
+    "HE_TOP_P": "0.95"
+  },
+  "finished": "2026-10-23T15:48:27",
+  "git_sha": "11a2993",
+  "n_tasks": 164,
+  "out": "humaneval_ornithstockq4km.jsonl",
+  "platform": "Linux-7.2.9-artix1-1-x86_64-with-glibc2.44",
+  "python": "3.14.8",
+  "s_per_task": 31.5,
+  "sample": {
+    "max_tokens": 2048,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 20,
+    "top_p": 0.95
+  },
+  "serve_model": "/mnt/Vsio/assets/models/Ornith-1.5-9B-Q4_K_M.gguf",
+  "serve_sha256": "35600b767e99943c839f447536f854c89b969cecc26f8882dd03a1365ede0bc4",
+  "server_args": [
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--log-disable",
+    "--cache-ram",
+    "0"
+  ],
+  "server_bin": "/home/wepiqx/llama.cpp/build/bin/llama-server",
+  "server_url": "http://127.0.0.1:28082",
+  "started": "2026-10-23T14:22:17"
+}
