@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elephant Rehabilitation Habitat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #0a0a1a; font-family: sans-serif; }
+    canvas { display: block; }
+    #info {
+      position: fixed; top: 10px; left: 10px;
+      color: #e0e0e0; z-index: 10;
+      background: rgba(0,0,0,0.7); padding: 10px 14px;
+      border-radius: 6px; font-size: 13px; line-height: 1.6;
+    }
+    #info h2 { font-size: 16px; margin-bottom: 4px; color: #f0c040; }
+    #info p { font-size: 12px; color: #aaa; }
+    #legend {
+      position: fixed; bottom: 10px; left: 10px;
+      color: #ccc; font-size: 11px; z-index: 10;
+      background: rgba(0,0,0,0.7); padding: 8px 12px;
+      border-radius: 6px;
+    }
+    #legend div { display: flex; align-items: center; margin: 3px 0; }
+    #legend .swatch {
+      width: 12px; height: 12px; margin-right: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h2>🐘 Elephant Rehabilitation Habitat</h2>
+    <p>3D Voxel Model — 1-unit blocks</p>
+    <p>Drag to rotate · Scroll to zoom · Right-click to pan</p>
+  </div>
+  <div id="legend">
+    <div><div class="swatch" style="background:#3d2b1f;"></div>Ground / Path</div>
+    <div><div class="swatch" style="background:#1a73e8;"></div>Water</div>
+    <div><div class="swatch" style="background:#2d8a2d;"></div>Shade (Trees)</div>
+    <div><div class="swatch" style="background:#e8a838;"></div>Feeding Area</div>
+    <div><div class="swatch" style="background:#8b5e3c;"></div>Shelter</div>
+    <div><div class="swatch" style="background:#666;"></div>Elephant</div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ══════════════════════════════════════════
+    // SCENE SETUP
+    // ══════════════════════════════════════════
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(24, 18, 24);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 8;
+    controls.maxDistance = 80;
+    controls.maxPolarAngle = Math.PI / 2.1;
+    controls.target.set(0, 0, 0);
+
+    // ══════════════════════════════════════════
+    // LIGHTING
+    // ══════════════════════════════════════════
+    const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+    scene.add(ambient);
+
+    const sunLight = new THREE.DirectionalLight(0xfff5e0, 1.1);
+    sunLight.position.set(20, 30, 15);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 100;
+    sunLight.shadow.camera.left = -30;
+    sunLight.shadow.camera.right = 30;
+    sunLight.shadow.camera.top = 30;
+    sunLight.shadow.camera.bottom = -30;
+    scene.add(sunLight);
+
+    const fillLight = new THREE.DirectionalLight(0x8ec8f0, 0.3);
+    fillLight.position.set(-15, 10, -10);
+    scene.add(fillLight);
+
+    const pointLight = new THREE.PointLight(0xff6b35, 0.4, 18);
+    pointLight.position.set(8, 4, 8);
+    scene.add(pointLight);
+
+    // ══════════════════════════════════════════
+    // GROUND PLANE
+    // ══════════════════════════════════════════
+    const groundGeo = new THREE.BoxGeometry(30, 1, 30);
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0x6b5335 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.position.set(0, -0.5, 0);
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // ══════════════════════════════════════════
+    // PATHS (accessible paths around the yard)
+    // ══════════════════════════════════════════
+    function createPath(x, z, w, d) {
+      const geo = new THREE.BoxGeometry(w, 1, d);
+      const mat = new THREE.MeshLambertMaterial({ color: 0x8a7a5e });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, 0.5, z);
+      mesh.receiveShadow = true;
+      mesh.castShadow = true;
+      scene.add(mesh);
+    }
+
+    // Central access path (wide)
+    createPath(0, 0, 30, 1);
+    createPath(0, -0, 30, 1);
+    createPath(-10, -10, 10, 1);
+    createPath(10, -10, 10, 1);
+    createPath(-10, 10, 10, 1);
+    createPath(10, 10, 10, 1);
+    createPath(0, -10, 30, 1);
+    createPath(0, 10, 30, 1);
+
+    // ══════════════════════════════════════════
+    // WATER FEATURE (pond in center)
+    // ══════════════════════════════════════════
+    const waterGeo = new THREE.CircleGeometry(6, 32);
+    const waterMat = new THREE.MeshPhongMaterial({
+      color: 0x1a73e8,
+      transparent: true,
+      opacity: 0.85,
+      shininess: 120,
+      specular: 0x4488ff,
+    });
+    const water = new THREE.Mesh(waterGeo, waterMat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(0, 0.05, 0);
+    scene.add(water);
+
+    // Pond edge (border)
+    const pondEdgeGeo = new THREE.BoxGeometry(6, 1, 6);
+    const pondEdgeMat = new THREE.MeshLambertMaterial({ color: 0x1563b8 });
+    const pondEdge = new THREE.Mesh(pondEdgeGeo, pondEdgeMat);
+    pondEdge.rotation.x = -Math.PI / 2;
+    pondEdge.position.set(0, 1.05, 0);
+    scene.add(pondEdge);
+
+    // Lily pads
+    const lilyGeo = new THREE.BoxGeometry(0.6, 0.05, 0.6);
+    const lilyMat = new THREE.MeshLambertMaterial({ color: 0x4caf50 });
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2 + 0.5;
+      const lily = new THREE.Mesh(lilyGeo, lilyMat);
+      lily.position.set(Math.cos(angle) * 2.5, 0.06, Math.sin(angle) * 2.5);
+      scene.add(lily);
+    }
+
+    // ══════════════════════════════════════════
+    // SHADEN (Trees)
+    // ══════════════════════════════════════════
+    function createTree(x, z, height, canopySize) {
+      const group = new THREE.Group();
+
+      // Trunk
+      const trunkGeo = new THREE.CylinderGeometry(0.25, 0.3, height, 8);
+      const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5c3a1e });
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.set(0, height / 2, 0);
+      trunk.castShadow = true;
+      group.add(trunk);
+
+      // Canopy (sphere)
+      const canopyGeo = new THREE.SphereGeometry(Math.max(0.1, canopySize), 16, 16);
+      const canopyMat = new THREE.MeshLambertMaterial({ color: 0x2d8a2d });
+      const canopy = new THREE.Mesh(canopyGeo, canopyMat);
+      canopy.position.set(0, height + canopySize * 0.6, 0);
+      canopy.castShadow = true;
+      group.add(canopy);
+
+      // Canopy highlight
+      const canopy2Geo = new THREE.SphereGeometry(Math.max(0.1, canopySize * 0.85), 16, 16);
+      const canopy2Mat = new THREE.MeshLambertMaterial({ color: 0x4caf50 });
+      const canopy2 = new THREE.Mesh(canopy2Geo, canopy2Mat);
+      canopy2.position.set(0, height + canopySize * 0.4, 0);
+      group.add(canopy2);
+
+      group.position.set(x, 0, z);
+      scene.add(group);
+    }
+
+    createTree(-8, -8, 4, 1.5);
+    createTree(8, -8, 3.5, 1.3);
+    createTree(-8, 8, 4, 1.4);
+    createTree(8, 8, 3, 1.2);
+    createTree(0, -10, 5, 1.8);
+    createTree(-10, 0, 4, 1.6);
+    createTree(10, 0, 3.5, 1.3);
+
+    // ══════════════════════════════════════════
+    // FEEDING AREA (Hay bales and trough)
+    // ══════════════════════════════════════════
+    const hayGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+    const hayMat = new THREE.MeshLambertMaterial({ color: 0xe8a838 });
+    const hayBlock = new THREE.Mesh(hayGeo, hayMat);
+    hayBlock.position.set(14, 0.75, 0);
+    hayBlock.castShadow = true;
+    scene.add(hayBlock);
+
+    const hayBlock2 = new THREE.Mesh(hayGeo, hayMat);
+    hayBlock2.position.set(14, 0.75, -3);
+    hayBlock2.castShadow = true;
+    scene.add(hayBlock2);
+
+    // Hay block 3
+    const hayBlock3 = new THREE.Mesh(hayGeo, hayMat);
+    hayBlock3.position.set(14, 0.75, 3);
+    hayBlock3.castShadow = true;
+    scene.add(hayBlock3);
+
+    // Feeding trough
+    const troughGeo = new THREE.CylinderGeometry(0.8, 0.8, 1.5, 16);
+    const troughMat = new THREE.MeshLambertMaterial({ color: 0xd4a017 });
+    const trough = new THREE.Mesh(troughGeo, troughMat);
+    trough.rotation.x = Math.PI / 2;
+    trough.position.set(14, 0.15, -3);
+    trough.castShadow = true;
+    scene.add(trough);
+
+    // Feed bins
+    const binGeo = new THREE.BoxGeometry(1.8, 2, 1.8);
+    const binMat = new THREE.MeshLambertMaterial({ color: 0xc0392b });
+    for (let i = 0; i < 3; i++) {
+      const bin = new THREE.Mesh(binGeo, binMat);
+      bin.position.set(14, 2, i * 3 - 3);
+      bin.castShadow = true;
+      scene.add(bin);
+    }
+
+    // ══════════════════════════════════════════
+    // SHELTER (Barn)
+    // ══════════════════════════════════════════
+    const barnGroup = new THREE.Group();
+
+    // Barn walls
+    const wallGeo = new THREE.BoxGeometry(5, 3, 5);
+    const wallMat = new THREE.MeshLambertMaterial({ color: 0x8b5e3c });
+    const walls = new THREE.Mesh(wallGeo, wallMat);
+    walls.position.set(16, 1.5, 0);
+    walls.castShadow = true;
+    walls.receiveShadow = true;
+    barnGroup.add(walls);
+
+    // Roof
+    const roofGeo = new THREE.BoxGeometry(6, 1.5, 6);
+    const roofMat = new THREE.MeshLambertMaterial({ color: 0x5c3a1e });
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.set(16, 3.75, 0);
+    roof.castShadow = true;
+    barnGroup.add(roof);
+
+    // Roof ridge line
+    const ridgeGeo = new THREE.BoxGeometry(6, 0.1, 6);
+    const ridgeMat = new THREE.MeshLambertMaterial({ color: 0x3a2010 });
+    const ridge = new THREE.Mesh(ridgeGeo, ridgeMat);
+    ridge.position.set(16, 4.2, 0);
+    barnGroup.add(ridge);
+
+    // Door
+    const doorGeo = new THREE.BoxGeometry(1.2, 2.5, 0.4);
+    const doorMat = new THREE.MeshLambertMaterial({ color: 0x5c3a1e });
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(16, 1.25, 2.8);
+    door.castShadow = true;
+    barnGroup.add(door);
+
+    // Window (left wall)
+    const winGeo = new THREE.BoxGeometry(0.5, 1, 0.4);
+    const winMat = new THREE.MeshLambertMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.8 });
+    const win = new THREE.Mesh(winGeo, winMat);
+    win.position.set(16, 1.2, 3.4);
+    barnGroup.add(win);
+
+    // Window (right wall)
+    const win2 = new THREE.Mesh(winGeo, winMat.clone());
+    win2.position.set(16, 1.2, -3.4);
+    barnGroup.add(win2);
+
+    scene.add(barnGroup);
+
+    // ══════════════════════════════════════════
+    // ELEPHANT MODEL (Voxel silhouette)
+    // ══════════════════════════════════════════
+    const elephantGroup = new THREE.Group();
+
+    const elecMat = new THREE.MeshLambertMaterial({ color: 0x8a8a8a });
+    const elecMatDark = new THREE.MeshLambertMaterial({ color: 0x6a6a6a });
+    const elecMatLight = new THREE.MeshLambertMaterial({ color: 0xa0a0a0 });
+
+    // ── Body ──
+    const bodyGeo = new THREE.BoxGeometry(1.2, 1.4, 1.2);
+    const body = new THREE.Mesh(bodyGeo, elecMatDark);
+    body.position.set(0, 0, 0);
+    body.castShadow = true;
+    elephantGroup.add(body);
+
+    // ── Head ──
+    const headGeo = new THREE.BoxGeometry(0.9, 0.9, 0.9);
+    const head = new THREE.Mesh(headGeo, elecMat);
+    head.position.set(0, 2.5, 0);
+    head.castShadow = true;
+    elephantGroup.add(head);
+
+    // ── Trunk ──
+    const trunkGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
+    const trunk = new THREE.Mesh(trunkGeo, elecMat);
+    trunk.position.set(0, 1.6, 0);
+    trunk.castShadow = true;
+    elephantGroup.add(trunk);
+
+    // ── Tusks ──
+    const tuskGeo = new THREE.BoxGeometry(0.15, 0.7, 0.1);
+    const tusk1 = new THREE.Mesh(tuskGeo, elecMatLight);
+    tusk1.position.set(0.2, 2.3, 0);
+    tusk1.rotation.z = 0.15;
+    elephantGroup.add(tusk1);
+
+    const tusk2 = new THREE.Mesh(tuskGeo, elecMatLight);
+    tusk2.position.set(-0.2, 2.3, 0);
+    tusk2.rotation.z = -0.15;
+    elephantGroup.add(tusk2);
+
+    // ── Ear ──
+    const earGeo = new THREE.BoxGeometry(0.7, 0.5, 0.3);
+    const ear = new THREE.Mesh(earGeo, elecMat);
+    ear.position.set(0.4, 2.3, 0.1);
+    ear.rotation.z = 0.2;
+    elephantGroup.add(ear);
+
+    // ── Tail ──
+    const tailGeo = new THREE.BoxGeometry(0.4, 0.8, 0.3);
+    const tail = new THREE.Mesh(tailGeo, elecMatDark);
+    tail.position.set(-0.5, 0.4, 0);
+    tail.castShadow = true;
+    elephantGroup.add(tail);
+
+    // ── Legs (4 legs) ──
+    const legGeo = new THREE.BoxGeometry(1.0, 0.8, 1.0);
+    const legPositions = [
+      [-0.5, -0.8, 0.3],
+      [0.5, -0.8, 0.3],
+      [-0.5, -0.8, -0.3],
+      [0.5, -0.8, -0.3],
+    ];
+    legPositions.forEach(pos => {
+      const leg = new THREE.Mesh(legGeo, elecMat);
+      leg.position.set(pos[0], pos[1], pos[2]);
+      leg.castShadow = true;
+      elephantGroup.add(leg);
+    });
+
+    // ── Foot pads ──
+    const padGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 12);
+    const padMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
+    for (let i = 0; i < 4; i++) {
+      const pad = new THREE.Mesh(padGeo, padMat);
+      const angle = (i / 4) * Math.PI * 2;
+      const px = Math.cos(angle) * 0.6;
+      const pz = Math.sin(angle) * 0.6;
+      pad.position.set(px, -0.9, pz);
+      pad.rotation.x = Math.PI / 2;
+      elephantGroup.add(pad);
+    }
+
+    // ── Back foot (extra detail) ──
+    const backPad = new THREE.Mesh(padGeo, padMat);
+    backPad.position.set(0, -0.9, -0.3);
+    backPad.rotation.x = Math.PI / 2;
+    elephantGroup.add(backPad);
+
+    scene.add(elephantGroup);
+
+    // ══════════════════════════════════════════
+    // WATER PLANE
+    // ══════════════════════════════════════════
+    const waterPlaneGeo = new THREE.PlaneGeometry(30, 30);
+    const waterPlaneMat = new THREE.MeshLambertMaterial({ color: 0x1a73e8, side: THREE.DoubleSide });
+    const waterPlane = new THREE.Mesh(waterPlaneGeo, waterPlaneMat);
+    waterPlane.rotation.x = -Math.PI / 2;
+    waterPlane.position.set(0, -0.01, 0);
+    waterPlane.receiveShadow = true;
+    scene.add(waterPlane);
+
+    // ══════════════════════════════════════════
+    // FENCE (around the yard)
+    // ══════════════════════════════════════════
+    const fencePosts = [];
+    const fenceGeo = new THREE.BoxGeometry(0.2, 2, 0.2);
+    const fenceMat = new THREE.MeshLambertMaterial({ color: 0x5c3a1e });
+    for (let i = -15; i <= 15; i += 2) {
+      // Front posts
+      const post = new THREE.Mesh(fenceGeo, fenceMat);
+      post.position.set(i, 1, 15);
+      post.castShadow = true;
+      scene.add(post);
+      // Back posts
+      const post2 = new THREE.Mesh(fenceGeo, fenceMat);
+      post2.position.set(i, 1, -15);
+      post2.castShadow = true;
+      scene.add(post2);
+      // Corner posts
+      const corner = new THREE.Mesh(fenceGeo, fenceMat);
+      corner.position.set(-15, 1, i);
+      corner.castShadow = true;
+      scene.add(corner);
+      const corner2 = new THREE.Mesh(fenceGeo, fenceMat);
+      corner2.position.set(15, 1, i);
+      corner2.castShadow = true;
+      scene.add(corner2);
+      fencePosts.push(post, post2, corner, corner2);
+    }
+
+    // Fence rails (top)
+    for (let i = -15; i <= 15; i += 2) {
+      const railGeo = new THREE.BoxGeometry(0.2, 0.2, 16);
+      const railMat = new THREE.MeshLambertMaterial({ color: 0x5c3a1e });
+      const rail = new THREE.Mesh(railGeo, railMat);
+      rail.position.set(i, 2.05, 0);
+      scene.add(rail);
+      const rail2 = new THREE.Mesh(railGeo, railMat);
+      rail2.position.set(i, 2.05, 0);
+      scene.add(rail2);
+    }
+
+    // ══════════════════════════════════════════
+    // ANIMAL ENCLOSURE FENCE (inner yard)
+    // ══════════════════════════════════════════
+    const innerFenceGeo = new THREE.BoxGeometry(0.15, 2, 0.15);
+    const innerFenceMat = new THREE.MeshLambertMaterial({ color: 0x7a6b4a });
+    for (let x = -8; x <= 8; x += 2) {
+      const post = new THREE.Mesh(innerFenceGeo, innerFenceMat);
+      post.position.set(x, 1, -8);
+      scene.add(post);
+      const post2 = new THREE.Mesh(innerFenceGeo, innerFenceMat);
+      post2.position.set(x, 1, 8);
+      scene.add(post2);
+      const post3 = new THREE.Mesh(innerFenceGeo, innerFenceMat);
+      post3.position.set(-8, 1, x);
+      scene.add(post3);
+      const post4 = new THREE.Mesh(innerFenceGeo, innerFenceMat);
+      post4.position.set(8, 1, x);
+      scene.add(post4);
+    }
+
+    // ══════════════════════════════════════════
+    // AMBIENT PARTICLES (dust/mist)
+    // ══════════════════════════════════════════
+    const particlesGeo = new THREE.BufferGeometry();
+    const particleCount = 200;
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 40;
+      positions[i * 3 + 1] = Math.random() * 15;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
+    }
+    particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const particlesMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.08,
+      transparent: true,
+      opacity: 0.3,
+      sizeAttenuation: true,
+    });
+    const particles = new THREE.Points(particlesGeo, particlesMat);
+    scene.add(particles);
+
+    // ══════════════════════════════════════════
+    // GROUND DETAIL (small pebbles)
+    // ══════════════════════════════════════════
+    const pebbleGeo = new THREE.DodecahedronGeometry(0.3, 0);
+    const pebbleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+    for (let i = 0; i < 20; i++) {
+      const pebble = new THREE.Mesh(pebbleGeo, pebbleMat);
+      pebble.position.set(
+        (Math.random() - 0.5) * 28,
+        0.1,
+        (Math.random() - 0.5) * 28
+      );
+      pebble.scale.set(
+        Math.max(0.1, 0.5 + Math.random() * 0.5),
+        Math.max(0.1, 0.2 + Math.random() * 0.4),
+        Math.max(0.1, 0.5 + Math.random() * 0.5)
+      );
+      pebble.rotation.set(
+        Math.random() * Math.PI,
+        Math.random() * Math.PI,
+        Math.random() * Math.PI
+      );
+      pebble.receiveShadow = true;
+      scene.add(pebble);
+    }
+
+    // ══════════════════════════════════════════
+    // RENDER LOOP
+    // ══════════════════════════════════════════
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      // Gentle swaying of the elephant
+      elephantGroup.rotation.y = Math.sin(elapsed * 0.5) * 0.03;
+      // Subtle breathing motion
+      const breathe = 1 + Math.sin(elapsed * 0.8) * 0.02;
+      elephantGroup.scale.set(breathe, breathe, breathe);
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // ══════════════════════════════════════════
+    // RESIZE
+    // ══════════════════════════════════════════
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    console.log('🐘 Elephant Rehabilitation Habitat loaded — Voxel Model');
+  </script>
+</body>
+</html>

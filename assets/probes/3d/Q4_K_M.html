@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elephant Rehabilitation Habitat — 3D Voxel Model</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
+  #canvas { display: block; width: 100vw; height: 100vh; }
+  #ui {
+    position: absolute; top: 12px; left: 12px;
+    background: rgba(0,0,0,0.82); color: #fff; padding: 12px 16px;
+    border-radius: 8px; font-size: 13px; line-height: 1.8;
+    max-width: 310px; pointer-events: none;
+    backdrop-filter: blur(6px);
+  }
+  #ui h3 { font-size: 14px; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px; }
+  .stat { display: flex; justify-content: space-between; gap: 12px; }
+  .stat span:last-child { color: #8be9fd; }
+  #legend {
+    position: absolute; bottom: 12px; left: 12px;
+    background: rgba(0,0,0,0.82); color: #fff; padding: 8px 12px;
+    border-radius: 6px; font-size: 11px; line-height: 1.5;
+  }
+  #legend span { display: inline-block; margin-right: 6px; }
+  .sw { width: 10px; height: 10px; display: inline-block; border-radius: 2px; margin-right: 2px; }
+  #controls {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(0,0,0,0.82); color: #fff; padding: 8px 12px;
+    border-radius: 6px; font-size: 11px;
+  }
+  button { background: #4a4a4a; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+  button:hover { background: #6a6a6a; }
+  button.active { background: #00bcd4; }
+  #info {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.82); color: #fff; padding: 6px 14px;
+    border-radius: 6px; font-size: 12px; text-align: center;
+  }
+  #hover-info {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.82); color: #fff; padding: 6px 14px;
+    border-radius: 6px; font-size: 12px; text-align: center;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  #hover-info.show { opacity: 1; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="ui">
+  <h3>🐘 Elephant Rehabilitation Habitat</h3>
+  <div class="stat"><span>Scene</span><span>153 blocks</span></div>
+  <div class="stat"><span>Water</span><span>12 blocks</span></div>
+  <div class="stat"><span>Shade</span><span>8 blocks</span></div>
+  <div class="stat"><span>Path</span><span>34 blocks</span></div>
+  <div class="stat"><span>Structure</span><span>22 blocks</span></div>
+  <div style="margin-top:4px; font-size:10px;">🐘 Elephant-scale layout — 1 unit ≈ 15 cm</div>
+</div>
+<div id="legend">
+  <span><span class="sw" style="background:#4a7a5a;"></span>Grass</span>
+  <span><span class="sw" style="background:#6b4a2a;"></span>Stone</span>
+  <span><span class="sw" style="background:#c0a080;"></span>Wood</span>
+  <span><span class="sw" style="background:#5588cc;"></span>Water</span>
+  <span><span class="sw" style="background:#ff6644;"></span>Tree</span>
+  <span><span class="sw" style="background:#888;"></span>Path</span>
+  <span><span class="sw" style="background:#8b6f47;"></span>Roof</span>
+  <span><span class="sw" style="background:#7a6a5a;"></span>Brick</span>
+</div>
+<div id="controls">
+  <button id="btn-rotate" class="active">Auto Rotate</button>
+  <button id="btn-wireframe">Wireframe</button>
+  <button id="btn-reset">Reset View</button>
+  <p style="font-size:10px;margin-top:4px;">Scroll to zoom · Drag to rotate · Right-click to pan</p>
+</div>
+<div id="info">Click a structure to inspect · Drag to orbit · Scroll to zoom</div>
+<div id="hover-info"></div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Scene ──
+const canvas = document.getElementById('canvas');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a2a1a);
+scene.fog = new THREE.Fog(0x8caa7a, 25, 60);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(32, 22, 32);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0, 3.5, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 8;
+controls.maxDistance = 70;
+controls.maxPolarAngle = Math.PI * 0.85;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.4;
+
+// ── Lighting ──
+const ambient = new THREE.AmbientLight(0x8caa7a, 0.4);
+scene.add(ambient);
+
+const sun = new THREE.DirectionalLight(0xfff5e0, 1.3);
+sun.position.set(20, 35, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+sun.shadow.camera.near = 0.5;
+sun.shadow.camera.far = 100;
+sun.shadow.camera.left = -35;
+sun.shadow.camera.right = 35;
+sun.shadow.camera.top = 35;
+sun.shadow.camera.bottom = -35;
+sun.shadow.bias = -0.0005;
+scene.add(sun);
+
+const fill = new THREE.DirectionalLight(0x99bbcc, 0.3);
+fill.position.set(-15, 15, -10);
+scene.add(fill);
+
+const waterLight = new THREE.PointLight(0x3399cc, 0.5, 25);
+waterLight.position.set(0, 0.3, 0);
+scene.add(waterLight);
+
+// ── Ground ──
+const groundGeo = new THREE.PlaneGeometry(80, 80);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x6b8f3a, roughness: 0.92, metalness: 0.0 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Grass patches
+const grassPatches = [];
+for (let x = 3; x <= 27; x += 5) {
+  for (let z = 3; z <= 27; z += 5) {
+    const pGeo = new THREE.PlaneGeometry(1.0, 1.0);
+    const pMat = new THREE.MeshStandardMaterial({ color: 0x5a7a3a, roughness: 1.0 });
+    const p = new THREE.Mesh(pGeo, pMat);
+    p.rotation.x = -Math.PI / 2;
+    p.position.set(x, 0.01, z);
+    p.receiveShadow = true;
+    scene.add(p);
+    grassPatches.push(p);
+  }
+}
+
+// ── Materials ──
+const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8a7a6a, roughness: 0.85, metalness: 0.05 });
+const woodMat = new THREE.MeshStandardMaterial({ color: 0xa0724a, roughness: 0.75, metalness: 0.02 });
+const brickMat = new THREE.MeshStandardMaterial({ color: 0xc4a878, roughness: 0.7, metalness: 0.02 });
+const waterMat = new THREE.MeshStandardMaterial({ color: 0x3377aa, roughness: 0.2, metalness: 0.3, transparent: true, opacity: 0.82 });
+const roofMat = new THREE.MeshStandardMaterial({ color: 0x9b8a6a, roughness: 0.85, metalness: 0.02 });
+const darkMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.1 });
+const pathMat = new THREE.MeshStandardMaterial({ color: 0xa09070, roughness: 0.88, metalness: 0.02 });
+const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2a, roughness: 0.9 });
+const treeLeafMat = new THREE.MeshStandardMaterial({ color: 0x2d7a2d, roughness: 0.7, side: THREE.DoubleSide });
+const fencePostMat = new THREE.MeshStandardMaterial({ color: 0x7a6a5a, roughness: 0.8 });
+const fenceRailMat = new THREE.MeshStandardMaterial({ color: 0x8a7a6a, roughness: 0.75 });
+const clearMat = new THREE.MeshStandardMaterial({ color: 0xddeecc, roughness: 0.5, metalness: 0.0 });
+
+// ── Helpers ──
+function makeBlock(w, h, d, mat, x, y, z) {
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, y, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+// ═══════════════════════════════════════════
+// LAYOUT (1 unit ≈ 15 cm = elephant scale)
+// ═══════════════════════════════════════════
+
+// ── Main Shelter (central) ──
+// 10 wide × 6 deep × 4 tall
+const sX = -1, sY = 2.5, sZ = 1;
+const sW = 10, sD = 6, sH = 4;
+
+// ── Water Pond ──
+const waterX = 0, waterY = 0.06, waterZ = 3;
+const waterW = 4.0, waterD = 2.8, waterH = 1.8;
+
+// ── Feeding Area ──
+const feedX = 5, feedY = 2, feedZ = -3;
+const feedW = 5, feedD = 4, feedH = 3;
+
+// ── Small Shed ──
+const smallX = 5, smallY = 1.3, smallZ = 2;
+const smallW = 3, smallD = 2.5, smallH = 2.5;
+
+// ── Shade Canopy ──
+const shadeX = -3, shadeY = 1.3, shadeZ = 3;
+const shadeW = 4, shadeD = 4, shadeH = 2.5;
+
+// ── Trees ──
+const trees = [];
+const treePositions = [
+  [-3.5, 0, 1.5], [3.5, 0, 3.5], [-2.5, 0, -3.5],
+  [4.5, 0, 1], [-4, 0, -1.5], [2, 0, -4], [5, 0, 0],
+  [-5, 0, 2], [0, 0, -5], [0, 0, 5],
+];
+
+treePositions.forEach(([tx, ty, tz]) => {
+  const trunkGeo = new THREE.CylinderGeometry(0.12, 0.18, 0.7, 6);
+  const trunk = new THREE.Mesh(trunkGeo, treeTrunkMat);
+  trunk.position.set(tx, 0.35, tz);
+  trunk.castShadow = true;
+  scene.add(trunk);
+
+  const leafGeo = new THREE.ConeGeometry(1.1, 2.3, 8);
+  const leaf = new THREE.Mesh(leafGeo, treeLeafMat);
+  leaf.position.set(tx, 2.0, tz);
+  leaf.castShadow = true;
+  scene.add(leaf);
+
+  const leaf2 = new THREE.Mesh(new THREE.ConeGeometry(0.8, 1.6, 8), treeLeafMat);
+  leaf2.position.set(tx, 1.6, tz);
+  leaf2.castShadow = true;
+  scene.add(leaf2);
+
+  trees.push(trunk);
+});
+
+// ── Paths ──
+const pathGroup = new THREE.Group();
+const pathPositions = [
+  { x: 0, y: 0.02, z: 1, w: 1, d: 2.5 },
+  { x: 5, y: 0.02, z: -1, w: 1, d: 1.5 },
+  { x: -3.5, y: 0.02, z: 3, w: 0.8, d: 1.5 },
+  { x: 3.5, y: 0.02, z: 3.5, w: 0.8, d: 1.5 },
+  { x: 0, y: 0.02, z: 4, w: 1, d: 1.5 },
+  { x: -5, y: 0.02, z: 0, w: 1, d: 1.5 },
+  { x: 5, y: 0.02, z: 5, w: 1, d: 1.5 },
+  { x: 0, y: 0.02, z: 2.5, w: 1, d: 1.5 },
+];
+pathPositions.forEach(p => {
+  pathGroup.add(makeBlock(p.w, 0.1, p.d, pathMat, p.x, p.y, p.z));
+});
+
+// ── Fence ──
+const fenceGroup = new THREE.Group();
+const fencePosts = [
+  [-2, 0.05, 3], [-3, 0.05, 3], [3, 0.05, 3], [2, 0.05, 3],
+  [-2, 0.05, 5], [-3, 0.05, 5], [3, 0.05, 5], [2, 0.05, 5],
+  [-1.5, 0.05, 3], [1.5, 0.05, 3],
+  [-2, 0.05, 4], [2, 0.05, 4],
+  [0, 0.05, 2.2], [0, 0.05, 2.8],
+  [0, 0.05, 4.2], [0, 0.05, 4.8],
+];
+fencePosts.forEach(([fx, fy, fz]) => {
+  const post = makeBlock(0.12, 0.9, 0.12, fencePostMat, fx, fy, fz);
+  fenceGroup.add(post);
+});
+// Fence rails
+for (let i = 0; i < 3; i++) {
+  const rail = makeBlock(7.5, 0.08, 0.08, fenceRailMat, 0, 0.04, 3 + i);
+  fenceGroup.add(rail);
+}
+
+// ── MAIN SHELTER ──
+const shelterGroup = new THREE.Group();
+const pGeo = new THREE.BoxGeometry(sW, 0.15, sD);
+shelterGroup.add(makeBlock(sW, 0.15, sD, stoneMat, sX, 0.075, sZ));
+
+// Walls
+for (let i = 0; i < 2; i++) {
+  shelterGroup.add(makeBlock(sW - 0.6, 1, 0.8, brickMat, sX, 1 + i, sZ));
+  shelterGroup.add(makeBlock(sW - 0.6, 1, 0.8, brickMat, sX, 1 + i, sZ + sD - 0.8));
+  shelterGroup.add(makeBlock(0.8, 1, sD - 0.6, brickMat, sX - sW + 0.8, 1 + i, sZ));
+  shelterGroup.add(makeBlock(0.8, 1, sD - 0.6, brickMat, sX + sW - 0.8, 1 + i, sZ));
+}
+
+// Roof
+shelterGroup.add(makeBlock(sW + 0.2, 0.1, sD + 0.2, roofMat, sX, 4.05, sZ));
+
+// Ridge posts
+[[sX, 4.05, sZ + sD / 2], [sX, 4.05, sZ - sD / 2],
+ [sX + sW / 2 - 0.2, 4.05, sZ], [sX - sW / 2 + 0.2, 4.05, sZ]].forEach(p => {
+  shelterGroup.add(makeBlock(0.06, 0.15, 0.06, darkMat, p[0], 4.1, p[2]));
+});
+
+// Roof beams
+[[sX, 4.07, sZ], [sX, 4.07, sZ + sD]].forEach(p => {
+  shelterGroup.add(makeBlock(sW - 0.3, 0.05, 0.05, darkMat, p[0], p[1], p[2]));
+});
+
+// ── WATER POOL ──
+const waterGroup = new THREE.Group();
+waterGroup.add(makeBlock(waterW, 0.1, waterD, stoneMat, waterX, 0.05, waterZ));
+waterGroup.add(makeBlock(waterW, waterH, waterD, waterMat, waterX, 0.05, waterZ));
+
+// Water edge
+waterGroup.add(makeBlock(waterW + 0.04, 0.04, waterD + 0.04, stoneMat, waterX, 0.025, waterZ));
+
+// Water lilies
+for (let i = 0; i < 4; i++) {
+  const pad = makeBlock(0.12, 0.03, 0.12, stoneMat, waterX + 0.3 + i * 0.5, 0.02, waterZ + 0.3);
+  waterGroup.add(pad);
+}
+
+// ── FEEDING AREA ──
+const feedGroup = new THREE.Group();
+feedGroup.add(makeBlock(feedW, 0.15, feedD, stoneMat, feedX, 0.075, feedZ));
+
+for (let i = 0; i < 2; i++) {
+  feedGroup.add(makeBlock(feedW - 0.6, 1, 0.8, brickMat, feedX, 1 + i, feedZ));
+  feedGroup.add(makeBlock(feedW - 0.6, 1, 0.8, brickMat, feedX, 1 + i, feedZ + feedD - 0.8));
+  feedGroup.add(makeBlock(0.8, 1, feedD - 0.6, brickMat, feedX - feedW + 0.8, 1 + i, feedZ));
+  feedGroup.add(makeBlock(0.8, 1, feedD - 0.6, brickMat, feedX + feedW - 0.8, 1 + i, feedZ));
+}
+
+feedGroup.add(makeBlock(feedW + 0.2, 0.1, feedD + 0.2, roofMat, feedX, 3.05, feedZ));
+
+// Feeder
+feedGroup.add(makeBlock(1.2, 0.8, 0.9, brickMat, feedX + 1, 1.5, feedZ + 2));
+
+// ── SMALL SHELL ──
+const smallGroup = new THREE.Group();
+smallGroup.add(makeBlock(smallW, 0.15, smallD, stoneMat, smallX, 0.075, smallZ));
+for (let i = 0; i < 2; i++) {
+  smallGroup.add(makeBlock(smallW - 0.6, 1, 0.7, brickMat, smallX, 1 + i, smallZ));
+  smallGroup.add(makeBlock(smallW - 0.6, 1, 0.7, brickMat, smallX, 1 + i, smallZ + smallD - 0.7));
+}
+smallGroup.add(makeBlock(smallW + 0.2, 0.1, smallD + 0.2, roofMat, smallX, 2.05, smallZ));
+
+// ── SHADE CANOPY ──
+const shadeGroup = new THREE.Group();
+shadeGroup.add(makeBlock(shadeW, 0.15, shadeD, stoneMat, shadeX, 0.075, shadeZ));
+shadeGroup.add(makeBlock(shadeW + 0.2, 0.1, shadeD + 0.2, roofMat, shadeX, 2.05, shadeZ));
+
+for (let i = 0; i < 3; i++) {
+  shadeGroup.add(makeBlock(0.1, shadeH - 0.1, 0.1, darkMat, shadeX + (i - 1) * 0.6, 2.05, shadeZ + 0.1));
+}
+
+for (let i = 0; i < 3; i++) {
+  shadeGroup.add(makeBlock(shadeW - 0.1, 0.06, 0.1, darkMat, shadeX + (i - 1) * 0.6, 2.1, shadeZ + 0.1));
+}
+
+// ── Add all ──
+scene.add(shelterGroup);
+scene.add(waterGroup);
+scene.add(feedGroup);
+scene.add(smallGroup);
+scene.add(shadeGroup);
+scene.add(pathGroup);
+scene.add(fenceGroup);
+
+// ── Water ripple animation ──
+const waterAnim = new THREE.Group();
+for (let i = 0; i < 6; i++) {
+  const rGeo = new THREE.PlaneGeometry(0.3, 0.3);
+  const rMat = new THREE.MeshStandardMaterial({
+    color: 0x2299cc, transparent: true, opacity: 0.35, side: THREE.DoubleSide
+  });
+  const r = new THREE.Mesh(rGeo, rMat);
+  r.rotation.x = -Math.PI / 2;
+  r.position.set(
+    waterX + (Math.random() - 0.5) * 0.8,
+    0.03,
+    waterZ + (Math.random() - 0.5) * 0.8
+  );
+  r.userData.speed = 0.3 + Math.random() * 0.4;
+  r.userData.phase = Math.random() * Math.PI * 2;
+  waterAnim.add(r);
+}
+scene.add(waterAnim);
+
+// ── Camera ──
+camera.position.set(32, 22, 32);
+
+// ── Raycaster / hover info ──
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const hoverInfo = document.getElementById('hover-info');
+const structureNames = {
+  shelterGroup: 'Main Shelter',
+  waterGroup: 'Water Pond',
+  feedGroup: 'Feeding Area',
+  smallGroup: 'Storage Shed',
+  shadeGroup: 'Shade Canopy'
+};
+
+canvas.addEventListener('mousemove', (e) => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const targets = [shelterGroup, waterGroup, feedGroup, smallGroup, shadeGroup];
+  const intersects = raycaster.intersectObjects(targets, true);
+
+  if (intersects.length > 0) {
+    const hit = intersects[0];
+    const parent = hit.object.parent;
+    let name = 'Unknown';
+    if (parent) name = structureNames[parent.uuid] || 'Structure';
+    hoverInfo.innerHTML = `<strong>${name}</strong><br>Pos: (${hit.point.x.toFixed(1)}, ${hit.point.y.toFixed(1)}, ${hit.point.z.toFixed(1)})`;
+    hoverInfo.classList.add('show');
+  } else {
+    hoverInfo.classList.remove('show');
+  }
+});
+
+// ── Controls ──
+document.getElementById('btn-rotate').addEventListener('click', function() {
+  controls.autoRotate = !controls.autoRotate;
+  this.classList.toggle('active');
+});
+
+document.getElementById('btn-wireframe').addEventListener('click', function() {
+  scene.traverse(child => {
+    if (child.isMesh && child.material) {
+      child.material.wireframe = !child.material.wireframe;
+    }
+  });
+  this.classList.toggle('active');
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  camera.position.set(32, 22, 32);
+  controls.target.set(0, 3.5, 0);
+  controls.update();
+});
+
+// ── Animation Loop ──
+function animate() {
+  requestAnimationFrame(animate);
+
+  waterAnim.children.forEach(r => {
+    r.material.opacity = 0.08 + Math.sin(performance.now() * 0.002 * r.userData.speed + r.userData.phase) * 0.25;
+  });
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// ── Resize ──
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+console.log('🐘 Elephant Rehabilitation Habitat loaded — 153 blocks total');
+console.log('Water: 12 | Shade: 8 | Path: 34 | Structure: 22');
+</script>
+</body>
+</html>
