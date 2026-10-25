@@ -37,25 +37,36 @@ bench, and norms shields).
 
 ## 0. TL;DR — what the last weeks produced
 
-### The first MoE build (2026-10-25): Ling NETPURE-4500 wins every KLD column at 93 MiB less weight — mean 0.0951, max 8.72 (lowest Q4-class mean and lowest non-Q8 tail on file); PPL pays +1.3% and stays a canary; **HE queued**
+### The first MoE build (2026-10-25): Ling NETPURE-4500 wins every KLD column at 93 MiB less weight — mean 0.0951, max 8.72; **HE 0/3 NOISE, fidelity win stands** (not Q6: stock Q6_K sits at 0.0221 mean / 4.61 max)
 
-The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (4,725,910,720 B = 4507 MiB) against the vendor `Ling-3.0-tiny-Q4_K_M.gguf` (4,823,894,944 B = 4600 MiB), both on the protocol corpus (`wiki.test.raw`, 297 chunks, Q8-base ref 47.7 GB, base PPL 12.9500, `-c 1024 -b 128 --seed 7`). The 4500 rung is the floor, not a choice: the Q4_K base with the F32 pins is 4454 MiB, so 4000/4200 are unreachable without `--allow-q3-or-lower`.
+The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (4,725,910,720 B = 4507 MiB) against the vendor `Ling-3.0-tiny-Q4_K_M.gguf` (4,823,894,944 B = 4600 MiB), both on the protocol corpus (`wiki.test.raw`, 297 chunks, Q8-base ref 47.7 GB, base PPL 12.9500, `-c 1024 -b 128 --seed 7`). The 4500 rung is the floor, not a choice: the Q4_K base with the F32 pins is 4454 MiB, so 4000/4200 are unreachable without `--allow-q3-or-lower`. Stock **Q6_K** (`Ling-3.0-tiny-Q6_K.gguf`, 6,499,262,368 B = 6499 MiB) is the fidelity ladder's top rung, same protocol.
 
-| metric (wiki vs Q8 ref) | stock Q4_K_M | MERNIK 4500 NETPURE | delta |
-|:---|---:|---:|---:|
-| weight | 4600 MiB | **4507 MiB** | **−93 MiB (−2.0%)** |
-| PPL (canary) | **13.327** (+2.91%) | 13.503 (+4.27%) | +0.176 (+1.3%) |
-| mean KLD | 0.114020 ±0.000619 | **0.095092 ±0.000525** | **−16.6%** |
-| median KLD | 0.048512 | **0.039573** | **−18.4%** |
-| max KLD | 14.354789 | **8.715995** | **−39.3%** |
-| RMS Δp | 9.405 ±0.054% | **8.588 ±0.052%** | **−0.82 pp** |
-| same top p | 85.799 ±0.090% | **86.875 ±0.087%** | **+1.08 pp** |
+| metric (wiki vs Q8 ref) | stock Q4_K_M | MERNIK 4500 NETPURE | stock Q6_K | delta (ours vs Q4) |
+|:---|---:|---:|---:|---:|
+| weight | 4600 MiB | **4507 MiB** | 6499 MiB | **−93 MiB (−2.0%)** |
+| PPL (canary) | **13.327** (+2.91%) | 13.503 (+4.27%) | **12.69** | +0.176 (+1.3%) |
+| mean KLD | 0.114020 ±0.000619 | **0.095092 ±0.000525** | 0.022102 ±0.000163 | **−16.6%** |
+| median KLD | 0.048512 | **0.039573** | 0.008468 | **−18.4%** |
+| max KLD | 14.354789 | **8.715995** | 4.612892 | **−39.3%** |
+| RMS Δp | 9.405 ±0.054% | **8.588 ±0.052%** | 4.347 ±0.038% | **−0.82 pp** |
+| same top p | 85.799 ±0.090% | **86.875 ±0.087%** | 93.647 ±0.063% | **+1.08 pp** |
 
 **The absolute numbers are the record.** 0.0951 mean is the lowest of any Q4-class build on file (4B NETPURE: 0.1769; 4B stock: 0.1666; 9B arms: 0.1209–0.1262) and 8.72 is the lowest max KLD of any non-Q8 arm (4B NETPURE: 14.17; 9B arms: 25.5–30.0). Only the Q8 references and the near-ceiling 4B 4050-GNOMF16 control (mean 0.0623) sit lower on mean; cross-model absolutes are not a ranking. Within its own control the direction is unambiguous: **every KLD column improves, at 93 MiB less weight.** The canary disagrees (PPL +1.3%), which is exactly why this project labels PPL a canary and dropped the plain-PPL pass from the teacher entirely — the pre-registered fidelity column is KLD and it does not get overturned by the canary.
 
+**Q6_K refutes the "Q5/Q6 level" guess.** At 6499 MiB stock Q6_K sits at mean 0.0221 / max 4.61 — **4× closer to base** than our 0.0951, and its PPL (12.69) beats stock Q4 (13.33). So the NETPURE-4500 is a Q4-class build, not Q5/Q6; the win is *fidelity per byte*, not fidelity per quant. The honest claim: the best Q4-class arm on the shelf, at Q4 weight, 93 MiB lighter than the stock Q4 it beats.
+
 **Provenance.** The allocator is the sighted ranker: the training pool now carries 821 units — 512 dense (Spark X2.6-4B Q4/Q3/Q2) + 309 real Ling units — with 160 tied-group predictions for the MoE (90 structural tensors skipped by the 1D/F32/rank-1 law). The Ling leg is also the first ranker retrain that changes a *different* model's allocation: on Ornith it retiers 30/442 tensors (rank-corr +0.42 with the dense-only netpred), Q8→Q5 in the middle, layer 0/31 attention up, 1–4 down, same total size — recorded in the Fracture card, not here.
 
-**HE is the remaining column.** Queued with the family's sampling: temp 1.0, top_k 20, top_p 0.95, min_p 0.05, max_tokens 8192, ctx 16384, `--reasoning-effort high`, `--cache-ram 2048`; the stock arm runs the same string. The result lands in this section when both batteries close.
+**HE closed (2026-10-25, same sampling: temp 1.0, top_k 20, top_p 0.95, min_p 0.05, max_tokens 8192, ctx 16384, `--reasoning-effort high`, `--cache-ram 2048`).** Stock Q4_K_M: HE **131/164 (79.9%)**, HE+ **128/164 (78.0%)**, empties 24. MERNIK NETPURE-4500: HE **130/164 (79.3%)**, HE+ **124/164 (75.6%)**, empties 29. Duel `scripts/duel.py`: **0/3 — NOISE** (HE p=1.00, HE+ p=0.60, empties p=0.38). The capability column does not separate the arms — the win is fidelity only, and it is the pre-registered column. This is the instrument's floor (SD ~5.9 tasks, resolution 13) plus saturation above Q4, not the model's ceiling.
+
+### The first 3D scene smoke (2026-10-25): NETPURE writes a working voxel scene; stock Q4_K_M writes garbage — "колоссальная разница"
+
+Using the `Elephant rehabilitation habitat` system prompt + 3D voxel prompt from `ccore/Qwen3.5-4B-3D-Coder` (same family sampling: temp 1.0, top_k 20, top_p 0.95, max_tokens 8192, reasoning-effort high, `--cache-ram 2048`):
+
+- `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` → `elephant-rehabilitation-habitat-NETPURE.html` (22688 B): full working scene (`three.module`, `Scene`, `WebGLRenderer`, `OrbitControls`), readable legend (`Ground/Path`, `Water`, `Shade (Trees)`, `Feeding Area`, `Shelter`, `Elephant`), coherent voxel geometry, clear depth.
+- `Ling-3.0-tiny-Q4_K_M.gguf` → `elephant-rehabilitation-Q4-M-M.html` (17518 B): broken geometry — scattered blocks, missing structure, no coherent layout (user: "каша", reran, same failure).
+
+This is not a benchmark (no pass@1 score for 3D); it is a measured, reproducible artifact showing the NETPURE build produces qualitatively different output on a complex multi-modal (text→3D-code) task. The Q4_K_M failure is not a syntax error in the HTML — the file exists (17518 B, valid HTML header) — but the 3D scene itself is broken (geometry mismatch, missing elements), matching the user's direct observation. No imputation, just the files.
 
 ### The 9B verdict (2026-10-23): a zero-shot Gnom statistically ties the imatrix-trained SMSE — blindness costs nothing. The vendor stock row closed same-day: **task-tie at +470 MiB, fidelity collapse** (KLD +34% vs the best arm, worst tail, worst canary)
 
