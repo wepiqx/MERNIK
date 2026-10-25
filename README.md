@@ -37,6 +37,26 @@ bench, and norms shields).
 
 ## 0. TL;DR — what the last weeks produced
 
+### The first MoE build (2026-10-25): Ling NETPURE-4500 wins every KLD column at 93 MiB less weight — mean 0.0951, max 8.72 (lowest Q4-class mean and lowest non-Q8 tail on file); PPL pays +1.3% and stays a canary; **HE queued**
+
+The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (4,725,910,720 B = 4507 MiB) against the vendor `Ling-3.0-tiny-Q4_K_M.gguf` (4,823,894,944 B = 4600 MiB), both on the protocol corpus (`wiki.test.raw`, 297 chunks, Q8-base ref 47.7 GB, base PPL 12.9500, `-c 1024 -b 128 --seed 7`). The 4500 rung is the floor, not a choice: the Q4_K base with the F32 pins is 4454 MiB, so 4000/4200 are unreachable without `--allow-q3-or-lower`.
+
+| metric (wiki vs Q8 ref) | stock Q4_K_M | MERNIK 4500 NETPURE | delta |
+|:---|---:|---:|---:|
+| weight | 4600 MiB | **4507 MiB** | **−93 MiB (−2.0%)** |
+| PPL (canary) | **13.327** (+2.91%) | 13.503 (+4.27%) | +0.176 (+1.3%) |
+| mean KLD | 0.114020 ±0.000619 | **0.095092 ±0.000525** | **−16.6%** |
+| median KLD | 0.048512 | **0.039573** | **−18.4%** |
+| max KLD | 14.354789 | **8.715995** | **−39.3%** |
+| RMS Δp | 9.405 ±0.054% | **8.588 ±0.052%** | **−0.82 pp** |
+| same top p | 85.799 ±0.090% | **86.875 ±0.087%** | **+1.08 pp** |
+
+**The absolute numbers are the record.** 0.0951 mean is the lowest of any Q4-class build on file (4B NETPURE: 0.1769; 4B stock: 0.1666; 9B arms: 0.1209–0.1262) and 8.72 is the lowest max KLD of any non-Q8 arm (4B NETPURE: 14.17; 9B arms: 25.5–30.0). Only the Q8 references and the near-ceiling 4B 4050-GNOMF16 control (mean 0.0623) sit lower on mean; cross-model absolutes are not a ranking. Within its own control the direction is unambiguous: **every KLD column improves, at 93 MiB less weight.** The canary disagrees (PPL +1.3%), which is exactly why this project labels PPL a canary and dropped the plain-PPL pass from the teacher entirely — the pre-registered fidelity column is KLD and it does not get overturned by the canary.
+
+**Provenance.** The allocator is the sighted ranker: the training pool now carries 821 units — 512 dense (Spark X2.6-4B Q4/Q3/Q2) + 309 real Ling units — with 160 tied-group predictions for the MoE (90 structural tensors skipped by the 1D/F32/rank-1 law). The Ling leg is also the first ranker retrain that changes a *different* model's allocation: on Ornith it retiers 30/442 tensors (rank-corr +0.42 with the dense-only netpred), Q8→Q5 in the middle, layer 0/31 attention up, 1–4 down, same total size — recorded in the Fracture card, not here.
+
+**HE is the remaining column.** Queued with the family's sampling: temp 1.0, top_k 20, top_p 0.95, min_p 0.05, max_tokens 8192, ctx 16384, `--reasoning-effort high`, `--cache-ram 2048`; the stock arm runs the same string. The result lands in this section when both batteries close.
+
 ### The 9B verdict (2026-10-23): a zero-shot Gnom statistically ties the imatrix-trained SMSE — blindness costs nothing. The vendor stock row closed same-day: **task-tie at +470 MiB, fidelity collapse** (KLD +34% vs the best arm, worst tail, worst canary)
 
 The pre-registered 9B batteries (below) closed on 2026-10-22; the vendor control (plain Q4_K_M, no imatrix, no allocator) closed 2026-10-23 16:17. Duel `scripts/duel.py` (McNemar exact, α=0.05, same protocol, 164 tasks):
