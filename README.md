@@ -71,8 +71,6 @@ Prompt (from `ccore/Qwen3.5-4B-3D-Coder`, same family sampling: temp 1.0, top_k 
 - `Q4_K_M.html` (17518 B): broken geometry — scattered blocks, missing elements, no coherent layout (`screenshot_q4_20-15-51.png`).
 - `probe_info.md`: full prompt + settings.
 
-Not a benchmark (no pass@1 for 3D). It is a reproducible artifact: same prompt, same settings, same family sampling — one file is a coherent 3D voxel model, the other is broken geometry. No imputation, just the files.
-
 ### The 9B verdict (2026-10-23): a zero-shot Gnom statistically ties the imatrix-trained SMSE — blindness costs nothing. The vendor stock row closed same-day: **task-tie at +470 MiB, fidelity collapse** (KLD +34% vs the best arm, worst tail, worst canary)
 
 The pre-registered 9B batteries (below) closed on 2026-10-22; the vendor control (plain Q4_K_M, no imatrix, no allocator) closed 2026-10-23 16:17. Duel `scripts/duel.py` (McNemar exact, α=0.05, same protocol, 164 tasks):
