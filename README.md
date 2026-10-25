@@ -59,17 +59,19 @@ The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (
 
 **HE closed (2026-10-25, same sampling: temp 1.0, top_k 20, top_p 0.95, min_p 0.05, max_tokens 8192, ctx 16384, `--reasoning-effort high`, `--cache-ram 2048`).** Stock Q4_K_M: HE **131/164 (79.9%)**, HE+ **128/164 (78.0%)**, empties 24. MERNIK NETPURE-4500: HE **130/164 (79.3%)**, HE+ **124/164 (75.6%)**, empties 29. Duel `scripts/duel.py`: **0/3 — NOISE** (HE p=1.00, HE+ p=0.60, empties p=0.38). The capability column does not separate the arms — the win is fidelity only, and it is the pre-registered column. This is the instrument's floor (SD ~5.9 tasks, resolution 13) plus saturation above Q4, not the model's ceiling.
 
-### The first 3D scene smoke (2026-10-25): NETPURE writes a working voxel scene; stock Q4_K_M writes broken geometry — a dramatic gap
+### 3D smoke — my test (2026-10-25): NETPURE writes a working voxel scene first try; Q4_K_M writes broken geometry even on second run
 
-Using the `Elephant rehabilitation habitat` system prompt + 3D voxel prompt from `ccore/Qwen3.5-4B-3D-Coder` (same family sampling: temp 1.0, top_k 20, top_p 0.95, max_tokens 8192, reasoning-effort high, `--cache-ram 2048`):
+Prompt (from `ccore/Qwen3.5-4B-3D-Coder`, same family sampling: temp 1.0, top_k 20, top_p 0.95, max_tokens 8192, reasoning-effort high, `--cache-ram 2048`):
 
-- `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` → `elephant-rehabilitation-habitat-NETPURE.html` (22688 B): full working scene (`three.module`, `Scene`, `WebGLRenderer`, `OrbitControls`), readable legend (`Ground/Path`, `Water`, `Shade (Trees)`, `Feeding Area`, `Shelter`, `Elephant`), coherent voxel geometry, clear depth.
-- `Ling-3.0-tiny-Q4_K_M.gguf` → `elephant-rehabilitation-Q4-M-M.html` (17518 B): broken geometry — scattered blocks, missing structure, no coherent layout (user reran the build; same broken result).
-  ![Q4_K_M broken voxel scene](assets/probes/3d/screenshot_q4_20-15-51.png)
-- `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` → `elephant-rehabilitation-habitat-NETPURE.html` (22688 B): full working scene (`three.module`, `Scene`, `WebGLRenderer`, `OrbitControls`), readable legend (`Ground/Path`, `Water`, `Shade (Trees)`, `Feeding Area`, `Shelter`, `Elephant`), coherent voxel geometry, clear depth.
-  ![NETPURE working voxel scene](assets/probes/3d/screenshot_netpure_20-16-02.png)
+**System:** `Use only the Three.js core ES module from https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js.`  
+**User:** `Please create one self-contained HTML file with Three.js from cdnjs showing an elephant rehabilitation habitat. A broad sheltered yard connects water, shade, and feeding areas through accessible paths. Use the elephant's scale and movement clearance to guide the layout around the structures. Render it as a deliberate 3D voxel model built from visible cubic blocks, with clear depth, readable silhouettes, and solid spatial relationships.`
 
-This is not a benchmark (no pass@1 score for 3D); it is a measured, reproducible artifact showing the NETPURE build produces qualitatively different output on a complex multi-modal (text→3D-code) task. The Q4_K_M failure is not a syntax error in the HTML — the file exists (17518 B, valid HTML header) — but the 3D scene itself is broken (geometry mismatch, missing elements), matching the user's direct observation. No imputation, just the files.
+**Files (`assets/probes/3d/`):**
+- `NETPURE.html` (22688 B): working scene — `Scene`, `WebGLRenderer`, `OrbitControls`, legend, coherent voxel geometry (`screenshot_netpure_20-16-02.png`).
+- `Q4_K_M.html` (17518 B): broken geometry — scattered blocks, missing elements, no coherent layout (`screenshot_q4_20-15-51.png`).
+- `probe_info.md`: full prompt + settings.
+
+Not a benchmark (no pass@1 for 3D). It is a reproducible artifact: same prompt, same settings, same family sampling — one file is a coherent 3D voxel model, the other is broken geometry. No imputation, just the files.
 
 ### The 9B verdict (2026-10-23): a zero-shot Gnom statistically ties the imatrix-trained SMSE — blindness costs nothing. The vendor stock row closed same-day: **task-tie at +470 MiB, fidelity collapse** (KLD +34% vs the best arm, worst tail, worst canary)
 
