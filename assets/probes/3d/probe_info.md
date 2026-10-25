@@ -1,22 +1,19 @@
 3D PROBE — Elephant Rehabilitation Habitat
 --------------------------------------------
-Prompt (system + user): from ccore/Qwen3.5-4B-3D-Coder README.
-System: "Use only Three.js core ES module from cdnjs... implement controls directly."
-User: "Please create one self-contained HTML file... deliberate 3D voxel model built from visible cubic blocks..."
+Prompt (from ccore/Qwen3.5-4B-3D-Coder, same family sampling):
 
-Sampling (same family protocol): temp 1.0, top_k 20, top_p 0.95, min_p 0.05,
-max_tokens 8192, ctx 16384, --reasoning-effort high, --cache-ram 2048.
+System: Use only the Three.js core ES module from https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js.
 
-Files:
-  NETPURE.html  — Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf (22688 B) → full scene working
-  Q4_K_M.html   — Ling-3.0-tiny-Q4_K_M.gguf (17518 B) → broken geometry / "каша"
+User: Please create one self-contained HTML file with Three.js from cdnjs showing an elephant rehabilitation habitat. A broad sheltered yard connects water, shade, and feeding areas through accessible paths. Use the elephant's scale and movement clearance to guide the layout around the structures. Render it as a deliberate 3D voxel model built from visible cubic blocks, with clear depth, readable silhouettes, and solid spatial relationships.
 
-Quick reuse (same server port 28082, kill after):
-  HUMANEVAL_SERVE_MODEL=... HUMANEVAL_SERVER_ARGS="--cache-ram 2048 --reasoning-effort high"
-  HE_MAX_TOKENS=8192 HE_CTX=16384 HE_TEMP=1.0 HE_TOP_K=20 HE_TOP_P=0.95 HE_MIN_P=0.05
-  python -c "...generate HTML..."
+Sampling: temp 1.0, top_k 20, top_p 0.95, min_p 0.05, max_tokens 8192, ctx 16384, --reasoning-effort high, --cache-ram 2048.
+
+Files (assets/probes/3d/):
+  NETPURE.html (22688 B): working scene — Scene, WebGLRenderer, OrbitControls, legend, coherent voxel geometry (see screenshot_netpure_20-16-02.png).
+  Q4_K_M.html (17518 B): broken geometry — scattered blocks, missing elements, no coherent layout (see screenshot_q4_20-15-51.png for first broken scene; second rerun shows same failure — scattered/random blocks, missing structures, no readable spatial layout).
+  probe_info.md: this file.
 
 Results (2026-10-25):
-  NETPURE: Scene, WebGLRenderer, OrbitControls, legend, coherent voxel layout (153 blocks reported in output).
-  Q4_K_M: HTML header present, Three.js import present, but geometry broken — scattered/random blocks, missing structures, no readable spatial layout (author reran, same failure).
+  NETPURE: coherent voxel scene, full scene working.
+  Q4_K_M: HTML header and Three.js import present, but geometry broken — scattered/random blocks, missing structures, no readable spatial layout (author reran, same failure; second attempt confirms failure, not transient).
   Verdict: NETPURE delivers a qualitatively different (functional) result; Q4_K_M fails the 3D construction task entirely.

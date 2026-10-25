@@ -61,12 +61,7 @@ The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (
 
 ### 3D smoke — my test (2026-10-25): NETPURE writes a working voxel scene first try; Q4_K_M writes broken geometry even on second run
 
-Prompt (from `ccore/Qwen3.5-4B-3D-Coder`, same family sampling: temp 1.0, top_k 20, top_p 0.95, max_tokens 8192, reasoning-effort high, `--cache-ram 2048`):
-
-**System:** `Use only the Three.js core ES module from https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js.`  
-**User:** `Please create one self-contained HTML file with Three.js from cdnjs showing an elephant rehabilitation habitat. A broad sheltered yard connects water, shade, and feeding areas through accessible paths. Use the elephant's scale and movement clearance to guide the layout around the structures. Render it as a deliberate 3D voxel model built from visible cubic blocks, with clear depth, readable silhouettes, and solid spatial relationships.`
-
-**Files (`assets/probes/3d/`):**
+**Files (`assets/probes/3d/` — also see `probe_info.md` for full prompt + settings):**
 - `NETPURE.html` (22688 B): working scene — `Scene`, `WebGLRenderer`, `OrbitControls`, legend, coherent voxel geometry (`screenshot_netpure_20-16-02.png`).
 - `Q4_K_M.html` (17518 B): broken geometry — scattered blocks, missing elements, no coherent layout (`screenshot_q4_20-15-51.png`).
 - `probe_info.md`: full prompt + settings.
