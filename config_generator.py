@@ -66,9 +66,15 @@ def _range_to_regex(start: int, end: int) -> str:
 
 
 def _suffix(tname: str):
-    """Grouping key tissue: everything after 'blk.LAYER.' (or global)."""
+    """Grouping key tissue: everything after 'blk.LAYER.' (or global).
+
+    Minimum 3 parts, not 4: newer conversions write some tensors without
+    a trailing .weight (Ling-3.0-tiny writes blk.0.ssm_a, 2026-10-23).
+    Under the 4-part gate those fell to 'global' and produced anchored
+    '(?=' rules that llama-quantize cannot parse (it splits the rule at
+    the first '=' — the '=' inside the lookahead)."""
     parts = tname.split(".")
-    if (len(parts) >= 4 and parts[0] == "blk" and parts[1].isdigit()):
+    if (len(parts) >= 3 and parts[0] == "blk" and parts[1].isdigit()):
         return ("blk", int(parts[1]), ".".join(parts[2:]))
     return ("global", tname)
 

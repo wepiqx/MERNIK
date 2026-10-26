@@ -153,8 +153,14 @@ def main():
     imp_table = build_importance_table(im, model)
 
     ne_map = {k: v["n_elements"] for k, v in model.get("tensors", {}).items()}
+    # imatrix built by another llama.cpp generation may carry row names
+    # WITHOUT the current .weight suffix (Ling scar, 2026-10-23): those
+    # ghosts also become anchored --tensor-type rules downstream, and
+    # llama-quantize splits the rule at the FIRST '=' — the '=' hidden
+    # inside the '(?=' lookahead then poisons the parse. Real units only:
+    # ghosts are not in the model, so they cannot be measured anyway.
     for tname, info in imp_table.items():
-        if tname not in ne_map:
+        if tname not in ne_map and tname in model.get("tensors", {}):
             ne_map[tname] = info["n_elements"]
 
     # pool = everything the queue would fight over (no MTP here by construction
@@ -226,15 +232,34 @@ def main():
             for line in f:
                 done.add(json.loads(line)["unit"])
 
+    from constants import ROUTER_PIN_TYPES
     def build_file_inner(drop: list | None, path: str):
         assignments = {}
+        # base assignments(truth, not hope): droppable tensors at base tier,
+        # norm/router/F32 pins stay UNTOUCHED — quantizing a router (the
+        # constants.py 'verified disaster') into the BASELINE would shift
+        # every row by the same detonation instead of leaving the pins out.
         for n in ne_map:
-            assignments[n] = args.base_tier
+            if get_tensor_type(n) in ROUTER_PIN_TYPES:
+                # router is NOT covered by the binary's F32 law — a plain
+                # base_type=Q5_K positional would quantize it silently into
+                # every copy (the constants.py 'verified disaster'). Pin F32
+                # by an explicit rule; a clean blk-pattern without lookaheads.
+                assignments[n] = "F32"
+            elif "norm" in n:
+                continue  # f32 map + binary law keep norms F32
+            else:
+                assignments[n] = args.base_tier
         if drop:
             for n in drop:
                 assignments[n] = args.drop_tier
         flags = generate_flags(assignments, model, args.base_tier, 100000)
         flags["imatrix"] = args.imatrix
+        print("DBG rules:", len(flags["tensor_type_rules"]),
+              "anchored:", sum(1 for r in flags["tensor_type_rules"] if "(?=" in r),
+              flush=True)
+        for r in flags["tensor_type_rules"]:
+            if "(?=" in r: print("DBG anchored:", r, flush=True)
         ok = run_quantization(flags, args.model, path)
         if not ok:
             raise RuntimeError("quant failed")
