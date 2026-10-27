@@ -722,17 +722,21 @@ On Ling-3.0-tiny, against the NETPURE builds at the same target:
 
 | budget | build | MiB | PPL | KLD mean | KLD median | KLD max |
 |---:|:---|---:|---:|---:|---:|---:|
+| — | stock Q4_K_M (vendor) | 4600 | 13.327 | 0.114020 | 0.048512 | 14.354789 |
 | 4500 | NETPURE 4500 | 4507 | 13.503 | 0.095092 | 0.039573 | **8.715995** |
 | 4500 | **WATERFILL 4500** | 4516 | **13.1785** | **0.074614** | **0.030849** | 10.109997 |
 | 5100 | NETPURE 5100 | 5091 | 13.4271 | 0.089046 | 0.037072 | **9.071382** |
 | 5100 | **WATERFILL 5100** | 5116 | **13.0611** | **0.063126** | **0.025847** | 9.515678 |
 
-At 4500 MiB: mean KLD −22%, median −22%, PPL −2.4%, at +9 MiB; max KLD is
-16% worse (still below stock Q4_K_M's 14.35). At 5100 MiB: mean −29%,
-median −30%, PPL −2.7%, at +25 MiB; max KLD is 4.9% worse. That is a
-fidelity-per-byte result, not a clean sweep. The 4500/6500/9000 allocations
-and result files are kept in the local lab provenance (`provenance/waterfill/`,
-gitignored).
+Against stock Q4_K_M at 4600 MiB, **WATERFILL 4500 is 84 MiB smaller and
+better on every column**: PPL −1.1%, mean KLD −35%, median −36%, max −30%.
+Against NETPURE at 4500 MiB: mean KLD −22%, median −22%, PPL −2.4%, at
++9 MiB; max KLD is 16% worse (still below stock Q4_K_M's 14.35). At 5100 MiB
+against NETPURE: mean −29%, median −30%, PPL −2.7%, at +25 MiB; max KLD is
+4.9% worse. That is a fidelity-per-byte result, not a clean sweep. The
+4500/6500/9000 allocations and result files are kept in the local lab
+provenance (`provenance/waterfill/`, gitignored) and mirrored to the
+Hugging Face repo.
 
 ---
 
