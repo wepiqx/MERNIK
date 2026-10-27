@@ -39,11 +39,11 @@ bench, and norms shields).
 
 ### The first MoE build (2026-10-25): Ling NETPURE-4500 wins every KLD column at 93 MiB less weight — mean 0.0951, max 8.72; **HE 0/3 NOISE, fidelity win stands** (not Q6: stock Q6_K sits at 0.0221 mean / 4.61 max)
 
-The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (4,725,910,720 B = 4507 MiB) against the vendor `Ling-3.0-tiny-Q4_K_M.gguf` (4,823,894,944 B = 4600 MiB), both on the protocol corpus (`wiki.test.raw`, 297 chunks, Q8-base ref 47.7 GB, base PPL 12.9500, `-c 1024 -b 128 --seed 7`). The 4500 rung is the floor, not a choice: the Q4_K base with the F32 pins is 4454 MiB, so 4000/4200 are unreachable without `--allow-q3-or-lower`. Stock **Q6_K** (`Ling-3.0-tiny-Q6_K.gguf`, 6,499,262,368 B = 6499 MiB) is the fidelity ladder's top rung, same protocol.
+The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (4,725,910,720 B = 4507 MiB) against the vendor `Ling-3.0-tiny-Q4_K_M.gguf` (4,823,894,944 B = 4600 MiB), both on the protocol corpus (`wiki.test.raw`, 297 chunks, Q8-base ref 47.7 GB, base PPL 12.9500, `-c 1024 -b 128 --seed 7`). The 4500 rung is the floor, not a choice: the Q4_K base with the F32 pins is 4454 MiB, so 4000/4200 are unreachable without `--allow-q3-or-lower`. Stock **Q6_K** (`Ling-3.0-tiny-Q6_K.gguf`, 6,499,262,368 B = 6198 MiB) is the fidelity ladder's top rung, same protocol.
 
 | metric (wiki vs Q8 ref) | stock Q4_K_M | MERNIK 4500 NETPURE | stock Q6_K | delta (ours vs Q4) |
 |:---|---:|---:|---:|---:|
-| weight | 4600 MiB | **4507 MiB** | 6499 MiB | **−93 MiB (−2.0%)** |
+| weight | 4600 MiB | **4507 MiB** | 6198 MiB | **−93 MiB (−2.0%)** |
 | PPL (canary) | **13.327** (+2.91%) | 13.503 (+4.27%) | **12.69** | +0.176 (+1.3%) |
 | mean KLD | 0.114020 ±0.000619 | **0.095092 ±0.000525** | 0.022102 ±0.000163 | **−16.6%** |
 | median KLD | 0.048512 | **0.039573** | 0.008468 | **−18.4%** |
@@ -53,7 +53,7 @@ The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (
 
 **The absolute numbers are the record.** 0.0951 mean is the lowest of any Q4-class build on file (4B NETPURE: 0.1769; 4B stock: 0.1666; 9B arms: 0.1209–0.1262) and 8.72 is the lowest max KLD of any non-Q8 arm (4B NETPURE: 14.17; 9B arms: 25.5–30.0). Only the Q8 references and the near-ceiling 4B 4050-GNOMF16 control (mean 0.0623) sit lower on mean; cross-model absolutes are not a ranking. Within its own control the direction is unambiguous: **every KLD column improves, at 93 MiB less weight.** The canary disagrees (PPL +1.3%), which is exactly why this project labels PPL a canary and dropped the plain-PPL pass from the teacher entirely — the pre-registered fidelity column is KLD and it does not get overturned by the canary.
 
-**Q6_K refutes the "Q5/Q6 level" guess.** At 6499 MiB stock Q6_K sits at mean 0.0221 / max 4.61 — **4× closer to base** than our 0.0951, and its PPL (12.69) beats stock Q4 (13.33). So the NETPURE-4500 is a Q4-class build, not Q5/Q6; the win is *fidelity per byte*, not fidelity per quant. The honest claim: the best Q4-class arm on the shelf, at Q4 weight, 93 MiB lighter than the stock Q4 it beats.
+**Q6_K refutes the "Q5/Q6 level" guess.** At 6198 MiB stock Q6_K sits at mean 0.0221 / max 4.61 — **4× closer to base** than our 0.0951, and its PPL (12.69) beats stock Q4 (13.33). So the NETPURE-4500 is a Q4-class build, not Q5/Q6; the win is *fidelity per byte*, not fidelity per quant. The honest claim: the best Q4-class arm on the shelf, at Q4 weight, 93 MiB lighter than the stock Q4 it beats.
 
 **Provenance.** The allocator is the sighted ranker: the training pool now carries 821 units — 512 dense (Spark X2.6-4B Q4/Q3/Q2) + 309 real Ling units — with 160 tied-group predictions for the MoE (90 structural tensors skipped by the 1D/F32/rank-1 law). The Ling leg is also the first ranker retrain that changes a *different* model's allocation: on Ornith it retiers 30/442 tensors (rank-corr +0.42 with the dense-only netpred), Q8→Q5 in the middle, layer 0/31 attention up, 1–4 down, same total size — recorded in the Fracture card, not here.
 
