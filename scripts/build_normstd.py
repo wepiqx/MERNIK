@@ -9,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from model_reader import read_model
+from llama_inspect import read_model
 from imatrix_reader import read_imatrix, detect_tied_groups, build_importance_table
 from classifier import optimal_classify_topdown, compute_stats
 from config_generator import generate_flags, format_flags

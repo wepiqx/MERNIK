@@ -1,32 +1,34 @@
 import heapq
+import math
 import warnings
-import numpy as np
 from functools import lru_cache
 from typing import Dict, List, Set, Tuple, Any
 from dataclasses import dataclass, field
 
+import gnom
+from legacy_modes import LEGACY_MODES, apply_hinge, legacy_gain
 from constants import (
     TIER_ORDER, TIER_BPW, GGUF_OVERHEAD_FACTOR, CLASS_MAX_TIER,
-    CAN_Q3, ALLOW_LOWER_FLOOR, MTP_DEPLOY_TIER, EMBD_DEPLOY_TIER,
+    CAN_Q3, ALLOW_LOWER_FLOOR, EXTREME_FLOOR, MTP_DEPLOY_TIER, EMBD_DEPLOY_TIER,
     EMBD_PIN_TYPES, ROUTER_PIN_TYPES, TOXICITY_SUB4, F32_BPW,
     FORCE_F32_TYPES,
     get_tensor_class, get_tensor_type, is_mtp_tensor,
 )
 
-# Выносим делитель в константу (8 бит * 1024 байт * 1024 кбайт)
+# Keep the divisor in a constant (8 bits * 1024 bytes * 1024 KiB)
 BITS_IN_MIB = 8 * 1024 * 1024.0
 
 # Filled in by the last classify() call so main.py can report the tail of the
 # budget without threading a third return value through everything.
 _LAST_RUN_INFO: Dict[str, float] = {"slack_mib": 0.0, "polish_steps": 0}
 
-# Предвычисляем множители размеров для каждого тира (ускорение математики)
+# Precompute size multipliers per tier (faster math)
 TIER_SIZE_MULTIPLIER = {
     tier: (bpw / BITS_IN_MIB) * GGUF_OVERHEAD_FACTOR 
     for tier, bpw in TIER_BPW.items()
 }
 
-# K-quants используют блоки по 256 элементов и требуют выравнивания (padding) 3D-тензоров MoE
+# K-quants use 256-element blocks and need padding for 3D MoE tensors
 K_QUANTS = {"Q3_K", "Q4_K", "Q5_K", "Q6_K"}
 MOE_PAD_TYPES = {"ffn_gate_exps", "ffn_up_exps", "ffn_down_exps", "ffn_down"}
 
@@ -45,7 +47,7 @@ MSE_BPW = {
 
 @dataclass(order=True, slots=True)
 class UpgradeItem:
-    """Элемент очереди апгрейдов. Сравнивается только по neg_utility."""
+    """Upgrade queue item. Compared only by neg_utility."""
     neg_utility: float
     group_id: int = field(compare=False)
     next_tier: str = field(compare=False)
@@ -68,7 +70,7 @@ def _tier_at(idx: int, order: list | None = None) -> str:
 # palace, nothing in between. Separate path, other modes untouched.
 
 def _size_mib(tier: str, n_elements: int, force_f32: bool = False) -> float:
-    """Размер тензора в MiB с учётом оверхеда GGUF.
+    """Tensor size in MiB including GGUF overhead.
 
     1D tensors (norms, biases) are F32 in the file whatever the tier says —
     llama.cpp does not quantize 1D. Accounting them at the assigned tier
@@ -115,52 +117,19 @@ def _mse_delta(cur_tier: str, next_tier: str) -> float:
     return _mse_eff(cur_tier) - _mse_eff(next_tier)
 
 
-# ---------------------------------------------------------------- battlefield
-# Experimental hybrid utility: MSE is not the only lens. Modes:
-#   mse    — baseline (current behavior, uopt ignored)
-#   rmse   — sqrt scale: compresses dynamic range, cheap small steps rank higher
-#   hybrid — ΔMSE, discounted for concentrated groups (bits wasted on junk
-#            members) and boosted for large worst-case-error drops.
-# Concentration rationale: group timp [100,0,0] vs [34,33,33], same sum and
-# cost — the first wastes 2/3 of the upgrade on zero-importance members, so
-# its gain is divided by (1 + cv_w * cv^2).
-
-
+# ---------------------------------------------------------------- utility
+# Core: mse (baseline), smse (SMAPE x MSE), smape, gnom.
+# Archived lenses live in legacy_modes.py and are hidden from the CLI.
 
 def _gain(cur_tier: str, next_tier: str, g_names: List[str],
           tensor_importance: Dict[str, float], uopt: Dict[str, Any]) -> float:
     """Quality gain of cur->next step under the selected utility metric."""
-    mode = (uopt or {}).get("mode", "mse")
-    if mode == "mix":
-        # Per-group utility: kings (top importance rank) evaluated by MSE
-        # (spread/protect), everyone else by mix_base (default: sacrifice).
-        # mix_top is a set of group rep names, built once by the caller.
-        # SCALE WARNING (scar 2026-09-18): raw formulas live on different
-        # scales (mse Δ ~1e-3, smape Δ ~1) — compared raw, smape junk
-        # outbids mse kings ~800:1 and mix collapses to pure smape.
-        # _scale() below normalizes every formula to O(1) first.
-        top = (uopt or {}).get("mix_top") or frozenset()
-        rep = g_names[0] if g_names else ""
-        mode = "mse" if rep in top else (uopt or {}).get("mix_base", "smape")
-        return _scale(mode, cur_tier, next_tier, uopt or {}) * _gain_mode(
-            mode, cur_tier, next_tier, g_names, tensor_importance, uopt or {})
-    # non-mix: raw formula, behavior unchanged (zoo baselines intact)
-    g = _gain_mode(mode, cur_tier, next_tier, g_names,
-                   tensor_importance, uopt or {})
-    hw = float((uopt or {}).get("hinge_w", 0.0) or 0.0)
+    uopt = uopt or {}
+    g = _gain_mode((uopt.get("mode", "mse")), cur_tier, next_tier, g_names,
+                   tensor_importance, uopt)
+    hw = float(uopt.get("hinge_w", 0.0) or 0.0)
     if hw > 0:
-        # Friend's smooth hinge (operator-approved experiment): sub-4
-        # transitions get boosted, safe ones unchanged. Unlike
-        # TOXICITY_SUB4 (dead inside SMAPE's denominator), this is a bias
-        # on the DECISION, not a distortion of the loss model.
-        import math as _m
-        tau = 0.8
-        try:
-            from constants import TIER_BPW as _BPW
-            bw = float(_BPW.get(next_tier, 8.0))
-        except Exception:
-            bw = 8.0
-        g = g * (1.0 + hw / (1.0 + _m.exp((bw - 4.0) / tau)))
+        g = apply_hinge(g, next_tier, hw)
     return g
 
 
@@ -168,16 +137,7 @@ _scale_cache: Dict[str, float] = {}
 
 
 def _scale(mode: str, cur_tier: str, next_tier: str, uopt: Dict[str, Any]) -> float:
-    """Normalize a utility formula to O(1).
-
-    Reference = |raw Q4_K→Q5_K delta| for that mode (cached). Without this,
-    bounded formulas (smape ≤ 2) outbid absolute ones (mse Δ ~1e-3) ~800:1
-    and any mix collapses to the bounded side. cur/next args kept for
-    future per-step references; currently unused.
-    Cache key includes uopt-dependent knobs (review 2026-10-08: keying by
-    mode alone silently served stale norms e.g. to logcosh with a custom
-    huber_delta via mix_base).
-    """
+    """Normalize a utility formula to O(1) (legacy mix/srmse only)."""
     uopt = uopt or {}
     key = (mode, float(uopt.get("huber_delta", 3e-4)))
     if key not in _scale_cache:
@@ -189,69 +149,18 @@ def _scale(mode: str, cur_tier: str, next_tier: str, uopt: Dict[str, Any]) -> fl
 def _gain_mode(mode: str, cur_tier: str, next_tier: str,
                g_names: List[str], tensor_importance: Dict[str, float],
                uopt: Dict[str, Any]) -> float:
-    """Single-formula gain (mode already resolved, never 'mix')."""
-    import math
-    if mode == "mix":
-        raise ValueError("mix must be resolved before _gain_mode")
-    if mode == "logratio":
-        # Friend's α-family, left edge (α→0): log(ec/en). Small steps ≈
-        # SMAPE asymptotically; huge steps (IQ1→IQ2) unbounded — sub-4
-        # toxicity survives structurally (SMAPE caps at 2, this doesn't).
-        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
-        if en <= 0 or ec <= 0:
-            return 0.0
-        return math.log(ec / en)
-    if mode == "powalpha":
-        # g = ec^α − en^α (friend's axis: α=1 MSE, 0.5 RMSE, →0 log-ratio).
-        # α from uopt (sweep {0.1,0.25,0.5,0.75,1.0} to map the optimum).
-        # AXIS, not a mode: α is a continuous concentration↔distribution
-        # knob (verified monotonic on FrogNano-3500: Q8 183→167 as α
-        # 0.1→0.9). SMSE sits near α≈0.5 on WARM budgets (identical
-        # histograms) but DIVERGES on small budgets (FrogNano-2500
-        # allow-q3: Q6 100 vs 82, Q8 39 vs 51) — SMSE is an edge-case
-        # discriminator that switches on where ec/en spreads wide, not
-        # a redundant blend. Policy future: α = f(budget, model_class).
-        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
-        a = float((uopt or {}).get("pow_alpha", 0.5))
-        return (ec ** a - en ** a) if ec > 0 and en > 0 else 0.0
-    if mode == "recovery":
-        # Asymmetric relative: fraction of CURRENT damage recovered.
-        # (ec−en)/ec ∈ [0,1) — "percent healed", not symmetric split.
-        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
-        if ec <= 0 or en > ec:
-            return 0.0
-        return (ec - en) / ec
-    from experimental import experimental_gain, experimental_gain_modes
-    if mode == "rmse":
-        return math.sqrt(_mse_eff(cur_tier)) - math.sqrt(_mse_eff(next_tier))
-    if mode == "logcosh":
-        # Gain reshaper on the MSE delta: linear-ish for small steps,
-        # compressed for large ones (outlier-heavy steps stop dominating).
-        d = _mse_delta(cur_tier, next_tier)
-        s = (uopt or {}).get("huber_delta", 3e-4)  # splits the typical Δ range
-        if d < 0:
-            return d
-        return math.log(math.cosh(d / s)) * s
-    if mode in experimental_gain_modes():
-        return experimental_gain(cur_tier, next_tier, g_names,
-                                 tensor_importance, uopt)
+    """Single-formula gain, core modes and Gnom only."""
+    if mode in LEGACY_MODES:
+        return legacy_gain(mode, cur_tier, next_tier, g_names,
+                           tensor_importance, uopt)
+    if gnom.is_gnom(mode):
+        return gnom.gain(cur_tier, next_tier, g_names, uopt)
     if mode == "smape":
-        # Relative lens: symmetric relative error drop, bounded in [0, 2].
-        # Favors steps that slash the *remaining* error proportionally,
-        # regardless of absolute scale.
         ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
         if ec + en <= 0:
             return 0.0
         return 2.0 * (ec - en) / (ec + en)
-    if mode in ("smse", "balance"):
-        # SMSE (ex-BALANCE, renamed 2026-09-23: SMAPE+MSE blend) —
-        # 'balance' kept as a deprecated alias.
-        # geometric blend of the relative lens (SMAPE barbell shape) and
-        # the absolute lens (MSE weight + live sub-4 toxicity). Both halves
-        # O(1)-normalized first (MIX lesson), so neither outbids 800:1.
-        # Toxicity survives here because the MSE half is divided by a
-        # CONSTANT reference — unlike SMAPE's (ec+en) denominator, which
-        # cancels it. TOX multipliers reverted (dead code, wrong direction).
+    if mode == "smse":
         ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
         if ec + en <= 0:
             return 0.0
@@ -264,149 +173,7 @@ def _gain_mode(mode: str, cur_tier: str, next_tier: str,
         if s_ref <= 0.0 or m_ref <= 0.0:
             return 0.0
         return math.sqrt((rel / s_ref) * (aba / m_ref))
-    if mode == "srmse":
-        # SMAPE x RMSE blend (2026-09-23, proposed as "what if"): relative
-        # lens x COMPRESSED absolute (sqrt). sqrt compresses the toxicity
-        # multiplier (x1.41 instead of x2.0), so this carries LESS toxicity
-        # than SMSE — expect a gentler barbell: more penthouses, weaker
-        # lava rescue. Verdict duel queued (MiMo-5100-SRMSE vs SMSE).
-        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
-        if ec + en <= 0:
-            return 0.0
-        rel = 2.0 * (ec - en) / (ec + en)
-        rba = math.sqrt(ec) - math.sqrt(en)
-        if rel <= 0.0 or rba <= 0.0:
-            return 0.0
-        s_ref = _scale("smape", cur_tier, next_tier, uopt or {})
-        r_ref = _scale("rmse", cur_tier, next_tier, uopt or {})
-        if s_ref <= 0.0 or r_ref <= 0.0:
-            return 0.0
-        return math.sqrt((rel / s_ref) * (rba / r_ref))
-    if mode == "ssim":
-        # Measured structural gain, per group MEMBER (not rep): members of a
-        # tied group share importance but not weights, so ΔSSIM differs per
-        # member — a genuine per-group signal. No toxicity fiction: SSIM
-        # measures the sub-4 collapse directly (that's the hypothesis).
-        return _ssim_gain(cur_tier, next_tier, g_names, tensor_importance,
-                          (uopt or {}).get("ssim_table"), relative=False)
-    if mode == "smape_ssim":
-        # Relative lens on the measured signal: symmetric relative structural
-        # recovery per member, importance-weighted. The zoo final boss.
-        return _ssim_gain(cur_tier, next_tier, g_names, tensor_importance,
-                          (uopt or {}).get("ssim_table"), relative=True)
-    if mode == "smape_frag":
-        # Don't replace the champion — modulate it. SMAPE-on-MSE decides the
-        # shape; per-group structural fragility (measured Q4 damage, mean over
-        # members, normalized) reweights the vote. Fragile groups get boosted
-        # upgrades, oak groups get discounted ones.
-        ec, en = _mse_eff(cur_tier), _mse_eff(next_tier)
-        base = 0.0 if ec + en <= 0 else 2.0 * (ec - en) / (ec + en)
-        frag = _group_fragility(g_names, (uopt or {}).get("ssim_table"))
-        return base * (1.0 + (uopt or {}).get("frag_w", 0.5) * (frag - 1.0))
-    gain = _mse_delta(cur_tier, next_tier)
-    return gain
-
-
-def _ssim_gain(cur_tier: str, next_tier: str, g_names: List[str],
-               tensor_importance: Dict[str, float],
-               table_path: str | None, relative: bool = False) -> float:
-    """Importance-weighted mean ΔSSIM over group members.
-
-    Returns an average (not a sum): the caller multiplies by Σtimp, so the
-    result is Σt·ΔS — members with more importance contribute more gain.
-    Tiers outside the measured table are bpw-interpolated on the measured
-    curve; tensors missing from the table contribute 0 (pinned anyway).
-    """
-    from constants import TIER_BPW
-    table = _ssim_table(table_path)
-    if not table:
-        return _mse_delta(cur_tier, next_tier)  # table not ready: mse fallback
-
-    def s_of(name: str, tier: str) -> float | None:
-        row = table.get(name)
-        if row is None:
-            return None
-        if tier in row:
-            return row[tier]
-        if tier == "F16":
-            return 1.0
-        # bpw-interpolate on the measured curve
-        b = TIER_BPW.get(tier)
-        pts = sorted((TIER_BPW[t], s) for t, s in row.items() if t in TIER_BPW)
-        if b is None or not pts:
-            return None
-        if b <= pts[0][0]:
-            b0, s0 = pts[0]
-            b1, s1 = pts[1] if len(pts) > 1 else (b0 + 1.0, 1.0)
-            s = s0 + (s1 - s0) * (b - b0) / (b1 - b0)
-            return max(0.0, min(1.0, s))
-        for (b0, s0), (b1, s1) in zip(pts, pts[1:]):
-            if b0 <= b <= b1:
-                f = (b - b0) / (b1 - b0) if b1 > b0 else 0.0
-                return s0 + (s1 - s0) * f
-        return pts[-1][1]  # above measured range: clamp to best
-
-    num, den = 0.0, 0.0
-    for n in g_names:
-        t = tensor_importance.get(n, 0.0)
-        sc, sn = s_of(n, cur_tier), s_of(n, next_tier)
-        if sc is None or sn is None:
-            continue
-        if relative:
-            # Relative lens on DAMAGE (1-S), not similarity: damage spans an
-            # order of magnitude (vs similarity stuck in [0.987, 1]), so the
-            # relative rescaling actually bites — same trick that made SMAPE
-            # win on MSE. Positive when damage drops.
-            dc, dn = 1.0 - sc, 1.0 - sn
-            g = 0.0 if dc + dn <= 0 else 2.0 * (dc - dn) / (dc + dn)
-        else:
-            g = sn - sc
-        num += t * g
-        den += t
-    return num / den if den > 0 else 0.0
-
-
-_SSIM_CACHE: Dict[str, Dict[str, Dict[str, float]]] = {}
-_FRAG_CACHE: Dict[str, float] = {}
-
-
-def _group_fragility(g_names: List[str], table_path: str | None) -> float:
-    """Mean measured Q4 damage over group members, normalized by global mean.
-
-    Returns 1.0 when the table is missing (modulation becomes a no-op).
-    """
-    table = _ssim_table(table_path)
-    if not table:
-        return 1.0
-    key = table_path + "|mean"
-    if key not in _FRAG_CACHE:
-        vals = [1.0 - row["Q4_K"] for row in table.values() if "Q4_K" in row]
-        _FRAG_CACHE[key] = sum(vals) / len(vals) if vals else 1.0
-    gmean = _FRAG_CACHE[key]
-    ds = [1.0 - table[n]["Q4_K"] for n in g_names
-          if n in table and "Q4_K" in table[n]]
-    if not ds or gmean <= 0:
-        return 1.0
-    return (sum(ds) / len(ds)) / gmean
-
-
-def _ssim_table(path: str | None) -> Dict[str, Dict[str, float]]:
-    if not path or path in _SSIM_CACHE:
-        return _SSIM_CACHE.get(path, {})
-    try:
-        z = np.load(path, allow_pickle=False)
-    except Exception as e:
-        warnings.warn(f"ssim table {path} unreadable ({e}); MSE fallback, duels compare blind",
-                      RuntimeWarning)
-        _SSIM_CACHE[path] = {}
-        return {}
-    tiers = ["Q4_K", "Q5_K", "Q6_K", "Q8_0"]
-    table = {}
-    for name in z.files:
-        arr = z[name]
-        table[name] = {t: float(arr[i][0]) for i, t in enumerate(tiers)}
-    _SSIM_CACHE[path] = table
-    return table
+    return _mse_delta(cur_tier, next_tier)
 
 
 def _step_cost(cur_tier: str, next_tier: str, g_elements: int,
@@ -521,7 +288,7 @@ def _push_upgrade(group_id: int,
                    uopt: Dict[str, Any] | None = None,
                    order: list | None = None):
     order = order or TIER_ORDER
-    # Храним 4 элемента: имена, реальный размер, размер с padding, признак 1D
+    # Keep 4 fields: names, real size, padded size, 1D flag
     g_names, g_elements, g_elements_padded, g_f32 = group_registry[group_id]
     if g_f32:
         return  # F32 in the file whatever we assign — no decision to make
@@ -543,8 +310,16 @@ def _push_upgrade(group_id: int,
     cost_delta = _step_cost(cur_tier, next_tier, g_elements, g_elements_padded)
 
     quality_delta = _gain(cur_tier, next_tier, g_names, tensor_importance, uopt or {})
+    # Safety floor: a group below Q3_K must be allowed to climb out even when
+    # Gnom predicts zero gain for the next rung. Missing predictions used to
+    # strand 37 tensors at IQ2_XXS on Ling and leave hundreds of MiB unused at
+    # 5100+; sub-Q3 is a risk zone, not a place to park slack.
+    q3_idx = _tier_index("Q3_K", order)
+    sub_q3 = cur_idx < q3_idx
     if quality_delta < 0:
-        return
+        if not sub_q3:
+            return
+        quality_delta = 0.0
     if cost_delta < 0:
         return
 
@@ -554,18 +329,21 @@ def _push_upgrade(group_id: int,
         utility_per_mb = float('inf')
     else:
         if quality_delta == 0:
-            return  # paying real MB for zero modeled gain
-        total_g_imp = sum(tensor_importance.get(n, 0) for n in g_names)
-        utility_per_mb = (total_g_imp * quality_delta) / cost_delta
+            if not sub_q3:
+                return  # paying real MB for zero modeled gain
+            utility_per_mb = 0.0  # safety floor gets first claim on slack
+        else:
+            total_g_imp = sum(tensor_importance.get(n, 0) for n in g_names)
+            utility_per_mb = (total_g_imp * quality_delta) / cost_delta
 
     heapq.heappush(upgrade_queue, UpgradeItem(-utility_per_mb, group_id, next_tier, cost_delta))
 
 
 def _base_floor(ttype: str, cls: str, allow_q3: bool, has_imatrix: bool,
-                is_qat: bool = False) -> str:
+                is_qat: bool = False, low_floor: str | None = None) -> str:
     """Minimum tier for a tensor: bottom-up starts here, top-down stops here."""
     if allow_q3 and (ttype in CAN_Q3 or cls in CAN_Q3) and has_imatrix:
-        return ALLOW_LOWER_FLOOR
+        return low_floor or ALLOW_LOWER_FLOOR
     if is_qat:
         return "Q4_K" if cls == "attn_proj" else "IQ4_XS"
     return "Q4_K"
@@ -574,7 +352,8 @@ def _base_floor(ttype: str, cls: str, allow_q3: bool, has_imatrix: bool,
 def compute_initial_assignments(non_mtp_names: Set[str], mtp_names: Set[str],
                                 importance_table: Dict, allow_q3: bool, is_qat: bool = False,
                                 floor: str | None = None,
-                                f32_map: Dict[str, bool] | None = None) -> Dict[str, str]:
+                                f32_map: Dict[str, bool] | None = None,
+                                low_floor: str | None = None) -> Dict[str, str]:
     f32_map = f32_map or {}
     assignments = {name: MTP_DEPLOY_TIER for name in mtp_names}
 
@@ -594,7 +373,7 @@ def compute_initial_assignments(non_mtp_names: Set[str], mtp_names: Set[str],
         elif cls in ("norms", "ssm_params"):
             assignments[name] = "F16"
         else:
-            assignments[name] = floor or _base_floor(ttype, cls, allow_q3, has_imatrix, is_qat)
+            assignments[name] = floor or _base_floor(ttype, cls, allow_q3, has_imatrix, is_qat, low_floor)
 
     return assignments
 
@@ -648,7 +427,8 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
     relief ceilings are ignored in squeeze mode."""
     if target_size_mib <= 0:
         raise ValueError("target_size_mib must be positive")
-    uopt = uopt or {"mode": "mse"}
+    uopt = dict(uopt or {"mode": "mse"})
+    uopt["top_down"] = False
     order = allowed_tiers or TIER_ORDER
     squeeze = allowed_tiers is not None
 
@@ -668,7 +448,7 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
     # the artifact and the queue stops spending decisions on them.
     f32_map = {} if legacy_1d else _f32_map(model_tensors)
 
-    # --- Вычисление MoE Padding (Целочисленное выравнивание) ---
+    # --- MoE padding (integer alignment) ---
     moe_d_ff = features.get("moe_intermediate_size", 0)
     padded_ne_map = dict(ne_map)
     if moe_d_ff > 0 and moe_d_ff % 256 != 0:
@@ -716,15 +496,6 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
         raw_imp = importance_table.get(name, {}).get("importance_mean", 0.0)
         tensor_importance[name] = raw_imp
 
-    assignments = compute_initial_assignments(non_mtp_names, mtp_names, importance_table, allow_q3, is_qat,
-                                              floor=(order[0] if squeeze else None),
-                                              f32_map=f32_map)
-    for n in embd_names:
-        assignments[n] = EMBD_DEPLOY_TIER
-    for n in router_names:
-        assignments[n] = "F16"
-    for n in small_names:
-        assignments[n] = "F16"
     group_registry = build_groups(tied_groups, non_mtp_names, ne_map, padded_ne_map,
                                   f32_map=f32_map)
 
@@ -746,12 +517,41 @@ def optimal_classify(importance_table: dict, tied_groups: list, model: dict,
     small_cost = sum(_size_mib("F16", ne_map.get(n, 0), f32_map.get(n, False)) for n in small_names)
     effective_target = target_size_mib - mtp_cost - embd_cost - router_cost - small_cost
 
-    current_size = sum(
-        _size_mib(assignments[n],
-                  padded_ne_map.get(n, ne_map.get(n, 0)) if assignments[n] in K_QUANTS else ne_map.get(n, 0),
-                  f32_map.get(n, False))
-        for n in non_mtp_names
-    )
+    def _initial_assignments(allow_low: bool,
+                             low_floor: str | None = None) -> Dict[str, str]:
+        a = compute_initial_assignments(
+            non_mtp_names, mtp_names, importance_table, allow_low, is_qat,
+            floor=(order[0] if squeeze else None), f32_map=f32_map,
+            low_floor=low_floor)
+        for n in embd_names:
+            a[n] = EMBD_DEPLOY_TIER
+        for n in router_names:
+            a[n] = "F16"
+        for n in small_names:
+            a[n] = "F16"
+        return a
+
+    def _size_of(a: Dict[str, str]) -> float:
+        return sum(
+            _size_mib(a[n],
+                      padded_ne_map.get(n, ne_map.get(n, 0)) if a[n] in K_QUANTS else ne_map.get(n, 0),
+                      f32_map.get(n, False))
+            for n in non_mtp_names
+        )
+
+    # Adaptive floor: preserve the Q4_K start whenever it fits, so large
+    # budgets keep their old distribution. Drop to IQ2/IQ1 only when the
+    # budget cannot hold the Q4_K floor. --dont-allow-q3 pins allow_q3=False
+    # and therefore refuses the fallback by construction.
+    assignments = _initial_assignments(False)
+    current_size = _size_of(assignments)
+    if allow_q3 and not squeeze and current_size > effective_target:
+        # Stage the fallback: IQ2 first, IQ1 only if even that cannot fit.
+        assignments = _initial_assignments(True, ALLOW_LOWER_FLOOR)
+        current_size = _size_of(assignments)
+        if current_size > effective_target:
+            assignments = _initial_assignments(True, EXTREME_FLOOR)
+            current_size = _size_of(assignments)
 
     if current_size > effective_target:
         warnings.warn(f"Initial size {current_size:.1f} MiB already exceeds target {effective_target:.1f} MiB", RuntimeWarning)
@@ -826,14 +626,14 @@ def _push_downgrade(group_id: int,
         return  # padding quirk: downgrade would grow — stall here
 
     loss = _gain(next_tier, cur_tier, g_names, tensor_importance, uopt or {})  # quality increase reversed
-    if loss < 0:
+    _mode = (uopt or {}).get("mode")
+    if loss < 0 and _mode not in ("gnom", "netfd", "netpure"):
         return
 
     total_g_imp = sum(tensor_importance.get(n, 0) for n in g_names)
-    if (uopt or {}).get("mode") == "netfd":
-        # Gnom's prediction IS the loss here (raw damage >= 0); multiplying
-        # by the imatrix importance would re-import the lens we are
-        # replacing. Weight 1.0 -> utility = damage per byte saved.
+    if _mode in ("gnom", "netfd", "netpure"):
+        # Gnom's prediction IS the loss here; the imatrix lens is not
+        # re-imported. Weight 1.0 -> utility = damage per byte saved.
         total_g_imp = 1.0
     if saved == 0:
         # Transit step (e.g. Q4_K→IQ4_NL: same bpw, must pass through to reach
@@ -854,16 +654,13 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
                              target_size_mib: float, allow_q3: bool = False,
                              free_pins: bool = False,
                              uopt: Dict[str, Any] | None = None,
-                             pin_norms: bool = False,
-                             legacy_1d: bool = False) -> Tuple[dict, dict]:
-    """Top-down classification: start at F16, downgrade to fit.
-
-    pin_norms: keep norms/small tensors at F16 outside the budget (the
-    native norms shield — post-hoc forcing disrupts the greedy path).
-    """
+                             legacy_1d: bool = False,
+                             low_floor: str | None = None) -> Tuple[dict, dict]:
+    """Top-down classification: start at F16, downgrade to fit."""
     if target_size_mib <= 0:
         raise ValueError("target_size_mib must be positive")
-    uopt = uopt or {"mode": "mse"}
+    uopt = dict(uopt or {"mode": "mse"})
+    uopt["top_down"] = True
 
     features = model.get("features", {})
     has_mtp = features.get("has_mtp", False) and not free_pins
@@ -911,14 +708,6 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
     flex_names -= router_names
     one_d_names = {n for n in flex_names if f32_map.get(n, False)}
     flex_names -= one_d_names
-    # Native norms shield: norms/small tensors stay F16 outside the budget
-    # (post-hoc forcing was proven to disrupt the greedy path — TDN-SMAPE).
-    norm_names = {
-        n for n in flex_names
-        if "norm" in n or ne_map.get(n, 10 ** 9) < 100000
-    } if pin_norms else set()
-    flex_names -= norm_names
-
     tensor_importance = {}
     for name in flex_names:
         tensor_importance[name] = importance_table.get(name, {}).get("importance_mean", 0.0)
@@ -930,8 +719,6 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
         assignments[n] = "F16"
     for n in one_d_names:
         assignments[n] = "F32"
-    for n in norm_names:
-        assignments[n] = "F16"
     for n in flex_names:
         assignments[n] = "F16"
 
@@ -946,7 +733,8 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
             ttype = rep_info["type"] if "type" in rep_info else get_tensor_type(n)
             cls = get_tensor_class(ttype)
             floors.append(_tier_index(_base_floor(
-                ttype, cls, allow_q3, "importance_mean" in rep_info, is_qat)))
+                ttype, cls, allow_q3, "importance_mean" in rep_info, is_qat,
+                low_floor)))
         group_floors[g_id] = _tier_at(min(floors))
 
     fixed_cost = (
@@ -954,7 +742,6 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
         + sum(_size_mib(EMBD_DEPLOY_TIER, ne_map.get(n, 0), f32_map.get(n, False)) for n in embd_names)
         + sum(_size_mib("F16", ne_map.get(n, 0), f32_map.get(n, False)) for n in router_names)
         + sum(_size_mib("F32", ne_map.get(n, 0), True) for n in one_d_names)
-        + sum(_size_mib("F16", ne_map.get(n, 0), f32_map.get(n, False)) for n in norm_names)
     )
     effective_target = target_size_mib - fixed_cost
     current_size = sum(_size_mib("F16", ne_map.get(n, 0)) for n in flex_names)
@@ -973,6 +760,12 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
                         tensor_importance, downgrade_queue, uopt=uopt)
 
     if current_size > effective_target:
+        used = low_floor or ALLOW_LOWER_FLOOR
+        if allow_q3 and _tier_index(used) > _tier_index(EXTREME_FLOOR):
+            return optimal_classify_topdown(
+                importance_table, tied_groups, model, target_size_mib,
+                allow_q3=True, free_pins=free_pins, uopt=uopt,
+                legacy_1d=legacy_1d, low_floor=EXTREME_FLOOR)
         warnings.warn(f"Top-down hit all floors at {current_size:.1f} MiB, "
                       f"still over target {effective_target:.1f} MiB", RuntimeWarning)
         return assignments, padded_ne_map
@@ -1005,7 +798,7 @@ def optimal_classify_topdown(importance_table: dict, tied_groups: list, model: d
 
 def compute_stats(assignments: dict, ne_map: dict = None, padded_ne_map: dict = None,
                   f32_map: dict = None) -> dict:
-    """Собирает статистику по тирам с точным учётом K_QUANTS padding."""
+    """Collect per-tier stats with exact K_QUANTS padding accounting."""
     f32_map = f32_map or {}
     stats = {"by_tier_count": {}, "by_tier_mib": {}, "total_mib": 0.0, "tensor_count": 0}
     for name, tier in assignments.items():

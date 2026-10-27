@@ -39,22 +39,6 @@ F32_BPW = 32.0
 FORCE_F32_TYPES = {"ssm_conv1d"}
 GGUF_OVERHEAD_FACTOR = 1.0
 
-# Quant quality rank: higher = better (same order as TIER_ORDER)
-QUANT_RANK = {tier: i for i, tier in enumerate(TIER_ORDER)}
-
-# Per-class hard floor — display-only (--show-floors). The greedy never
-# downgrades below its base, so floors are not enforced in code.
-CLASS_HARD_FLOORS = {
-    "gate": "Q8_0",
-    "attn_proj": "Q8_0",
-    "ffn_gate_up": "IQ4_XS",
-    "ffn_down": "Q6_K",
-    "norms": "F16",
-    "ssm_params": "F16",
-    "mtp": "IQ4_XS",
-    "embd": "Q5_K",
-}
-
 # Per-class max tier — never exceed this (for greedy upgrades)
 # Deep layers can be upgraded to Q8_0 for important tensors
 CLASS_MAX_TIER = {
@@ -68,10 +52,13 @@ CLASS_MAX_TIER = {
     "embd": "Q8_0",
 }
 
-# Classes that can go to Q3_K when --allow-q3-or-lower is set
-# (matched against tensor *type*: ffn_gate, ffn_up, ffn_down, attn_output, ssm_out)
+# Classes that may drop below Q4 when the Q4_K floor does not fit the budget
+# (matched against tensor *type*: ffn_gate, ffn_up, ffn_down, attn_output, ssm_out).
+# Default is adaptive: the allocator tries the Q4_K floor first and only lowers
+# this floor when --size is too small for it. --dont-allow-q3 disables the fallback.
 CAN_Q3 = {"ffn_gate", "ffn_up", "ffn_down", "attn_output", "ssm_out"}
-ALLOW_LOWER_FLOOR = "IQ2_XXS"  # lowest starting tier for --allow-q3-or-lower
+ALLOW_LOWER_FLOOR = "IQ2_XXS"  # first fallback when the Q4_K floor does not fit
+EXTREME_FLOOR = "IQ1_S"        # last resort for budgets below the IQ2 floor
 
 # Tier for MTP head deployment
 MTP_DEPLOY_TIER = "Q8_0"
@@ -82,69 +69,8 @@ MTP_DEPLOY_TIER = "Q8_0"
 # it reluctantly (top-down). Tunable.
 TOXICITY_SUB4 = 2.0
 
-# --- TOXICITY IS A TAIL, NOT A STEP (measured 2026-09-28) ------------------
-# The multiplier above is a single number applied to EVERY tensor below
-# 4.0 bpw. Paired measurement on the same 112 Spark-1.7B units, Q5_K->Q4_K
-# against Q5_K->Q3_K (gnom/labels/spark17_damage_q4.jsonl vs _q3.jsonl):
-#
-#   damage @Q4:  mean +0.120  median +0.042  std 0.773  P(>0)=60.7%  P(>1)= 7.1%
-#   damage @Q3:  mean +0.090  median +0.192  std 1.521  P(>0)=61.6%  P(>1)=19.6%
-#   paired diff: mean -0.031  median +0.093  std 1.605  P(>0)=59.8%
-#
-# Read that carefully: the mean difference is ZERO (step cancelled out), the
-# MEDIAN is positive, and the top-1 unit (0.9% of all units) carries 58% of
-# the net damage. Crossing into sub-4 does not make the typical tensor worse
-# by a factor — it makes ~1 in 5 tensors detonate where 1 in 14 did before.
-# The mean is silent because a few large negatives cancel a heavy positive
-# tail. So the effect is a change in the TAIL, not in the mean.
-#
-# What that means for the queue (spec for the classifier owner — constants.py
-# holds the data, classifier.py consumes it; no behaviour change here):
-#
-#   1. kind="step" stays the default so every existing table reproduces.
-#   2. kind="tail" is NOT a different constant. If detonation is
-#      unpredictable — which is exactly what Gnom-0.2 established — then no
-#      reweighting of the tiers can capture it, and the expectation is the
-#      same number. What the tail changes is the OBJECTIVE: expected loss is
-#      dominated by a few groups, so a queue that maximises expected gain is
-#      not the queue you want; one that bounds worst case is. That is a new
-#      lens, not a new constant, and it is a classifier.py decision.
-#   3. The measurement that can settle it is tail P(detonation | group), and
-#      that needs paired multi-tier labels on the same units — one drop tier
-#      identifies nothing (pool_kld.json has a single level: 5.5 -> 4.5 bpw).
-TOXICITY_MODEL = {
-    "kind": "step",                 # "step" (legacy) | "tail"
-    "sub4_bpw": 4.0,
-    "multiplier": TOXICITY_SUB4,
-    "evidence": {                   # spark17, 112 paired units, Q5 base
-        "q4": {"mean": 0.1203, "median": 0.0417, "std": 0.7726,
-               "p_gt_0": 0.607, "p_gt_1": 0.071},
-        "q3": {"mean": 0.0896, "median": 0.1917, "std": 1.5206,
-               "p_gt_0": 0.616, "p_gt_1": 0.196},
-        "paired": {"mean": -0.0307, "median": 0.0934, "std": 1.6054,
-                   "p_gt_0": 0.598},
-        "top1_share_of_net_damage": 0.58,
-    },
-    "tail": {
-        "detonation_threshold": 1.0,     # damage above this = "detonates"
-        "p_detonation": {"q4": 0.071, "q3": 0.196},   # ~2.8x across sub-4
-        "usable_without_a_predictor": False,
-    },
-}
-
-
-def toxicity_multiplier(tier_bpw: float, model: dict | None = None) -> float:
-    """Effective-MSE inflation for a tier, per TOXICITY_MODEL.
-
-    kind="step" reproduces the legacy constant exactly (unchanged default).
-    kind="tail" is intentionally NOT implemented as a per-group inflation:
-    see the spec above — without a predictor of which groups detonate, the
-    expected value is identical and only the objective would change.
-    """
-    model = model or TOXICITY_MODEL
-    if tier_bpw >= model["sub4_bpw"]:
-        return 1.0
-    return float(model["multiplier"])
+# Sub-4 toxicity is a tail, not a mean shift; the measured evidence and the
+# reason it never became a per-group constant live in LEGACY.md §toxicity.
 
 # Tier for output/token_embd — must match --output-tensor-type /
 # --token-embedding-type in generate_flags (llama.cpp applies those
@@ -203,89 +129,9 @@ TENSOR_CLASS = {
     "down_proj": "ffn_down",
 }
 
-ARCH_FEATURES = {
-    "qwen35": {
-        "has_qkv": True,
-        "has_ssm": True,
-        "has_mtp": True,
-        "has_moe": False,
-        "is_qat": False,
-        "prefix": "blk",
-        "n_layers": 32,
-    },
-    "mellum2": {
-        "has_qkv": False,
-        "has_ssm": False,
-        "has_mtp": False,
-        "has_moe": True,
-        "is_qat": False,
-        "prefix": "blk",
-        "n_layers": 28,
-    },
-    "gemma4": {
-        "has_qkv": False,
-        "has_ssm": False,
-        "has_mtp": False,
-        "has_moe": False,
-        "is_qat": True,
-        "prefix": "blk",
-        "n_layers": 48,
-    },
-    "granite": {
-        "has_qkv": False,  # separate attn_q/k/v projections, like gemma4 — but NOT qat
-        "has_ssm": False,
-        "has_mtp": False,
-        "has_moe": False,
-        "is_qat": False,
-        "prefix": "blk",
-        "n_layers": 40,
-    },
-    "k2_horizon": {
-        "has_qkv": False,  # separate attn_q/k/v projections, like granite — NOT qat
-        "has_ssm": False,
-        "has_mtp": False,
-        "has_moe": False,
-        "is_qat": False,
-        "prefix": "blk",
-        "n_layers": 36,
-    },
-    "spark2_5": {
-        "has_qkv": True,  # fused q_k_v_proj (tied groups like qwen35)
-        "has_ssm": False,
-        "has_mtp": False,
-        "has_moe": False,
-        "is_qat": False,
-        "prefix": "blk",
-        "n_layers": 36,  # per imatrix (36 blocks); overwritten by estimate from file
-    },
-    "bailingmoe3": {
-        "has_qkv": False,  # separate projections + MLA low-rank factors
-        "has_ssm": True,   # KDA layers carry ssm_* tensors (ssm_params class)
-        "has_mtp": False,
-        "has_moe": True,
-        "is_qat": False,
-        "prefix": "blk",
-        "n_layers": 24,
-        "moe_intermediate_size": 512,  # 512 % 256 == 0 → no K-quant padding needed
-    },
-    "lfm2moe": {
-        "has_qkv": False,  # separate attn_q/k/v in the 10 GQA attention blocks
-        "has_ssm": False,  # no ssm_* names — recurrence is shortconv (own class)
-        "has_mtp": False,
-        "has_moe": True,   # 38 expert layers (top-4 of 64) + 2 dense; also forced True live
-        "is_qat": False,
-        "prefix": "blk",
-        "n_layers": 40,  # 30 shortconv + 10 attention; overwritten live from the file
-        # moe_intermediate_size: left out until the BF16 header lands —
-        # classifier only applies the padding correction when % 256 != 0.
-    },
-}
-
-# general.architecture aliases that differ from preset keys.
-METADATA_ARCH_MAP = {
-    "mellum": "mellum2",
-    "k2-horizon": "k2_horizon",  # GGUF arch string uses a dash
-}
+# Architecture features are derived from llama.cpp's GGUF metadata
+# (<arch>.block_count, <arch>.expert_count, <arch>.expert_feed_forward_length,
+# <arch>.nextn_predict_layers) in llama_inspect.py, not from a preset table.
 
 # MoE routers — always F16, outside the budget. Corrupting the router
 # corrupts expert choice for every token (verified disaster).

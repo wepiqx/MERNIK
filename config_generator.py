@@ -1,4 +1,4 @@
-"""Assignment map -> llama-quantize --tensor-type flags ("на века" edition).
+"""Assignment map -> llama-quantize --tensor-type flags ("built to last" edition).
 
 Contract with the binary, verified against llama-quant.cpp (build 11571):
 - each --tensor-type "PATTERN=TIER" splits at the FIRST '='; the pattern is

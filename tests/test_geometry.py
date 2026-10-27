@@ -25,7 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 warnings.simplefilter("ignore")
 
-from model_reader import read_model
+from llama_inspect import read_model
 from imatrix_reader import (read_imatrix, combine_imatrix, detect_tied_groups,
                             build_importance_table)
 from classifier import optimal_classify, optimal_classify_topdown, compute_stats
@@ -33,75 +33,80 @@ from classifier import optimal_classify, optimal_classify_topdown, compute_stats
 DL = "/mnt/Vsio/Downloads"
 PROG = "/mnt/Vsio/shq-program/models"
 
-# (label, model, imatrix, size_mib, utility, top_down, pin_norms, allow_q3, golden)
+# (label, model, imatrix, size_mib, utility, top_down, allow_q3, golden)
 CASES = [
     ("zoo-stand 1.7B @1000 mse  (README-ZOO baseline)",
      f"{DL}/Spark-X2.5-1.7B-BF16.gguf", f"{PROG}/Spark-X2.5-1.7B-imatrix.gguf",
-     1000, "mse", False, False, False,
+     1000, "mse", False, False,
      {"F32": 57, "Q4_K": 105, "Q5_K": 8, "Q6_K": 56}),
 
     ("MiniCPM5-2B @1700 mse    (bottom-up default)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1700, "mse", False, False, False,
+     1700, "mse", False, False,
      {"F32": 85, "IQ4_XS": 40, "Q4_K": 19, "Q5_K": 71, "Q6_K": 45, "Q8_0": 121}),
 
     ("MiniCPM5-2B @1700 smse   (blend lens)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1700, "smse", False, False, False,
+     1700, "smse", False, False,
      {"F32": 85, "IQ4_XS": 40, "Q4_K": 19, "Q5_K": 71, "Q6_K": 45, "Q8_0": 121}),
 
     ("MiniCPM5-2B @1400 top-down",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1400, "mse", True, False, False,
+     1400, "mse", True, False,
      {"F32": 85, "IQ4_XS": 39, "Q4_K": 255, "Q5_K": 2}),
 
     ("MiniCPM5-2B @1200 smse allow-q3",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1200, "smse", False, False, True, None),   # None = recorded on first run
+     1200, "smse", False, True, None),   # None = recorded on first run
 
-    # --- utility modes owned by BIG: these guard the lens zoo ---------------
+    # --- archived lenses (LEGACY.md): reproduction fixtures only -----------
     ("MiniCPM5-2B @1700 smape  (barbell lens)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1700, "smape", False, False, False, None),
+     1700, "smape", False, False, None),
 
     ("MiniCPM5-2B @1700 rmse   (perfectionist rescale)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1700, "rmse", False, False, False, None),
+     1700, "rmse", False, False, None),
 
     ("MiniCPM5-2B @1700 srmse  (SMAPE x RMSE)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1700, "srmse", False, False, False, None),
+     1700, "srmse", False, False, None),
 
     ("MiniCPM5-2B @1700 mix    (per-group kings/junk)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1700, "mix", False, False, False, None),
+     1700, "mix", False, False, None),
 
     ("MiniCPM5-2B @1700 logcosh (gain reshaper)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1700, "logcosh", False, False, False, None),
+     1700, "logcosh", False, False, None),
 
     ("MiniCPM5-2B @1700 top-down smape  (TD barbell)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     1700, "smape", True, False, False, None),
+     1700, "smape", True, False, None),
 
     ("MiniCPM5-2B @2500 squeeze (dungeon/palace binary)",
      f"{DL}/MiniCPM5-2B-BF16.gguf", f"{DL}/MiniCPM5-2B.imatrix.gguf",
-     2500, "mse", False, False, False, None),
+     2500, "mse", False, False, None),
 
     ("RINIQ-M2 @5100 mse       (qwen35 hybrid + MTP)",
      f"{DL}/RINIQ-M2-BF16.gguf", f"{DL}/RINIQ-M2-qwen38.imatrix.gguf",
-     5100, "mse", False, False, False,
+     5100, "mse", False, False,
      {"F32": 177, "Q4_K": 216, "Q5_K": 34}),
 
     ("Mellum2.1 @7500 smse     (mellum2 MoE, routers F16)",
      f"{DL}/Mellum2.1-12B-A2.5B-Thinking-BF16.gguf",
      f"{DL}/Mellum2.1-12B-A2.5B-Thinking-imatrix.gguf",
-     7500, "smse", False, False, False, None),
+     7500, "smse", False, False, None),
 
     ("Mellum2.1 @7500 huber    (MoE fat middle vs smse pyramid)",
      f"{DL}/Mellum2.1-12B-A2.5B-Thinking-BF16.gguf",
      f"{DL}/Mellum2.1-12B-A2.5B-Thinking-imatrix.gguf",
-     7500, "huber", False, False, False, None),
+     7500, "huber", False, False, None),
+
+    ("Ling-3.0-tiny @5100 gnom (top-down, netpred)",
+     "/mnt/Vsio/assets/models/Ling-3.0-tiny-bf16.gguf",
+     f"{PROG}/Ling-3.0-tiny-imatrix.gguf",
+     5100, "gnom", True, False, None),
 ]
 
 GOLDEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -122,29 +127,31 @@ def save_golden(g):
 
 
 def geometry(case):
-    (_label, model, imat, size, util, td, pin, q3, _gold) = case
+    (_label, model, imat, size, util, td, q3, _gold) = case
     m = read_model(model)
     im = combine_imatrix([read_imatrix(imat)])
     tg = detect_tied_groups(im)
     it = build_importance_table(im, m)
     uopt = {"mode": util, "mix_base": "smape"}
+    if util == "gnom":
+        uopt["netpred"] = os.path.join(ROOT, "models", "netpred_ling_groups.json")
     if util == "mix":
         # main.py ranks kings by importance and freezes the top fraction once
         scored = sorted(((it[n]["importance_mean"], n) for n in it), reverse=True)
         k = max(1, int(len(scored) * 0.2))
         uopt["mix_top"] = frozenset(rep for _, rep in scored[:k])
     if td:
-        a, _ = optimal_classify_topdown(it, tg, m, target_size_mib=size,
-                                        uopt=uopt, pin_norms=pin)
+        a, padded = optimal_classify_topdown(it, tg, m, target_size_mib=size,
+                                             uopt=uopt)
     elif "squeeze" in _label:
-        a, _ = optimal_classify(it, tg, m, target_size_mib=size, uopt=uopt,
-                                allowed_tiers=["IQ1_S", "F16"])
+        a, padded = optimal_classify(it, tg, m, target_size_mib=size, uopt=uopt,
+                                     allowed_tiers=["IQ1_S", "F16"])
     else:
-        a, _ = optimal_classify(it, tg, m, target_size_mib=size, allow_q3=q3,
-                                uopt=uopt)
+        a, padded = optimal_classify(it, tg, m, target_size_mib=size, allow_q3=q3,
+                                     uopt=uopt)
     ne = {k: v["n_elements"] for k, v in m["tensors"].items()}
     from classifier import _f32_map
-    st = compute_stats(a, ne, None, _f32_map(m["tensors"]))
+    st = compute_stats(a, ne, padded, _f32_map(m["tensors"]))
     return {k: v for k, v in st["by_tier_count"].items() if v}, st["total_mib"]
 
 

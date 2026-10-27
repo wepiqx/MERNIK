@@ -6,7 +6,7 @@ Corpus: chain-log tails + AGENTS.md (STATE + mailbox) + ledger standings
 llama-server (embeddinggemma-2 Q8, CPU, :28083). Cosine in numpy.
 Reader: the agent (me) — this tool prints the top chunks + live status.
 
-    python scripts/lab_ask.py "что сейчас на GPU" [--k 6]
+    python scripts/lab_ask.py "what is on the GPU now" [--k 6]
 """
 import glob
 import json
@@ -131,7 +131,7 @@ def static_corpus():
 
 def main():
     ensure_server()
-    q = sys.argv[1] if len(sys.argv) > 1 else "что сейчас происходит"
+    q = sys.argv[1] if len(sys.argv) > 1 else "what is happening now"
     k = int(sys.argv[2]) if len(sys.argv) > 2 else 6
     live = live_status()
     idx_path = "/mnt/Vsio/MERNIK/provenance/lab_index.npz"

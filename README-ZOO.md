@@ -46,7 +46,7 @@ Soulfate24 called it; receipts above. Consequences:
 | huber (δ=3e-4) | == mse | — | dead: monotonic in Δ, dud at this δ |
 | hybrid cv/linf | == mse at any weight | — | **dead by construction** (see below) |
 
-Flag series (`--allow-q3-or-lower`, done): RMSE-1000-Q3 **84.37** vs
+Flag series (sub-4 exposure, done; now the automatic fallback): RMSE-1000-Q3 **84.37** vs
 MSE-1000-Q3 91.14 (RMSE wins flag-vs-flag too) — but both far worse than
 no-flag (70–71): sub-4 dungeons cost more than Q8 penthouses gain.
 RMSE-600-Q3: **13611.77** — total collapse, the floor is lava.

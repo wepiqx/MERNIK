@@ -1,4 +1,15 @@
 {
+  "Ling-3.0-tiny @5100 gnom (top-down, netpred)": {
+    "tiers": {
+      "F16": 175,
+      "F32": 97,
+      "Q4_K": 212,
+      "Q5_K": 6,
+      "Q6_K": 13,
+      "Q8_0": 23
+    },
+    "total_mib": 5098.1
+  },
   "Mellum2.1 @7500 huber    (MoE fat middle vs smse pyramid)": {
     "tiers": {
       "F16": 28,

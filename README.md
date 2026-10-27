@@ -30,16 +30,51 @@ we prove and certify it.
 
 Think of MERNIK as a **finetune of ASHQ1**: same base weights (queue, pins, tied groups),
 retrained objective (measure-first protocol, columns that carry their own ring), and
-expanded capabilities (slow capability ring, KLD-aware teachers, relief ceilings, the zoo
-bench, and norms shields).
+expanded capabilities (slow capability ring, KLD-aware teachers, the zoo bench, and the
+water-fill allocator).
 
 ---
 
 ## 0. TL;DR — what the last weeks produced
 
+### The 5100 experiment (2026-10-27): water-fill beats NETPURE on PPL and mean/median KLD; **HE deliberately not run**
+
+This was the week the allocator stopped carrying its own architecture table and
+started reading the model through `llama-quantize --dry-run` (`llama_inspect.py`).
+The same week added the adaptive sub-Q4 floor, recorded 38 greedy baseline
+allocations across 10 models, and built the water-fill prototype. The 5100 MiB
+rung is the first measured head-to-head of that prototype against the greedy
+Gnom build on the same Ling-3.0-tiny base, imatrix and corpus.
+
+| arm | MiB | PPL | KLD mean | KLD median | KLD max |
+|:---|---:|---:|---:|---:|---:|
+| stock Q4_K_M | 4600 | 13.327 | 0.114020 | 0.048512 | 14.354789 |
+| NETPURE 5100 (greedy Gnom) | 5091 | 13.4271 ±0.10880 | 0.089046 | 0.037072 | 9.071382 |
+| **WATERFILL 5100** (Gnom amplitude, α=2.4) | 5116 | **13.0611 ±0.10497** | **0.063126 ±0.000371** | **0.025847** | 9.515678 |
+| stock Q6_K (ceiling, not the same budget) | 6198 | 12.69 | 0.022102 | 0.008468 | 4.612892 |
+
+Water-fill buys **−2.7% PPL, −29% mean KLD, −30% median KLD** at +25 MiB over
+NETPURE, while max KLD is 4.9% worse (9.52 vs 9.07). It spends the middle —
+Q5_K 1914 / Q4_K 1519 / Q6_K 1150 / Q8_0 184 / F16 8 MiB — exactly the region
+the 4500 rung cannot reach. The result is fidelity per byte, not a clean sweep:
+the tail is the price of the mean.
+
+The same prototype at 4500 MiB also beats NETPURE-4500: PPL **13.1785** vs
+13.503, mean KLD **0.074614** vs 0.095092, median **0.030849** vs 0.039573,
+at +9 MiB. That is −2.4% PPL / −22% mean / −22% median; max KLD is 16% worse
+(10.11 vs 8.72) but still below stock Q4_K_M's 14.35.
+
+**Why HE was not launched.** The 4500 battery had already put the capability
+column on the floor (130/164 vs stock 131/164, duel 0/3 NOISE). A second
+164-task battery at 5100 costs ~100 minutes of the single GPU and has a
+13-task resolution, so it would produce another draw, not a decision. The 5100
+question was fidelity per byte; PPL and KLD answer it. HE stays reserved for
+builds where capability is the open question — not for every fidelity
+comparison.
+
 ### The first MoE build (2026-10-25): Ling NETPURE-4500 wins every KLD column at 93 MiB less weight — mean 0.0951, max 8.72; **HE 0/3 NOISE, fidelity win stands** (not Q6: stock Q6_K sits at 0.0221 mean / 4.61 max)
 
-The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (4,725,910,720 B = 4507 MiB) against the vendor `Ling-3.0-tiny-Q4_K_M.gguf` (4,823,894,944 B = 4600 MiB), both on the protocol corpus (`wiki.test.raw`, 297 chunks, Q8-base ref 47.7 GB, base PPL 12.9500, `-c 1024 -b 128 --seed 7`). The 4500 rung is the floor, not a choice: the Q4_K base with the F32 pins is 4454 MiB, so 4000/4200 are unreachable without `--allow-q3-or-lower`. Stock **Q6_K** (`Ling-3.0-tiny-Q6_K.gguf`, 6,499,262,368 B = 6198 MiB) is the fidelity ladder's top rung, same protocol.
+The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (4,725,910,720 B = 4507 MiB) against the vendor `Ling-3.0-tiny-Q4_K_M.gguf` (4,823,894,944 B = 4600 MiB), both on the protocol corpus (`wiki.test.raw`, 297 chunks, Q8-base ref 47.7 GB, base PPL 12.9500, `-c 1024 -b 128 --seed 7`). The 4500 rung is the comfortable floor: the Q4_K base with the F32 pins is 4454 MiB, so 4000/4200 need the sub-Q4 fallback (automatic when the Q4_K floor does not fit; `--dont-allow-q3` refuses it). Stock **Q6_K** (`Ling-3.0-tiny-Q6_K.gguf`, 6,499,262,368 B = 6198 MiB) is the fidelity ladder's top rung, same protocol.
 
 | metric (wiki vs Q8 ref) | stock Q4_K_M | MERNIK 4500 NETPURE | stock Q6_K | delta (ours vs Q4) |
 |:---|---:|---:|---:|---:|
@@ -378,7 +413,7 @@ it. Each law carries the number that proves it.
 
 ### L0 — The sub-4 law (confirmed 2026-09-23)
 
-Any tier below Q4 hurts, and **fewer is better**. `--allow-q3-or-lower` at ~4 GB is lava in
+Any tier below Q4 hurts, and **fewer is better**. Sub-4 exposure at ~4 GB is lava in
 every family: MiMo-4500-SMAPE (PPL 10.53 / HE 29.88%) lands exactly where
 NeoHorse-3650-Q2 did (10.36 / 23.78%) — same physics, different bones. SMSE-4500
 (9.41 / **54.88%**, +25pp) proves that limiting sub-4 exposure rescues the build. TOX
@@ -496,9 +531,10 @@ rule to models it has never seen.
 ### L4 — The 1D/F32 law
 
 The binary writes 1D tensors (norms, biases) and `ssm_conv1d` as **F32 whatever the rules
-say**, so `--pin-norms` is a proven no-op (it warns when it changes 0 tensors) and the old
-"norms are load-bearing precision" reading was **budget-redirect, not precision**. The
-pre-flight audit exists to catch exactly this class of mistake.
+say**, so the allocator pins them outside the budget. `--pin-norms` was removed as a
+proven no-op (it changed 0 tensors); the old "norms are load-bearing precision" reading
+was **budget-redirect, not precision**. The pre-flight audit catches exactly this class
+of mistake.
 
 ### L5 — Saturation rule
 
@@ -528,65 +564,43 @@ override with `LLAMA_QUANTIZE`, `LLAMA_PPL`, `LLAMA_SERVER`.
 
 | Flag | Description |
 |:-----|:------------|
-| `--model M.gguf` | Source weights (BF16/F16) — required |
-| `--imatrix I.gguf` | Imatrix file; repeatable (`--imatrix A --imatrix B --imatrix-method max\|mean`) |
-| `--imatrix-method max\|mean` | How repeat imatrix lenses combine (default: max) |
-| `--size MIB` | Target file size in MiB (the primary budget knob) |
-| `--output O.gguf` | Output path (default: `<model>-MERNIK.gguf`) |
-| `--run` | Execute `llama-quantize` (without it: dry-run estimate only) |
-| `--utility NAME` | Queue gain metric — see the modes table below |
-| `--mix-base NAME` | MIX utility: gain for non-king groups (`mse`/`rmse`/`smape`/`logcosh`) |
-| `--mix-top-frac F` | MIX utility: fraction of top-importance king groups (default: 0.2) |
-| `--top-down` | Reverse allocation: everything from F16, downgrade cheapest-loss-first |
-| `--pin-norms` | Top-down native norms shield (proven no-op — warns when it changes 0 tensors) |
-| `--allow-q3-or-lower` | CAN_Q3 types (`ffn_gate/up/down`, `attn_output`, `ssm_out`) may drop to IQ2_XXS |
-| `--pin-small MIB` | Pin every tensor under MIB MiB (F16 weight) at F16, outside the budget (bottom-up only). Measured: Mellum k/v heads (2.3 MB F16) cost 126 MiB for 56 tensors — protection priced loudly, 0 = off |
-| `--relief labels.jsonl --relief-thr -0.5` | Groups below threshold get ceiling Q4; budget flows elsewhere |
-| `--relief-thr F` | Relief cutoff (default: −0.5) |
-| `--max-tier T` | Runtime override of CLASS_MAX_TIER for every class (e.g. F16 lets kings rise above Q8_0); bottom-up only, `constants.py` untouched |
-| `--free-pins` | EXPERIMENTAL: output/token_embd/MTP/routers join the budget pool |
-| `--squeeze` | SQUEEZE mode (separate path): only IQ1_S or F16 per tensor, bottom-up only |
-| `--legacy-1d` | LEGACY: price 1D tensors (norms/biases) and `ssm_conv1d` as quantizable F16 — reproduces pre-2026-09-28 budgets |
-| `--imatrix-tol F` / `--imatrix-legacy-combine` | Refuse when lens files diverge beyond tolerance (default 1%); legacy flag restores max/mean-combine with a split-brain binary |
-| `--verify gpqa\|he\|all` | Slow-ring verify on fresh build or existing `--output` (busy GPU port aborts LOUDLY, never steals) |
+| `--model M.gguf` | Source GGUF — required for allocation; not needed for verify-only |
+| `--imatrix I.gguf` | Importance lens; repeatable. In the normal path `llama-quantize` gets the **first** file for both the queue and the binary; extra files only check lens divergence. To combine lenses for real, build one merged imatrix with `llama-imatrix`, then pass it alone |
+| `--imatrix-method max\|mean` | Legacy-only (`--legacy-modes --imatrix-legacy-combine`); has no effect in the normal path |
+| `--imatrix-tol F` | Max relative importance spread across repeated `--imatrix` files before refusal (default 1%) |
+| `--size MIB` | Target file size in MiB (default: 6800). The Q4_K floor is tried first; if it does not fit, the allocator falls back to IQ2_XXS, then IQ1_S |
+| `--dont-allow-q3` | Keep the Q4_K floor even when `--size` is smaller; fail instead of dropping to IQ2/IQ1 |
+| `--output O.gguf` | Output path (default: `<model-basename>-MERNIK.gguf` in the current directory) |
+| `--run` | Execute `llama-quantize`; without it: allocation + dry-run only |
+| `--utility NAME` | Queue gain: `mse` (default), `smse`, `smape`, `gnom` (active path). `netpure`/`netfd` are deprecated aliases for `gnom` |
+| `--netpred P` | Gnom predicted-damage table (required by `--utility gnom`) |
+| `--legacy-modes` | Unlock archived utilities and flags for reproduction only — see `LEGACY.md` |
+| `--top-down` | Start quantizable 2D groups at F16, downgrade cheapest-loss-first to fit, then spend the slack. Structural pins (MTP/embd/routers) and 1D F32 stay outside the queue |
+| `--verify gpqa\|he\|all` | Slow-ring verify on a fresh `--run` build or an existing `--output` (busy port aborts LOUDLY) |
 | `--verify-tag TAG` | Result tag (default: from `--output` basename) |
-| `--show-config` / `--show-floors` | Print tensor config / hard tier floors |
+| `--show-config` | Print the tensor map and exit before dry-run |
+| `--dump-alloc PATH` | Write the final tensor map + stats as JSON; real dry-run geometry is included only when preflight ran |
 | `--no-preflight` / `--strict-preflight` | Skip the dry-run audit, or abort if any assigned tier cannot fire (default: audit runs, ~1s) |
-| `--ssim-table P` / `--ptable P` / `--frag-w F` | ssim / pw_ssim tables + smape_frag modulation weight (default 0.5) |
-| `--huber-delta D` | huber/logcosh scale splitting small vs large deltas (default 3e-4) |
-| `--pow-alpha A` | The α-axis itself: g = ec^A−en^A (1=MSE, 0.5=RMSE, →0 log-ratio) |
-| `--hinge-w W` | Smooth sub-4 boost multiplier on any mode (bias on the decision, not the loss); 0 = off |
-| `--cv-w F` / `--linf-w F` | Hybrid (dead by construction): concentration discount / worst-case boost weights |
-| `--netpred P` / `--netdmg-w F` | Gnom predicted damage per group + modulator weight (default 0.5) |
-| `--invert` | ADVERSARIAL CONTROL (operator's idea): negate importance — kings down, junk up. If it still scores, importance is bunk; if it collapses, importance is causal |
-| `--invert-keep K` | Soft invert: top-K importance groups exempt (small-budget dial; inert at big budgets where the ceiling binds, not priority) |
-| `--aggro F` | [deprecated] Use `--size` instead |
-| `--verbose` | Detailed output |
 
-### Utility modes — one row per belief
+Archived flags (`--pin-small`, `--max-tier`, `--free-pins`, `--legacy-1d`,
+`--imatrix-legacy-combine`, `--allow-q3-or-lower`, plus the legacy utility
+knobs) are hidden from `--help` and require `--legacy-modes`; see `LEGACY.md`.
 
-Each mode is a *belief about where damage lives*. This table is the extension point for new
-modes.
+### Utility modes
 
-| mode | belief | status / evidence |
+Gnom is the active allocator. The three core lenses stay because they define the
+baseline ladder; every historical lens is archived in `LEGACY.md` behind
+`--legacy-modes`.
+
+| mode | belief | status |
 |:---|:---|:---|
-| `mse` (default) | relative-blind absolute gain; tiers spread evenly (Q5/Q6-heavy middle) | best PPL/KLD on dense 9B |
+| `mse` (default) | relative-blind absolute gain; tiers spread evenly (Q5/Q6-heavy middle) | baseline; best PPL/KLD on dense 9B |
 | `smape` | barbell: junk to the Q4 floor, kings to Q8 penthouses | owns small budgets, loses big ones (L1) |
-| `smse` | geometric mean of the SMAPE-relative and MSE-absolute halves; SMAPE's `(ec+en)` denominator silently cancels the sub-4 toxicity penalty, so the blend carries real toxicity through its absolute half | the best hand-tuned mode; owns small+medium budgets (MiMo-4500 lava rescue, +25pp) |
-| `rmse` | perfectionist rescale of MSE | zoo: beats MSE on PPL twice; RINIQ-M2-6500-RMSE-Q38: PPL 7.5411, GPQA 50.00%, **HE 88.41%** — takes recognition, trails MSE by 3pp on verdict (sub-floor: direction, not rank) |
-| `srmse` | SMAPE-relative × compressed absolute (sqrt squeezes toxicity ×1.41 instead of ×2.0) | demoted 2026-09-28; MiMo-5100 duel 0/3 (109–115 on a bit-identical file) — manners without verdict. Filed, not crowned |
-| `huber` | fat middle: Huber loss on deltas pushes Q4/Q6 stragglers into Q5_K | best of six at FrogNano-3500 (122/164; SMSE 118, MSE 109, logratio 110, α0.25 117, α0.75 120); Mellum-7500 123 vs SMSE 125, duel 0/3 — the middle does not decide there |
-| `logratio` | left edge of the α-axis: log(ec/en) — extreme barbell, sub-4 toxicity survives structurally | 110/164 on FrogNano-3500 |
-| `powalpha` (+ `--pow-alpha A`) | the axis itself: g = ec^A−en^A | 117 → 120 as A goes 0.25 → 0.75; MSE (A=1) collapses to 109. The axis is **not monotonic**; the pure-absolute endpoint is the worst seat |
-| `recovery` | asymmetric relative: (ec−en)/ec, fraction of current damage recovered | ties SMSE at Mellum-6500 (123 vs 126) |
-| `mix` (+ `--mix-base`) | kings by MSE, rest by another base metric; formulas live on different scales (mse Δ ~1e-3 vs smape ~1.2), so `_scale()` normalizes every formula to O(1) first — without it smape junk outbids mse kings 800:1 and the mix collapses | dry-run geometry is new (wide Q5 spread, no Q8); verdict queued |
-| `ssim` / `smape_ssim` / `smape_frag` / `pw_ssim` | SSIM-flavoured variants | table-driven, `--ssim-table` / `--ptable` |
-| `netdmg` | modulator: Gnom-predicted damage as a bias on the lens | duel vs SMSE came back 0/3 — manners, not a verdict |
-| **`netpure`** | **the queue's gain IS the predicted damage; group weight 1.0 → demotion order is damage per byte saved; the static lens is not re-inserted** | X2.6-4B @2250: PPL **18.3646** (vs 19.2660 SMSE), max KLD vs BF16 **14.17 vs 17.77** (−20%) |
-| **`netfd`** | **F16-blend for bigger budgets: the fragile blocks are kept in full precision instead of upgraded a tier (top-down only)** | X2.6-4B @4050: 46 tensors in F16 (1510 MiB), PPL **18.6228** — beats a solid stock Q8_0 (4172 MiB, 19.0307) **while being smaller** |
+| `smse` | geometric mean of SMAPE-relative and MSE-absolute halves; carries the sub-4 toxicity through its absolute half | best hand-tuned baseline; owns small+medium budgets |
+| **`gnom`** | **per-group predicted damage is the gain; `--top-down` is the F16-blend direction, bottom-up is the floor direction** | **active path; smooth ladder from 4500 to 9000 MiB on Ling-3.0-tiny** |
 
-`--hinge-w` (sub-4 boost multiplier): 105/164 on FrogNano, −13 vs plain SMSE — the "free
-boost" backfired, filed as dead.
+`netpure` and `netfd` are deprecated aliases for `gnom` (bottom-up and top-down
+respectively).
 
 ### Recently added (2026-09-28 → 2026-10-16, all CPU-cheap, all verified)
 
@@ -597,11 +611,12 @@ boost" backfired, filed as dead.
   go to `*.failures.jsonl`, second failure of a unit becomes a TERMINAL censored label
   (`damage: null`, never retried, never imputed). `--kld-only` skips the plain-PPL pass and
   emits the 5-column KLD family.
-- `--max-tier F16` lets kings rise above Q8_0 without touching `constants.py` (reproduces
-  the raised-ceiling geometry byte-exact in dry-run; 13/13 golden geometries still green).
+- `--max-tier F16` (archived behind `--legacy-modes`) lets kings rise above Q8_0 without
+  touching `constants.py`; it reproduces the raised-ceiling geometry byte-exact in dry-run.
 - MoE golden geometries: `Mellum2.1 @7500 smse` (Q4 171 / routers F16 ×28) and `huber`
-  (Q4 163 / Q5 34) — first regression net over a Mixture-of-Experts allocation
-  (14/14 green + 8/8 provenance).
+  (Q4 163 / Q5 34) — regression net over a Mixture-of-Experts allocation. The golden set
+  now has 16 geometries (model-dependent cases skip when the GGUF is absent) plus 8/8
+  provenance checks.
 - `scripts/run_humaneval.py`: `HE_CHUNK="start,count"` slices the sorted task list; `HE_CTX=N`
   replaces the protocol default `-c`; `serve_sha256` sidecar key + `scripts/twin.py`
   pre-battery twin gate (same sha → reuse, else measure).
@@ -626,12 +641,12 @@ python scripts/audit_tiers.py --model M-6500.gguf --per-layer   # every layer
 ```bash
 for A in 0.1 0.25 0.5 0.75 0.9; do
   python main.py --model M.gguf --imatrix M.imatrix.gguf --size 3500 \
-    --utility powalpha --pow-alpha $A   # concentration↔distribution knob
+    --utility powalpha --pow-alpha $A --legacy-modes   # archived α-axis
 done
 python main.py --model M.gguf --imatrix M.imatrix.gguf --size 3500 \
-  --utility logratio                     # left edge: extreme barbell
+  --utility logratio --legacy-modes       # archived: extreme barbell
 python main.py --model M.gguf --imatrix M.imatrix.gguf --size 3500 \
-  --utility smse --hinge-w 0.5           # sub-4 boost on any mode
+  --utility smse --hinge-w 0.5 --legacy-modes  # archived sub-4 boost
 ```
 
 ---
@@ -640,11 +655,12 @@ python main.py --model M.gguf --imatrix M.imatrix.gguf --size 3500 \
 
 ### Queue & allocation principles
 
-Every tensor starts at a floor tier based on its functional class. A global max-heap drains
-the target budget best-first by sum(importance) × Δ / MiB. Tied groups (identical imatrix
-energy) upgrade as a single unit with summed importance. Structural pins — MTP heads
-(→ Q8_0), output/token embeddings (→ Q5_K), MoE routers (assigned F16, F32 in file) — sit
-outside the budget queue.
+The default `main.py` path: every tensor starts at a floor tier based on its functional
+class. A global max-heap drains the target budget best-first by
+sum(importance) × Δ / MiB. Tied groups (identical imatrix energy) upgrade as a single unit
+with summed importance. Structural pins — MTP heads (→ Q8_0), output/token embeddings
+(→ Q5_K), MoE routers (assigned F16, F32 in file) — sit outside the budget queue. The
+water-fill prototype below keeps the same groups and pins but replaces the heap.
 
 ### Certify vs report (tool boundary)
 
@@ -684,6 +700,39 @@ Q8_0      108 (1417 MiB)     149 (2913 MiB)       110 (1417)   85 (1287 MiB)
 
 Takeaway: MSE fills the middle (Q5+Q6 = 94 tensors). SMAPE hollows it (10 tensors) to
 double the Q4 floor and gain 41 extra Q8 penthouses.
+
+### Water-fill prototype (`scripts/waterfill.py`)
+
+A separate allocator experiment, not the default path: it reuses the same tied
+groups and pins as Gnom, but replaces the greedy heap with a discrete
+rate-distortion allocation. Gnom supplies the per-group damage amplitude `G`,
+and the model assumes
+
+```text
+D_i(t) = G_i * 2^(-alpha * (b_t - b0_i))
+```
+
+where `b_t` is bits/weight at tier `t`. Negative `G` is clipped to zero and
+pinned to the floor. The floor is Q4_K and the ceiling is F16 (the usual
+per-class cap does not apply); tier choice is a discrete Lagrangian, and
+leftover bytes are spent by a greedy tail fill. `alpha=2.4` is calibrated on
+paired Ling Q4→Q3 labels (median 2.54 / 2.23).
+
+On Ling-3.0-tiny, against the NETPURE builds at the same target:
+
+| budget | build | MiB | PPL | KLD mean | KLD median | KLD max |
+|---:|:---|---:|---:|---:|---:|---:|
+| 4500 | NETPURE 4500 | 4507 | 13.503 | 0.095092 | 0.039573 | **8.715995** |
+| 4500 | **WATERFILL 4500** | 4516 | **13.1785** | **0.074614** | **0.030849** | 10.109997 |
+| 5100 | NETPURE 5100 | 5091 | 13.4271 | 0.089046 | 0.037072 | **9.071382** |
+| 5100 | **WATERFILL 5100** | 5116 | **13.0611** | **0.063126** | **0.025847** | 9.515678 |
+
+At 4500 MiB: mean KLD −22%, median −22%, PPL −2.4%, at +9 MiB; max KLD is
+16% worse (still below stock Q4_K_M's 14.35). At 5100 MiB: mean −29%,
+median −30%, PPL −2.7%, at +25 MiB; max KLD is 4.9% worse. That is a
+fidelity-per-byte result, not a clean sweep. The 4500/6500/9000 allocations
+and result files are kept in the local lab provenance (`provenance/waterfill/`,
+gitignored).
 
 ---
 
@@ -840,7 +889,23 @@ same experiments are not re-run):
 
 ---
 
-## 8. Advanced experiments
+## 8. Advanced experiments and lab notes
+
+The repo carries several long-form notes that sit beside the code. They are lab
+notebooks, not required reading: each records one line of experiments, including
+the scars and dead ends. This README is the active documentation; `LEGACY.md` is
+the only one needed to reproduce archived flags.
+
+| file | what it is |
+|:---|:---|
+| `DIARY.md` | chronological session journal (2026-09-22 → 27), the context-restore file |
+| `FUSION.md` | layer-interleaved fusions: donor maps, soup, shape guards, specimens |
+| `MIMO.md` | MiMo-V2.6-Distill-Qwen-9B workbench and its distillate notes |
+| `MTP.md` | speculative-decoding draft duels (speed vs verdict) |
+| `README-ZOO.md` | utility-metric playground: the older MSE/SMAPE/SMSE duels |
+| `RINIQ-NEXT.md` | Ox × MiMo fusion lineage, recipes and corrections |
+| `SAGA.md` | the OxCoder+MTP graft saga, attempt by attempt |
+| `LEGACY.md` | archived utility modes and removed flags, frozen for reproduction |
 
 ### MTP head grafting
 
@@ -877,30 +942,52 @@ mechanism, measured against the BF16 base instead of a per-decision proxy.
   resolvable.
 - **Doctrine consequence:** the FLOOR is the whole game, priority among Q4+ is noise (L0/L1).
 
-### F16-blend (`--utility netfd`) — the next generation
+### F16-blend (`--utility gnom --top-down`)
 
 At bigger budgets the useful move is not "which tensor gets one more tier" but **"which
-tensor must not be touched at all"**. `netfd` keeps the fragile blocks in full precision
+tensor must not be touched at all"**. Gnom top-down keeps the fragile blocks in full precision
 and demotes by damage per byte saved. On X2.6-4B at 4050 MiB: 46 tensors in F16 (1510 MiB),
 PPL 18.6228 — beating a solid stock Q8_0 (4172 MiB, 19.0307) while being smaller. This is
 L2/L3 turned into an allocator mode.
 
 ---
 
-## 9. Supported architectures
+## 9. Architecture support
 
-| Arch | Detection | Key Features |
-|:-----|:----------|:-------------|
-| `qwen35` | SSM + QKV | Hybrid attention, SSM layers, GQA, MTP head pinning |
-| `mellum2` | MoE (`exps` tensors) | Mixture of Experts, GQA, routers out-of-budget (F32 in file, 28/28 incl. stock) |
-| `bailingmoe3` | KDA+MLA + MoE | Ling-3.0 family: routed + shared experts |
-| `granite` | `general.architecture` | Dense GQA, 40 layers, split Q/K/V |
-| `spark2_5` | `general.architecture` | Dense + hybrid sliding-window attention (1 full + 3 SWA) |
-| `k2_horizon` | `general.architecture` (`k2-horizon` alias) | Dense GQA thinking family, 36 layers, split attn_q/k/v; vendor sampling (temp 1.0 + top_p 0.95 only), ctx 16384, `--reasoning-effort high` (NOT qat — without the row it misdetects as gemma4) |
-| `lfm2moe` | `general.architecture` | Liquid LFM2.5 hybrid: 30 short-conv + 10 GQA blocks, MoE (top-4/64), 131K ctx; `shortconv` weight-stats class |
-| `gemma4` | layer-scale norms | QAT support, Q4_K attention floor |
-| llama (generic) | tensor names | Dense GQA (MiniCPM5, NeoHorse, etc.) |
+MERNIK has no supported-architecture list and no hand-maintained architecture
+table. Earlier versions required the architecture to be declared and kept a
+manual mapping; that path is gone. Today MERNIK runs `llama-quantize --dry-run`
+and consumes what the C++ loader reports: `general.architecture`, llama.cpp's
+generic metadata keys (`<arch>.block_count`, `<arch>.expert_count`,
+`<arch>.expert_feed_forward_length`, `<arch>.nextn_predict_layers`) and the
+full tensor inventory with shapes and source types. There is no preset table
+and no architecture-name fallback: if llama.cpp loads the model, MERNIK can
+allocate it; if llama.cpp cannot load it, both tools fail loudly before a byte
+is written.
 
+The broad-coverage claim is a theory rather than an exhaustive test: not every
+architecture has been measured yet. That is not a support limit — an untested
+architecture is an untested path, not an unsupported one. There is no whitelist
+to reject it, and it should work as long as llama.cpp reports the standard
+metadata and tensor inventory. Tested examples are `qwen35` (OxCoder, MiMo,
+Ornith, FrogNano),
+`bailingmoe3` (Ling), `mellum`, `spark2_5`, `k2-horizon`, and `llama`
+(MiniCPM5). That is evidence, not a whitelist.
+
+The same contract covers custom llama.cpp forks and their models: point
+`LLAMA_QUANTIZE` at the fork's binary and MERNIK reads the fork's loader output
+instead of assuming an upstream version. The dry run reads headers only, not
+tensor data (Ling BF16: ~0.2 s, ~77 KiB of output). `llama_inspect.py` is the
+adapter; the old `model_reader.py` is gone.
+
+Special cases are derived from the same metadata:
+
+- **MTP:** `nextn_predict_layers`, or `nextn`/`blk.32` tensors, pin the head
+  outside the regular layer count.
+- **MoE:** `expert_count > 0` or `*_exps` tensors; K-quant padding uses
+  `expert_feed_forward_length`.
+- **1D and `ssm_conv1d`:** llama.cpp writes them F32, so the allocator pins
+  them outside the budget.
 
 ---
 
@@ -922,7 +1009,8 @@ L2/L3 turned into an allocator mode.
 
 Lineage: Apache-2.0. Built with [Soulfate24](https://huggingface.co/Soulfate24), whose KLD
 battery ended our PPL theater. Field journals with every scar: `FUSION.md` (monsters),
-`README-ZOO.md` (utility duels), `SAGA.md` (MTP graft), `DIARY.md`.
+`README-ZOO.md` (utility duels), `SAGA.md` (MTP graft), `LEGACY.md` (archived
+modes and removed paths), `DIARY.md`.
 
 ---
 
