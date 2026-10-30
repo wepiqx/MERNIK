@@ -76,6 +76,25 @@
         "damage_dp_rms",
         "damage_same_top"
       ]
+    },
+    {
+      "name": "rl9b_q4",
+      "model": "ornith",
+      "tier": "Q4_K",
+      "corpus": "rlmini",
+      "n_cols": 5,
+      "path": null,
+      "file": "rl9b_q4.jsonl",
+      "rows": 210,
+      "units": 209,
+      "terminated": 0,
+      "kld_cols": [
+        "damage_kld",
+        "damage_kld_max",
+        "damage_kld_median",
+        "damage_dp_rms",
+        "damage_same_top"
+      ]
     }
   ]
 }

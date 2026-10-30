@@ -796,6 +796,20 @@ detonations), `damage_kld_median` (core), `damage_dp_rms` (decisiveness),
 3. `scripts/consolidate_labels.py` → clean pool + `pool.json`;
 4. add the row to the pool file, retrain, check the bars (0.45 / 0.60).
 
+**Gnom artifact (2026-10-31, safetensors).** The ranker ships as a
+self-describing `.safetensors` ensemble
+(`gnom/artifacts/gnom_ensemble_v4_2026-10-31.safetensors`, schema
+`MERNIK.gnom.multinet.v4`): per model family, 3 seeds, each family's
+nets trained without that family and scored on it (strict LOMO).
+Tensors `"<family>/s<seed>/W1..b3"`; the metadata header carries the
+feature contract (20 cols), per-seed and ensemble scores, the pool sha
+and the preprocessing law. Clean 5-family pool (n=1165, quantizer pins
+filtered): **mean ensemble LOMO 0.309** — rl17 +0.714, rl4b +0.708,
+lfm3 +0.522, rl9b −0.169, ling_moe −0.228. The honest law: transfer
+works on the spark family (~0.71), plausibly on the third architecture
+(0.52 ± 0.22), not on Ornith/MoE with these features. Packer:
+`scripts/pack_gnom.py`.
+
 ---
 
 ## 6. Slow-ring protocol (HumanEval execution)
