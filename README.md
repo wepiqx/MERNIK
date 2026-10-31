@@ -796,18 +796,18 @@ detonations), `damage_kld_median` (core), `damage_dp_rms` (decisiveness),
 3. `scripts/consolidate_labels.py` → clean pool + `pool.json`;
 4. add the row to the pool file, retrain, check the bars (0.45 / 0.60).
 
-**Gnom artifact (2026-10-31, safetensors).** The ranker ships as a
-self-describing `.safetensors` ensemble
-(`gnom/artifacts/gnom_ensemble_v4_2026-10-31.safetensors`, schema
-`MERNIK.gnom.multinet.v4`): per model family, 3 seeds, each family's
-nets trained without that family and scored on it (strict LOMO).
-Tensors `"<family>/s<seed>/W1..b3"`; the metadata header carries the
-feature contract (20 cols), per-seed and ensemble scores, the pool sha
-and the preprocessing law. Clean 5-family pool (n=1165, quantizer pins
-filtered): **mean ensemble LOMO 0.309** — rl17 +0.714, rl4b +0.708,
-lfm3 +0.522, rl9b −0.169, ling_moe −0.228. The honest law: transfer
-works on the spark family (~0.71), plausibly on the third architecture
-(0.52 ± 0.22), not on Ornith/MoE with these features. Packer:
+**Gnom artifact (2026-10-31, safetensors).** The ranker ships as
+self-describing `.safetensors` artifacts. **Deploy**:
+`gnom/artifacts/gnom_kfold_v5_2026-10-31.safetensors` (schema
+`MERNIK.gnom.multinet.v5`) — 5-fold within-family × 3 seeds, folds
+grouped by unit tag (no same-unit leakage), 75 nets / 166,675 params.
+Clean 5-family pool (n=1165, quantizer pins filtered), out-of-fold
+Spearman: **mean 0.523** — rl17 +0.736, lfm3 +0.674, rl4b +0.596,
+rl9b +0.445, ling_moe +0.162. The **transfer floor** for a new family
+is `gnom_ensemble_v4_2026-10-31.safetensors` (strict LOMO): mean 0.309
+(sparks ~0.71, lfm3 0.52, Ornith/MoE negative). The honest limits:
+dense decoders work; Ornith is moderate; MoE is weak even in-family —
+the feature set has no expert-routing signal. Packer:
 `scripts/pack_gnom.py`.
 
 ---
