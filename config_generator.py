@@ -28,9 +28,25 @@ Generation (exact by construction):
 """
 import re
 
+from constants import FORCE_F32_TYPES, get_tensor_type
+
 # 1D tensors are F32 in the file whatever the rules say — emitting a rule
 # for them is a no-op (kept out of rules AND out of the simulation).
 _FLAG_CARRIED = ("output.weight", "token_embd.weight")
+
+
+def _must_emit_f32_rule(tname: str, tensors: dict) -> bool:
+    """True for rank-2+ tensors we force to F32 with an explicit rule.
+
+    Rank-1 tensors are F32 in the binary by construction. Types in
+    FORCE_F32_TYPES (ssm_conv1d, mhc_*, and the SenseNova ssm_alpha/beta
+    gates) need a rule or the binary's mixture logic overwrites the F32
+    assignment.
+    """
+    info = tensors.get(tname, {})
+    shape = info.get("shape") or []
+    rank1 = bool(info.get("rank1", len(shape) <= 1))
+    return not rank1 and get_tensor_type(tname) in FORCE_F32_TYPES
 
 
 def _is_contiguous(lst, low, high):
@@ -95,11 +111,14 @@ def verify_rules(assignments: dict, model: dict, rules,
     a mismatch means the binary would write a tier nobody assigned.
     """
     from classifier import _f32_map
-    f32 = _f32_map(model.get("tensors", {}))
+    tensors = model.get("tensors", {})
+    f32 = _f32_map(tensors)
     compiled = [(re.compile(p), t) for p, t in rules]
     bad, sim = [], {}
     for tname, tier in assignments.items():
-        if f32.get(tname, False) or tname in flag_carried:
+        if tname in flag_carried:
+            continue
+        if f32.get(tname, False) and not _must_emit_f32_rule(tname, tensors):
             continue
         hit = next((t for rx, t in compiled if rx.search(tname)), None)
         sim[tname] = hit
@@ -131,7 +150,8 @@ def generate_flags(
 
     max_layer = _max_layer(assignments, model)
     names = [n for n in assignments
-             if not f32.get(n, False) and n not in _FLAG_CARRIED]
+             if (not f32.get(n, False) or _must_emit_f32_rule(n, tensors))
+             and n not in _FLAG_CARRIED]
 
     # Group blk tensors by (suffix, tier)
     type_tier_layers = {}

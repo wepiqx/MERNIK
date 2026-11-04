@@ -36,7 +36,16 @@ F32_BPW = 32.0
 # (shape [4, 8192]) came back F32 while assigned F16. Small in bytes, but it
 # means the tier map was making decisions the binary discards — same class of
 # phantom as 1D norms, different reason (tensor category, not rank).
-FORCE_F32_TYPES = {"ssm_conv1d"}
+# SenseNova-Loop (2026-11-01): the fork's quantizer keeps mhc_* routers F32
+# via an arch fallback, but an explicit --tensor-type rule bypasses that
+# fallback and quantizes them. MERNIK must pin them F32 itself or the 5300
+# build silently drops the residual routers to Q4_K. Tiny (65k params each).
+# 2026-11-02: ssm_alpha/ssm_beta are the only sub-1 MiB tensors left at Q4_K
+# (24 SSM layers x 2, [4096,32], 0.5 MiB F32 each). They share the `gate`
+# class with the large attn_gate tensors, so the 5300 budget never upgrades
+# them. Pin all 48 F32: +20.6 MiB outside the budget, cheap insurance for
+# the recurrent path.
+FORCE_F32_TYPES = {"ssm_conv1d", "mhc_attn", "mhc_ffn", "ssm_alpha", "ssm_beta"}
 GGUF_OVERHEAD_FACTOR = 1.0
 
 # Per-class max tier — never exceed this (for greedy upgrades)
@@ -96,6 +105,8 @@ TENSOR_CLASS = {
     "ffn_down": "ffn_down",
     "ssm_out": "ffn_down",
     "ssm_conv1d": "norms",
+    "mhc_attn": "norms",
+    "mhc_ffn": "norms",
     "router": "norms",
     "ssm_dt": "ssm_params",
     "ssm_a": "ssm_params",

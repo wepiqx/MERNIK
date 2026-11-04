@@ -42,6 +42,7 @@ def _model_groups(model, imatrix, netpred):
     n_layers = features.get("n_layers", 31)
     is_qat = features.get("is_qat", False)
     tensors = model.get("tensors", {})
+    importance = build_importance_table(imatrix, model)
     ne_map = {k: v["n_elements"] for k, v in tensors.items()}
 
     moe_d_ff = features.get("moe_intermediate_size", 0)
@@ -57,7 +58,10 @@ def _model_groups(model, imatrix, netpred):
     all_names = set(ne_map)
     mtp_names = {n for n in all_names if is_mtp_tensor(n, n_layers)} if has_mtp else set()
     rest = all_names - mtp_names
-    embd_names = {n for n in rest if get_tensor_type(n) in EMBD_PIN_TYPES}
+    embd_names = {
+        n for n in rest
+        if importance.get(n, {}).get("type", get_tensor_type(n)) in EMBD_PIN_TYPES
+    }
     rest -= embd_names
     router_names = {n for n in rest if get_tensor_type(n) in ROUTER_PIN_TYPES}
     rest -= router_names
@@ -80,7 +84,7 @@ def _model_groups(model, imatrix, netpred):
         "router_names": router_names, "one_d_names": one_d_names,
         "flex_names": flex_names, "group_registry": group_registry,
         "fixed_cost": fixed_cost, "is_qat": is_qat,
-        "importance": build_importance_table(imatrix, model),
+        "importance": importance,
     }
 
 

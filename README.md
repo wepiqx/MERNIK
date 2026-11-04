@@ -25,10 +25,10 @@ tags:
 # MERNIK — Measure-First Quantization Protocol
 
 **MERNIK** ("the one who measures") is the evolution of the ASHQ1 battlefield zoo: fewer
-utility duels, more verdicts. The method (priority-queue allocation) is built; MERNIK is how
+utility duels, more verdicts. The method (priority-queue allocation) is built; the protocol is how
 we prove and certify it.
 
-Think of MERNIK as a **finetune of ASHQ1**: same base weights (queue, pins, tied groups),
+Think of it as a **finetune of ASHQ1**: same base weights (queue, pins, tied groups),
 retrained objective (measure-first protocol, columns that carry their own ring), and
 expanded capabilities (slow capability ring, KLD-aware teachers, the zoo bench, and the
 water-fill allocator).
@@ -36,6 +36,59 @@ water-fill allocator).
 ---
 
 ## 0. TL;DR — what the last weeks produced
+
+### Gnom v5 + water-fill (2026-10-31): the retrained ranker is measured on a real model — **best mean/median KLD on the shelf at both Ling rungs**; greedy NETPURE still owns the tail
+
+The 5-fold within-family Gnom (v5, mean OOF **+0.527**;
+`gnom_kfold_v5_2026-10-31.safetensors`) replaced the old production tables on
+Ling-3.0-tiny. The v5 per-group table (`gnom/models/netpred_ling_v5_2026-10-31.json`)
+was used two ways on the same base, imatrix and protocol: the greedy classifier
+(`--utility gnom`, top-down because v5 predicts absolute damage) and the
+water-fill prototype with the same G amplitudes, α=2.4. The v5 artifact was
+rebuilt mid-flight after a constant-column guard in the fold normaliser (one
+one-hot type column was constant in a fold's train split; `sd=1e-12` blew the
+held-out z up); the deploy artifact was re-uploaded and its self-test
+reproduces every stored score to 1e-9.
+
+| arm (Ling-3.0-tiny) | MiB | PPL | KLD mean | KLD median | KLD max |
+|:---|---:|---:|---:|---:|---:|
+| stock Q4_K_M | 4600 | 13.327 | 0.114020 | 0.048512 | 14.354789 |
+| NETPURE 4500 (old greedy) | 4507 | 13.503 | 0.095092 | 0.039573 | **8.715995** |
+| **WFGNOMV5 4500** | 4516 | **13.0555 ±0.10484** | **0.070794 ±0.000423** | **0.028326** | 9.388152 |
+| NETPURE 5100 (old greedy) | 5091 | 13.4271 | 0.089046 | 0.037072 | **9.071382** |
+| GNOMV5TD 5100 (new greedy) | 5113 | 13.1311 | 0.062827 | 0.024551 | 10.694695 |
+| **WFGNOMV5 5100** | 5116 | 13.1289 ±0.10602 | **0.050744 ±0.000328** | **0.019695** | 9.858137 |
+| stock Q6_K (ceiling, not the same budget) | 6198 | 12.69 | 0.022102 | 0.008468 | 4.612892 |
+
+**Water-fill + v5 is the new fidelity leader at both rungs.** At 4500 it beats
+the old WATERFILL on every column (PPL −0.9%, mean −5.1%, median −8.2%, max
+−7.1%) and NETPURE-4500 on PPL −3.3% / mean −25.6% / median −28.4%; max KLD is
+7.7% above NETPURE (9.39 vs 8.72) but 34.6% below stock Q4. At 5100 it beats the
+old WATERFILL on mean **−19.6%** and median **−23.8%** (PPL +0.5% and max +3.6%
+are the price) and NETPURE-5100 on mean **−43.0%**, median **−46.9%**, PPL
+−2.2%; max is 8.7% above NETPURE. Against stock Q4_K_M the 5100 arm is
+mean −55.5%, median −59.4%, PPL −1.5%, max −31.3%, RMS Δp 6.448% vs 9.405%,
+same-top-p 90.43% vs 85.80%.
+
+**The allocation shape explains it.** The 5100 water-fill spends Q5_K 3706 /
+Q4_K 737 / Q6_K 181 / Q8_0 149 / F16 1 MiB — the v5 heavy tail pushes the middle
+into Q5_K instead of the old plan's Q4/Q6 pair. The 4500 arm spends Q4_K 3230 /
+Q5_K 788 / Q6_K 101 / Q8_0 55 / F16 1 MiB. The greedy v5 top-down arm (5113 MiB)
+is not competitive with water-fill on mean/median, only on tail.
+
+**Tail, stated plainly:** greedy NETPURE still has the lowest max KLD at both
+rungs (8.72 / 9.07); water-fill buys the mean/median and RMS, and pays the tail.
+HE was deliberately not run, same doctrine as the 2026-10-27 experiment: the
+capability column sat on the floor at 4500 (130/164 vs 131/164, duel 0/3 NOISE)
+and the open question here is fidelity per byte. Operator generation check was
+positive (informal, not a battery).
+
+**Provenance.** Builds `Ling-3.0-tiny-MERNIK-{4500,5100}-WFGNOMV5.gguf` (4516 /
+5116 MiB) and `Ling-3.0-tiny-MERNIK-5100-GNOMV5TD.gguf` (5113 MiB); alloc and
+result payloads in `provenance/waterfill/` (`ling_waterfill_v5_a2.4_*`,
+`ling*gnomv5_result.json`); PPL/KLD logs in `/mnt/Vsio/assets/refs/`
+(`*GNOMV5TD*`, `*WFGNOMV5*`). Reference and protocol unchanged:
+`ref_lingq8_wiki.dat`, wiki 297×1024, `-c 1024 -b 128 --seed 7`.
 
 ### The 5100 experiment (2026-10-27): water-fill beats NETPURE on PPL and mean/median KLD; **HE deliberately not run**
 
@@ -76,7 +129,7 @@ comparison.
 
 The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (4,725,910,720 B = 4507 MiB) against the vendor `Ling-3.0-tiny-Q4_K_M.gguf` (4,823,894,944 B = 4600 MiB), both on the protocol corpus (`wiki.test.raw`, 297 chunks, Q8-base ref 47.7 GB, base PPL 12.9500, `-c 1024 -b 128 --seed 7`). The 4500 rung is the comfortable floor: the Q4_K base with the F32 pins is 4454 MiB, so 4000/4200 need the sub-Q4 fallback (automatic when the Q4_K floor does not fit; `--dont-allow-q3` refuses it). Stock **Q6_K** (`Ling-3.0-tiny-Q6_K.gguf`, 6,499,262,368 B = 6198 MiB) is the fidelity ladder's top rung, same protocol.
 
-| metric (wiki vs Q8 ref) | stock Q4_K_M | MERNIK 4500 NETPURE | stock Q6_K | delta (ours vs Q4) |
+| metric (wiki vs Q8 ref) | stock Q4_K_M | NETPURE 4500 | stock Q6_K | delta (ours vs Q4) |
 |:---|---:|---:|---:|---:|
 | weight | 4600 MiB | **4507 MiB** | 6198 MiB | **−93 MiB (−2.0%)** |
 | PPL (canary) | **13.327** (+2.91%) | 13.503 (+4.27%) | **12.69** | +0.176 (+1.3%) |
@@ -92,7 +145,7 @@ The first MoE family is on the shelf: `Ling-3.0-tiny-MERNIK-4500-NETPURE.gguf` (
 
 **Provenance.** The allocator is the sighted ranker: the training pool now carries 821 units — 512 dense (Spark X2.6-4B Q4/Q3/Q2) + 309 real Ling units — with 160 tied-group predictions for the MoE (90 structural tensors skipped by the 1D/F32/rank-1 law). The Ling leg is also the first ranker retrain that changes a *different* model's allocation: on Ornith it retiers 30/442 tensors (rank-corr +0.42 with the dense-only netpred), Q8→Q5 in the middle, layer 0/31 attention up, 1–4 down, same total size — recorded in the Fracture card, not here.
 
-**HE closed (2026-10-25, same sampling: temp 1.0, top_k 20, top_p 0.95, min_p 0.05, max_tokens 8192, ctx 16384, `--reasoning-effort high`, `--cache-ram 2048`).** Stock Q4_K_M: HE **131/164 (79.9%)**, HE+ **128/164 (78.0%)**, empties 24. MERNIK NETPURE-4500: HE **130/164 (79.3%)**, HE+ **124/164 (75.6%)**, empties 29. Duel `scripts/duel.py`: **0/3 — NOISE** (HE p=1.00, HE+ p=0.60, empties p=0.38). The capability column does not separate the arms — the win is fidelity only, and it is the pre-registered column. This is the instrument's floor (SD ~5.9 tasks, resolution 13) plus saturation above Q4, not the model's ceiling.
+**HE closed (2026-10-25, same sampling: temp 1.0, top_k 20, top_p 0.95, min_p 0.05, max_tokens 8192, ctx 16384, `--reasoning-effort high`, `--cache-ram 2048`).** Stock Q4_K_M: HE **131/164 (79.9%)**, HE+ **128/164 (78.0%)**, empties 24. NETPURE-4500: HE **130/164 (79.3%)**, HE+ **124/164 (75.6%)**, empties 29. Duel `scripts/duel.py`: **0/3 — NOISE** (HE p=1.00, HE+ p=0.60, empties p=0.38). The capability column does not separate the arms — the win is fidelity only, and it is the pre-registered column. This is the instrument's floor (SD ~5.9 tasks, resolution 13) plus saturation above Q4, not the model's ceiling.
 
 ### 3D smoke — my test (2026-10-25): NETPURE writes a working voxel scene first try; Q4_K_M writes broken geometry even on second run
 
@@ -204,7 +257,7 @@ measurement.
 
 **One model, one byte budget, three beliefs about where the bits go.** Spark-X2.6-4B
 (released hours after its weights leaked; same `spark2_5` architecture as X2.5,
-post-training only). All three MERNIK arms are the **same 2254.8 MiB** with the **same tier
+post-training only). All three arms are the **same 2254.8 MiB** with the **same tier
 multiset** (Q4_K ×213 + Q5_K ×4) — they differ only in *which* tensors got the Q5.
 
 | allocation | who chose | PPL (wiki) | max KLD vs BF16 | mean Δp |
@@ -356,7 +409,7 @@ actually be tested.
 
 ## 1. The two rings (revised 2026-10-16)
 
-MERNIK strictly separates allocation signals from capability certification:
+The protocol strictly separates allocation signals from capability certification:
 
 | Ring | Columns | Role | Cadence |
 |:---|:---|:---|:---|
@@ -524,7 +577,7 @@ papers published in the same window describe the same physics:
 
 Read together: the mechanism (errors born early are amplified through the depth), the practical
 consequence (keep the early blocks precise), and the caveat (which block is architecture-
-specific) are all established independently. MERNIK's contribution is the *measurement
+specific) are all established independently. The contribution is the *measurement
 instrument* — per-tensor damage labels on a reasoning corpus, and a ranker that transfers the
 rule to models it has never seen.
 
@@ -724,18 +777,32 @@ On Ling-3.0-tiny, against the NETPURE builds at the same target:
 |---:|:---|---:|---:|---:|---:|---:|
 | — | stock Q4_K_M (vendor) | 4600 | 13.327 | 0.114020 | 0.048512 | 14.354789 |
 | 4500 | NETPURE 4500 | 4507 | 13.503 | 0.095092 | 0.039573 | **8.715995** |
-| 4500 | **WATERFILL 4500** | 4516 | **13.1785** | **0.074614** | **0.030849** | 10.109997 |
+| 4500 | WATERFILL 4500 | 4516 | 13.1785 | 0.074614 | 0.030849 | 10.109997 |
+| 4500 | **WFGNOMV5 4500** | 4516 | **13.0555** | **0.070794** | **0.028326** | 9.388152 |
 | 5100 | NETPURE 5100 | 5091 | 13.4271 | 0.089046 | 0.037072 | **9.071382** |
-| 5100 | **WATERFILL 5100** | 5116 | **13.0611** | **0.063126** | **0.025847** | 9.515678 |
+| 5100 | WATERFILL 5100 | 5116 | **13.0611** | 0.063126 | 0.025847 | 9.515678 |
+| 5100 | GNOMV5TD 5100 (greedy, v5) | 5113 | 13.1311 | 0.062827 | 0.024551 | 10.694695 |
+| 5100 | **WFGNOMV5 5100** | 5116 | 13.1289 | **0.050744** | **0.019695** | 9.858137 |
 
 Against stock Q4_K_M at 4600 MiB, **WATERFILL 4500 is 84 MiB smaller and
 better on every column**: PPL −1.1%, mean KLD −35%, median −36%, max −30%.
 Against NETPURE at 4500 MiB: mean KLD −22%, median −22%, PPL −2.4%, at
 +9 MiB; max KLD is 16% worse (still below stock Q4_K_M's 14.35). At 5100 MiB
 against NETPURE: mean −29%, median −30%, PPL −2.7%, at +25 MiB; max KLD is
-4.9% worse. That is a fidelity-per-byte result, not a clean sweep. The
-4500/6500/9000 allocations and result files are kept in the local lab
-provenance (`provenance/waterfill/`, gitignored) and mirrored to the
+4.9% worse. That is a fidelity-per-byte result, not a clean sweep.
+
+**The v5 table moves both rungs again (2026-10-31).** With the 5-fold Gnom
+predictions as the water-fill amplitude: at 4500 the sweep is clean — PPL
+−0.9%, mean −5.1%, median −8.2%, max −7.1% versus the old WATERFILL, and
+PPL −3.3% / mean −25.6% / median −28.4% versus NETPURE-4500 (max +7.7%
+above NETPURE, still −34.6% below stock Q4). At 5100 the mean drops **−19.6%**
+and the median **−23.8%** versus the old WATERFILL (PPL +0.5%, max +3.6%),
+and versus NETPURE-5100 mean −43.0%, median −46.9%, PPL −2.2% (max +8.7%).
+RMS Δp / same-top-p for the 5100 arm: 6.448% / 90.43% (stock Q4: 9.405% /
+85.80%). The same v5 table in the plain greedy classifier (top-down, 5113 MiB)
+lands at mean 0.062827 — better than the old WATERFILL, worse than its own
+water-fill. The 4500/6500/9000 allocations and result files are kept in the
+local lab provenance (`provenance/waterfill/`, gitignored) and mirrored to the
 Hugging Face repo.
 
 ---
@@ -802,8 +869,8 @@ self-describing `.safetensors` artifacts. **Deploy**:
 `MERNIK.gnom.multinet.v5`) — 5-fold within-family × 3 seeds, folds
 grouped by unit tag (no same-unit leakage), 75 nets / 166,675 params.
 Clean 5-family pool (n=1165, quantizer pins filtered), out-of-fold
-Spearman: **mean 0.523** — rl17 +0.736, lfm3 +0.674, rl4b +0.596,
-rl9b +0.445, ling_moe +0.162. The **transfer floor** for a new family
+Spearman: **mean 0.527** — rl17 +0.738, lfm3 +0.659, rl4b +0.615,
+rl9b +0.489, ling_moe +0.134. The **transfer floor** for a new family
 is `gnom_ensemble_v4_2026-10-31.safetensors` (strict LOMO): mean 0.309
 (sparks ~0.71, lfm3 0.52, Ornith/MoE negative). The honest limits:
 dense decoders work; Ornith is moderate; MoE is weak even in-family —
@@ -972,31 +1039,37 @@ L2/L3 turned into an allocator mode.
 
 ## 9. Architecture support
 
-MERNIK has no supported-architecture list and no hand-maintained architecture
-table. Earlier versions required the architecture to be declared and kept a
-manual mapping; that path is gone. Today MERNIK runs `llama-quantize --dry-run`
-and consumes what the C++ loader reports: `general.architecture`, llama.cpp's
-generic metadata keys (`<arch>.block_count`, `<arch>.expert_count`,
+The allocator has no supported-architecture list and no hand-maintained
+architecture table. Earlier versions required the architecture to be declared
+and kept a manual mapping; that path is gone. Today it runs
+`llama-quantize --dry-run` and consumes what the C++ loader reports:
+`general.architecture`, llama.cpp's generic metadata keys
+(`<arch>.block_count`, `<arch>.expert_count`,
 `<arch>.expert_feed_forward_length`, `<arch>.nextn_predict_layers`) and the
 full tensor inventory with shapes and source types. There is no preset table
-and no architecture-name fallback: if llama.cpp loads the model, MERNIK can
-allocate it; if llama.cpp cannot load it, both tools fail loudly before a byte
-is written.
+and no architecture-name fallback: if llama.cpp loads the model, the allocator
+can allocate it; if llama.cpp cannot load it, both tools fail loudly before a
+byte is written.
 
 The broad-coverage claim is a theory rather than an exhaustive test: not every
 architecture has been measured yet. That is not a support limit — an untested
 architecture is an untested path, not an unsupported one. There is no whitelist
 to reject it, and it should work as long as llama.cpp reports the standard
 metadata and tensor inventory. Tested examples are `qwen35` (OxCoder, MiMo,
-Ornith, FrogNano),
-`bailingmoe3` (Ling), `mellum`, `spark2_5`, `k2-horizon`, and `llama`
-(MiniCPM5). That is evidence, not a whitelist.
+Ornith, FrogNano), `bailingmoe3` (Ling), `mellum`, `spark2_5`,
+`k2-horizon`, `sensenova_loop` (SenseNova-Loop 9B via the MTP fork), and
+`llama` (MiniCPM5). That is evidence, not a whitelist.
 
 The same contract covers custom llama.cpp forks and their models: point
-`LLAMA_QUANTIZE` at the fork's binary and MERNIK reads the fork's loader output
+`LLAMA_QUANTIZE` at the fork's binary and it reads the fork's loader output
 instead of assuming an upstream version. The dry run reads headers only, not
 tensor data (Ling BF16: ~0.2 s, ~77 KiB of output). `llama_inspect.py` is the
 adapter; the old `model_reader.py` is gone.
+
+For `sensenova_loop`, upstream `llama.cpp` refuses the file
+(`unknown model architecture: 'sensenova_loop'`); use the fork quantizer and
+point `LLAMA_QUANTIZE` at it. The fork reports 538 tensors, 57 virtual blocks
+and the MTP head, and the same dry-run contract applies without a code change.
 
 Special cases are derived from the same metadata:
 
@@ -1004,8 +1077,17 @@ Special cases are derived from the same metadata:
   outside the regular layer count.
 - **MoE:** `expert_count > 0` or `*_exps` tensors; K-quant padding uses
   `expert_feed_forward_length`.
-- **1D and `ssm_conv1d`:** llama.cpp writes them F32, so the allocator pins
-  them outside the budget.
+- **SSM and mHC gates:** `ssm_alpha`, `ssm_beta`, `mhc_attn` and `mhc_ffn`
+  are hard F32 pins in `FORCE_F32_TYPES`. For rank-2+ tensors the config
+  generator emits an explicit F32 `--tensor-type` rule, because an explicit
+  rule would otherwise bypass the fork's architecture fallback. This closes
+  the qwen35 SSM hole: Ornith-1.5's 48 `ssm_alpha`/`ssm_beta` gates used to
+  land Q4_K/Q8; now 48/48 are F32. The ordinary qwen35 path is otherwise
+  unchanged — the pin is a safety floor for the recurrent gates, not a new
+  reallocation claim.
+- **1D and `ssm_conv1d`:** llama.cpp writes them F32 automatically, so the
+  allocator pins them outside the budget; the explicit rules above exist for
+  the rank-2 forced-F32 tensors the binary does not protect.
 
 ---
 
